@@ -2,8 +2,7 @@
  * Portal Karyawan - Admin Reports
  * Reports and exports for admin with FULL DETAIL functionality
  * 
- * Fitur: Tombol Delete pada Rekap Cuti & Izin, 
- *        Tombol Approve/Reject hanya untuk status pending
+ * Perbaikan: Filter periode dan jenis pada Rekap Cuti & Izin
  */
 
 const adminReports = {
@@ -55,6 +54,13 @@ const adminReports = {
         }
         await this.loadData();
         this.bindLeaveEvents();
+        // Set default bulan ke bulan saat ini jika belum ada filter
+        if (!this.filters.leave.month) {
+            const today = new Date();
+            this.filters.leave.month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+            const monthInput = document.getElementById('leave-month');
+            if (monthInput) monthInput.value = this.filters.leave.month;
+        }
         this.renderLeaveReports();
     },
 
@@ -115,11 +121,14 @@ const adminReports = {
         this.jurnalData.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
         console.log('Processed jurnalData length:', this.jurnalData.length);
 
-        // Build leave/izin combined
+        // Build leave/izin combined with proper date fields for filtering
         this.leaveData = [];
         this.rawLeaves.forEach(l => {
             const emp = this.rawEmployees.find(e => String(e.id) === String(l.userId));
             if (emp) {
+                // Gunakan startDate untuk filter bulan
+                const startDateObj = new Date(l.startDate);
+                const monthYear = `${startDateObj.getFullYear()}-${String(startDateObj.getMonth() + 1).padStart(2, '0')}`;
                 this.leaveData.push({
                     id: l.id,
                     type: 'cuti',
@@ -130,13 +139,18 @@ const adminReports = {
                     duration: l.duration,
                     reason: l.reason,
                     status: l.status,
-                    appliedAt: l.appliedAt
+                    appliedAt: l.appliedAt,
+                    startDate: l.startDate,
+                    endDate: l.endDate,
+                    monthYear: monthYear // untuk filter bulan
                 });
             }
         });
         this.rawIzin.forEach(i => {
             const emp = this.rawEmployees.find(e => String(e.id) === String(i.userId));
             if (emp) {
+                const dateObj = new Date(i.date);
+                const monthYear = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
                 this.leaveData.push({
                     id: i.id,
                     type: 'izin',
@@ -147,7 +161,10 @@ const adminReports = {
                     duration: i.duration,
                     reason: i.reason,
                     status: i.status,
-                    appliedAt: i.appliedAt
+                    appliedAt: i.appliedAt,
+                    startDate: i.date,
+                    endDate: i.date,
+                    monthYear: monthYear
                 });
             }
         });
@@ -231,11 +248,20 @@ const adminReports = {
         const btnPrint = document.getElementById('btn-print-leave');
         if (btnPrint) btnPrint.onclick = () => this.printReport('leave');
         const month = document.getElementById('leave-month');
-        if (month) month.onchange = (e) => { this.filters.leave.month = e.target.value; this.renderLeaveReports(); };
+        if (month) month.onchange = (e) => { 
+            this.filters.leave.month = e.target.value; 
+            this.renderLeaveReports(); 
+        };
         const type = document.getElementById('leave-type-filter');
-        if (type) type.onchange = (e) => { this.filters.leave.type = e.target.value; this.renderLeaveReports(); };
+        if (type) type.onchange = (e) => { 
+            this.filters.leave.type = e.target.value; 
+            this.renderLeaveReports(); 
+        };
         const status = document.getElementById('leave-status-filter');
-        if (status) status.onchange = (e) => { this.filters.leave.status = e.target.value; this.renderLeaveReports(); };
+        if (status) status.onchange = (e) => { 
+            this.filters.leave.status = e.target.value; 
+            this.renderLeaveReports(); 
+        };
     },
 
     getFilteredAttendance() {
@@ -271,17 +297,32 @@ const adminReports = {
         return data;
     },
 
+    // ========== PERBAIKAN: Filter untuk Rekap Cuti & Izin ==========
     getFilteredLeave() {
-        return this.leaveData.filter(item => {
-            let matchesType = true;
-            if (this.filters.leave.type) {
-                if (this.filters.leave.type === 'cuti') matchesType = item.type === 'cuti';
-                else if (this.filters.leave.type === 'izin') matchesType = item.type === 'izin';
-                else if (this.filters.leave.type === 'sakit') matchesType = item.typeLabel.toLowerCase().includes('sakit');
+        let data = [...this.leaveData];
+        
+        // Filter bulan (periode)
+        if (this.filters.leave.month) {
+            data = data.filter(item => item.monthYear === this.filters.leave.month);
+        }
+        
+        // Filter jenis (cuti/izin/sakit)
+        if (this.filters.leave.type && this.filters.leave.type !== '') {
+            if (this.filters.leave.type === 'cuti') {
+                data = data.filter(item => item.type === 'cuti');
+            } else if (this.filters.leave.type === 'izin') {
+                data = data.filter(item => item.type === 'izin');
+            } else if (this.filters.leave.type === 'sakit') {
+                data = data.filter(item => item.type === 'izin' && item.typeLabel.toLowerCase().includes('sakit'));
             }
-            const matchesStatus = !this.filters.leave.status || item.status === this.filters.leave.status;
-            return matchesType && matchesStatus;
-        });
+        }
+        
+        // Filter status
+        if (this.filters.leave.status && this.filters.leave.status !== '') {
+            data = data.filter(item => item.status === this.filters.leave.status);
+        }
+        
+        return data;
     },
 
     renderAttendanceReports() {
@@ -325,7 +366,7 @@ const adminReports = {
         if (data.length === 0) {
             tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:40px;">Tidak ada data jurnal untuk periode ini</div></tr>';
             const mobile = document.getElementById('jurnal-mobile-cards');
-            if (mobile) mobile.innerHTML = '<div class="empty-state">Tidak ada data jurnal</div>';
+            if (mobile) mobile.innerHTML = '<div class="empty-state">Tidak ada数据 jurnal</div>';
             return;
         }
         tbody.innerHTML = data.map(row => `
@@ -367,7 +408,7 @@ const adminReports = {
         const data = this.getFilteredLeave();
         const statusLabels = { pending: 'Menunggu', approved: 'Disetujui', rejected: 'Ditolak' };
         if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:40px;">Tidak ada data cuti/izin</div></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:40px;">Tidak ada data cuti/izin untuk periode/filter yang dipilih</div></tr>';
             const mobile = document.getElementById('leave-mobile-cards');
             if (mobile) mobile.innerHTML = '<div class="empty-state">Tidak ada数据</div>';
             return;
@@ -460,7 +501,7 @@ const adminReports = {
             } else if (rec && rec.status === 'libur') {
                 statusHtml = '<span class="badge-status secondary">Libur</span>';
             }
-            tableRows += `<tr><td>${d}</td><td>${dateStr}</td><td>${rec ? rec.clockIn || '-' : '-'}</td><td>${rec ? rec.clockOut || '-' : '-'}</td><td>${statusHtml}</td><tr>`;
+            tableRows += `<tr><td>${d}</td><td>${dateStr}</td><td>${rec ? rec.clockIn || '-' : '-'}</td><td>${rec ? rec.clockOut || '-' : '-'}</td><td>${statusHtml}</td></tr>`;
         }
         
         const formattedMonth = `${month}-${year}`;
