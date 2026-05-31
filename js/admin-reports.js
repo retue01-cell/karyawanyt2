@@ -2,7 +2,7 @@
  * Portal Karyawan - Admin Reports
  * Reports and exports for admin with FULL DETAIL functionality
  * 
- * Perbaikan: Filter periode dan jenis pada Rekap Cuti & Izin
+ * Perbaikan: Filter periode dan jenis pada Rekap Cuti & Izin (dengan debugging)
  */
 
 const adminReports = {
@@ -81,7 +81,8 @@ const adminReports = {
 
             console.log('=== Admin Reports Load Data ===');
             console.log('Employees count:', this.rawEmployees.length);
-            console.log('Journals raw count:', this.rawJournals.length);
+            console.log('Leaves raw count:', this.rawLeaves.length);
+            console.log('Izin raw count:', this.rawIzin.length);
         } catch (error) {
             console.error('Load error:', error);
             this.rawEmployees = storage.get('admin_employees', []);
@@ -91,7 +92,7 @@ const adminReports = {
             this.rawAttendance = storage.get('attendance', []);
         }
 
-        // Build jurnal data (enriched with employee names)
+        // Build jurnal data (enriched with employee names) - tidak berubah
         const empMap = new Map();
         this.rawEmployees.forEach(emp => {
             empMap.set(String(emp.id), { name: emp.name, department: emp.department });
@@ -126,8 +127,10 @@ const adminReports = {
         this.rawLeaves.forEach(l => {
             const emp = this.rawEmployees.find(e => String(e.id) === String(l.userId));
             if (emp) {
-                // Gunakan startDate untuk filter bulan
-                const startDateObj = new Date(l.startDate);
+                // Pastikan startDate dalam format YYYY-MM-DD
+                let startDateStr = l.startDate;
+                if (startDateStr && startDateStr.includes('T')) startDateStr = startDateStr.split('T')[0];
+                const startDateObj = new Date(startDateStr);
                 const monthYear = `${startDateObj.getFullYear()}-${String(startDateObj.getMonth() + 1).padStart(2, '0')}`;
                 this.leaveData.push({
                     id: l.id,
@@ -140,16 +143,18 @@ const adminReports = {
                     reason: l.reason,
                     status: l.status,
                     appliedAt: l.appliedAt,
-                    startDate: l.startDate,
+                    startDate: startDateStr,
                     endDate: l.endDate,
-                    monthYear: monthYear // untuk filter bulan
+                    monthYear: monthYear
                 });
             }
         });
         this.rawIzin.forEach(i => {
             const emp = this.rawEmployees.find(e => String(e.id) === String(i.userId));
             if (emp) {
-                const dateObj = new Date(i.date);
+                let dateStr = i.date;
+                if (dateStr && dateStr.includes('T')) dateStr = dateStr.split('T')[0];
+                const dateObj = new Date(dateStr);
                 const monthYear = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
                 this.leaveData.push({
                     id: i.id,
@@ -157,18 +162,20 @@ const adminReports = {
                     typeLabel: i.typeLabel || this.getIzinTypeLabel(i.type),
                     name: emp.name,
                     department: emp.department,
-                    dates: i.date,
+                    dates: dateStr,
                     duration: i.duration,
                     reason: i.reason,
                     status: i.status,
                     appliedAt: i.appliedAt,
-                    startDate: i.date,
-                    endDate: i.date,
+                    startDate: dateStr,
+                    endDate: dateStr,
                     monthYear: monthYear
                 });
             }
         });
         this.leaveData.sort((a, b) => new Date(b.appliedAt) - new Date(a.appliedAt));
+        console.log('Processed leaveData length:', this.leaveData.length);
+        console.log('Sample leaveData (first 2 items):', this.leaveData.slice(0, 2));
     },
 
     getLeaveTypeLabel(type) {
@@ -248,19 +255,22 @@ const adminReports = {
         const btnPrint = document.getElementById('btn-print-leave');
         if (btnPrint) btnPrint.onclick = () => this.printReport('leave');
         const month = document.getElementById('leave-month');
-        if (month) month.onchange = (e) => { 
-            this.filters.leave.month = e.target.value; 
-            this.renderLeaveReports(); 
+        if (month) month.onchange = (e) => {
+            console.log('Leave month changed to:', e.target.value);
+            this.filters.leave.month = e.target.value;
+            this.renderLeaveReports();
         };
         const type = document.getElementById('leave-type-filter');
-        if (type) type.onchange = (e) => { 
-            this.filters.leave.type = e.target.value; 
-            this.renderLeaveReports(); 
+        if (type) type.onchange = (e) => {
+            console.log('Leave type changed to:', e.target.value);
+            this.filters.leave.type = e.target.value;
+            this.renderLeaveReports();
         };
         const status = document.getElementById('leave-status-filter');
-        if (status) status.onchange = (e) => { 
-            this.filters.leave.status = e.target.value; 
-            this.renderLeaveReports(); 
+        if (status) status.onchange = (e) => {
+            console.log('Leave status changed to:', e.target.value);
+            this.filters.leave.status = e.target.value;
+            this.renderLeaveReports();
         };
     },
 
@@ -300,14 +310,19 @@ const adminReports = {
     // ========== PERBAIKAN: Filter untuk Rekap Cuti & Izin ==========
     getFilteredLeave() {
         let data = [...this.leaveData];
+        console.log('All leaveData before filter:', data);
+        console.log('Current filters:', this.filters.leave);
         
         // Filter bulan (periode)
-        if (this.filters.leave.month) {
+        if (this.filters.leave.month && this.filters.leave.month !== '') {
+            console.log('Filtering by month:', this.filters.leave.month);
             data = data.filter(item => item.monthYear === this.filters.leave.month);
+            console.log('After month filter, count:', data.length);
         }
         
         // Filter jenis (cuti/izin/sakit)
         if (this.filters.leave.type && this.filters.leave.type !== '') {
+            console.log('Filtering by type:', this.filters.leave.type);
             if (this.filters.leave.type === 'cuti') {
                 data = data.filter(item => item.type === 'cuti');
             } else if (this.filters.leave.type === 'izin') {
@@ -315,11 +330,14 @@ const adminReports = {
             } else if (this.filters.leave.type === 'sakit') {
                 data = data.filter(item => item.type === 'izin' && item.typeLabel.toLowerCase().includes('sakit'));
             }
+            console.log('After type filter, count:', data.length);
         }
         
         // Filter status
         if (this.filters.leave.status && this.filters.leave.status !== '') {
+            console.log('Filtering by status:', this.filters.leave.status);
             data = data.filter(item => item.status === this.filters.leave.status);
+            console.log('After status filter, count:', data.length);
         }
         
         return data;
@@ -364,7 +382,7 @@ const adminReports = {
         if (!tbody) return;
         const data = this.getFilteredJurnal();
         if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:40px;">Tidak ada data jurnal untuk periode ini</div></td>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:40px;">Tidak ada数据 jurnal untuk periode ini</div></tr>';
             const mobile = document.getElementById('jurnal-mobile-cards');
             if (mobile) mobile.innerHTML = '<div class="empty-state">Tidak ada数据 jurnal</div>';
             return;
