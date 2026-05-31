@@ -2,7 +2,8 @@
  * Portal Karyawan - Admin Reports
  * Reports and exports for admin with FULL DETAIL functionality
  * 
- * Fitur: Tombol Delete pada Rekap Cuti & Izin
+ * Fitur: Tombol Delete pada Rekap Cuti & Izin, 
+ *        Tombol Approve/Reject hanya untuk status pending
  */
 
 const adminReports = {
@@ -288,7 +289,7 @@ const adminReports = {
         if (!tbody) return;
         const data = this.getFilteredAttendance();
         if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px;">Tidak ada数据</div></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px;">Tidak ada数据</div><tr>';
             return;
         }
         tbody.innerHTML = data.map(row => `
@@ -322,7 +323,7 @@ const adminReports = {
         if (!tbody) return;
         const data = this.getFilteredJurnal();
         if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:40px;">Tidak ada data jurnal untuk periode ini</div></td>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:40px;">Tidak ada data jurnal untuk periode ini</div></tr>';
             const mobile = document.getElementById('jurnal-mobile-cards');
             if (mobile) mobile.innerHTML = '<div class="empty-state">Tidak ada data jurnal</div>';
             return;
@@ -359,7 +360,7 @@ const adminReports = {
         }
     },
 
-    // ========== RENDER LEAVE REPORTS WITH DELETE BUTTON ==========
+    // ========== RENDER LEAVE REPORTS WITH CONDITIONAL BUTTONS ==========
     renderLeaveReports() {
         const tbody = document.getElementById('leave-reports-body');
         if (!tbody) return;
@@ -372,13 +373,19 @@ const adminReports = {
             return;
         }
         tbody.innerHTML = data.map(item => {
-            // Tombol delete SELALU ditampilkan untuk semua status
-            const actions = `
+            // Tombol approve dan reject hanya jika status pending
+            const approveRejectButtons = item.status === 'pending' ? `
                 <button class="btn-action approve" style="background:rgba(16,185,129,0.1);color:#10B981;" onclick="adminReports.approveLeaveItem('${item.type}', ${item.id})" title="Setujui"><i class="fas fa-check"></i></button>
                 <button class="btn-action reject" style="background:rgba(239,68,68,0.1);color:#EF4444;" onclick="adminReports.rejectLeaveItem('${item.type}', ${item.id})" title="Tolak"><i class="fas fa-times"></i></button>
+            ` : '';
+            // Tombol delete selalu muncul
+            const deleteButton = `
                 <button class="btn-action delete" style="background:rgba(239,68,68,0.1);color:#EF4444;" onclick="adminReports.deleteLeaveItem('${item.type}', ${item.id})" title="Hapus"><i class="fas fa-trash"></i></button>
+            `;
+            const viewButton = `
                 <button class="btn-action view" onclick="adminReports.viewLeaveDetail('${this.escapeHtml(item.name)}', '${item.type}', ${item.id})" title="Lihat"><i class="fas fa-eye"></i></button>
             `;
+            const actions = approveRejectButtons + deleteButton + viewButton;
             return `
                 <tr>
                     <td>${this.escapeHtml(item.name)}</div>
@@ -396,12 +403,21 @@ const adminReports = {
         const mobile = document.getElementById('leave-mobile-cards');
         if (mobile) {
             mobile.innerHTML = data.map(item => {
+                const approveRejectButtons = item.status === 'pending' ? `
+                    <button class="btn-sm" style="background:#10B981;color:white;" onclick="adminReports.approveLeaveItem('${item.type}', ${item.id})">Setujui</button>
+                    <button class="btn-sm" style="background:#EF4444;color:white;" onclick="adminReports.rejectLeaveItem('${item.type}', ${item.id})">Tolak</button>
+                ` : '';
+                const deleteButton = `
+                    <button class="btn-sm" style="background:#EF4444;color:white;" onclick="adminReports.deleteLeaveItem('${item.type}', ${item.id})">Hapus</button>
+                `;
+                const viewButton = `
+                    <button class="btn-primary btn-sm" onclick="adminReports.viewLeaveDetail('${this.escapeHtml(item.name)}', '${item.type}', ${item.id})">Lihat</button>
+                `;
                 const actions = `
                     <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
-                        <button class="btn-sm" style="background:#10B981;color:white;" onclick="adminReports.approveLeaveItem('${item.type}', ${item.id})">Setujui</button>
-                        <button class="btn-sm" style="background:#EF4444;color:white;" onclick="adminReports.rejectLeaveItem('${item.type}', ${item.id})">Tolak</button>
-                        <button class="btn-sm" style="background:#EF4444;color:white;" onclick="adminReports.deleteLeaveItem('${item.type}', ${item.id})">Hapus</button>
-                        <button class="btn-primary btn-sm" onclick="adminReports.viewLeaveDetail('${this.escapeHtml(item.name)}', '${item.type}', ${item.id})">Lihat</button>
+                        ${approveRejectButtons}
+                        ${deleteButton}
+                        ${viewButton}
                     </div>
                 `;
                 return `
@@ -444,7 +460,7 @@ const adminReports = {
             } else if (rec && rec.status === 'libur') {
                 statusHtml = '<span class="badge-status secondary">Libur</span>';
             }
-            tableRows += `<tr><td>${d}</td><td>${dateStr}</td><td>${rec ? rec.clockIn || '-' : '-'}</td><td>${rec ? rec.clockOut || '-' : '-'}</td><td>${statusHtml}</td></tr>`;
+            tableRows += `<tr><td>${d}</td><td>${dateStr}</td><td>${rec ? rec.clockIn || '-' : '-'}</td><td>${rec ? rec.clockOut || '-' : '-'}</td><td>${statusHtml}</td><tr>`;
         }
         
         const formattedMonth = `${month}-${year}`;
