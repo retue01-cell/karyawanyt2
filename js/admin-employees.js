@@ -12,7 +12,7 @@ const adminEmployees = {
         department: '',
         status: ''
     },
-    currentEditId: null, // untuk menyimpan ID karyawan yang sedang diedit
+    currentEditId: null,
 
     async init() {
         if (!auth.isAdmin()) {
@@ -20,7 +20,6 @@ const adminEmployees = {
             router.navigate('dashboard');
             return;
         }
-
         await this.loadEmployees();
         this.bindEvents();
         this.renderTable();
@@ -77,34 +76,27 @@ const adminEmployees = {
 
         // Add employee button
         const addBtn = document.getElementById('btn-add-employee');
-        if (addBtn) {
-            addBtn.addEventListener('click', () => this.showAddModal());
-        }
+        if (addBtn) addBtn.addEventListener('click', () => this.showAddModal());
 
-        // Close modal (add)
+        // Close add modal
         const closeBtn = document.getElementById('btn-close-modal');
         const cancelBtn = document.getElementById('btn-cancel-add');
-        const modal = document.getElementById('modal-add-employee');
-
+        const addModal = document.getElementById('modal-add-employee');
         if (closeBtn) closeBtn.addEventListener('click', () => this.hideAddModal());
         if (cancelBtn) cancelBtn.addEventListener('click', () => this.hideAddModal());
-        if (modal) {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) this.hideAddModal();
+        if (addModal) {
+            addModal.addEventListener('click', (e) => {
+                if (e.target === addModal) this.hideAddModal();
             });
         }
 
-        // Form submit (add)
-        const form = document.getElementById('form-add-employee');
-        if (form) {
-            form.addEventListener('submit', (e) => this.handleAddEmployee(e));
-        }
+        // Add form submit
+        const addForm = document.getElementById('form-add-employee');
+        if (addForm) addForm.addEventListener('submit', (e) => this.handleAddEmployee(e));
 
-        // Set default date for add modal
+        // Set default join date
         const joinDateInput = document.getElementById('emp-join-date');
-        if (joinDateInput) {
-            joinDateInput.valueAsDate = new Date();
-        }
+        if (joinDateInput) joinDateInput.valueAsDate = new Date();
 
         // ========== EDIT MODAL EVENTS ==========
         const editModal = document.getElementById('modal-edit-employee');
@@ -119,12 +111,9 @@ const adminEmployees = {
                 if (e.target === editModal) this.hideEditModal();
             });
         }
-        if (editForm) {
-            editForm.addEventListener('submit', (e) => this.handleEditEmployee(e));
-        }
+        if (editForm) editForm.addEventListener('submit', (e) => this.handleEditEmployee(e));
     },
 
-    // ========== FILTER & PAGINATION ==========
     getFilteredEmployees() {
         return this.employees.filter(emp => {
             const matchesSearch = !this.filters.search ||
@@ -146,7 +135,7 @@ const adminEmployees = {
         const paginated = filtered.slice(start, start + this.perPage);
 
         if (paginated.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: var(--spacing-xl);">Tidak ada data karyawan</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:var(--spacing-xl);">Tidak ada data karyawan</td></tr>`;
             return;
         }
 
@@ -169,37 +158,26 @@ const adminEmployees = {
                 <td>${emp.shift}</td>
                 <td><span class="status-badge ${emp.status}">${this.getStatusLabel(emp.status)}</span></td>
                 <td>
-                    <button class="btn-action view" onclick="adminEmployees.viewEmployee(${emp.id})" title="Lihat">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    <button class="btn-action edit" onclick="adminEmployees.editEmployee(${emp.id})" title="Edit">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn-action delete" onclick="adminEmployees.deleteEmployee(${emp.id})" title="Hapus">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    <button class="btn-action view" onclick="adminEmployees.viewEmployee(${emp.id})" title="Lihat"><i class="fas fa-eye"></i></button>
+                    <button class="btn-action edit" onclick="adminEmployees.editEmployee(${emp.id})" title="Edit"><i class="fas fa-edit"></i></button>
+                    <button class="btn-action delete" onclick="adminEmployees.deleteEmployee(${emp.id})" title="Hapus"><i class="fas fa-trash"></i></button>
                 </td>
             </tr>
         `).join('');
-
         this.updatePagination(filtered.length);
     },
 
     renderMobileCards() {
         const container = document.getElementById('employees-mobile-cards');
         if (!container) return;
-
         const filtered = this.getFilteredEmployees();
         const start = (this.currentPage - 1) * this.perPage;
         const paginated = filtered.slice(start, start + this.perPage);
-
         container.innerHTML = paginated.map(emp => `
             <div class="mobile-card">
                 <div class="mobile-card-header">
                     <div class="employee-info">
-                        <div class="employee-avatar">
-                            <img src="${getAvatarUrl(emp)}" alt="${emp.name}">
-                        </div>
+                        <div class="employee-avatar"><img src="${getAvatarUrl(emp)}" alt="${emp.name}"></div>
                         <div class="employee-details">
                             <span class="employee-name">${emp.name}</span>
                             <span class="employee-email">${emp.email}</span>
@@ -207,29 +185,13 @@ const adminEmployees = {
                     </div>
                     <span class="status-badge ${emp.status}">${this.getStatusLabel(emp.status)}</span>
                 </div>
-                <div class="mobile-card-row">
-                    <span class="mobile-card-label">ID</span>
-                    <span class="mobile-card-value">EMP${String(emp.id).padStart(3, '0')}</span>
-                </div>
-                <div class="mobile-card-row">
-                    <span class="mobile-card-label">Departemen</span>
-                    <span class="mobile-card-value">${emp.department}</span>
-                </div>
-                <div class="mobile-card-row">
-                    <span class="mobile-card-label">Jabatan</span>
-                    <span class="mobile-card-value">${emp.position}</span>
-                </div>
-                <div class="mobile-card-row">
-                    <span class="mobile-card-label">Shift</span>
-                    <span class="mobile-card-value">${emp.shift}</span>
-                </div>
-                <div style="margin-top: var(--spacing); display: flex; gap: var(--spacing-xs);">
-                    <button class="btn-action view" onclick="adminEmployees.viewEmployee(${emp.id})" style="flex: 1;">
-                        <i class="fas fa-eye"></i> Lihat
-                    </button>
-                    <button class="btn-action edit" onclick="adminEmployees.editEmployee(${emp.id})" style="flex: 1;">
-                        <i class="fas fa-edit"></i> Edit
-                    </button>
+                <div class="mobile-card-row"><span class="mobile-card-label">ID</span><span class="mobile-card-value">EMP${String(emp.id).padStart(3, '0')}</span></div>
+                <div class="mobile-card-row"><span class="mobile-card-label">Departemen</span><span class="mobile-card-value">${emp.department}</span></div>
+                <div class="mobile-card-row"><span class="mobile-card-label">Jabatan</span><span class="mobile-card-value">${emp.position}</span></div>
+                <div class="mobile-card-row"><span class="mobile-card-label">Shift</span><span class="mobile-card-value">${emp.shift}</span></div>
+                <div style="margin-top:var(--spacing); display:flex; gap:var(--spacing-xs);">
+                    <button class="btn-action view" onclick="adminEmployees.viewEmployee(${emp.id})" style="flex:1;"><i class="fas fa-eye"></i> Lihat</button>
+                    <button class="btn-action edit" onclick="adminEmployees.editEmployee(${emp.id})" style="flex:1;"><i class="fas fa-edit"></i> Edit</button>
                 </div>
             </div>
         `).join('');
@@ -254,9 +216,7 @@ const adminEmployees = {
         const start = (this.currentPage - 1) * this.perPage + 1;
         const end = Math.min(start + this.perPage - 1, filtered.length);
         const info = document.querySelector('.pagination-info');
-        if (info) {
-            info.textContent = `Menampilkan ${filtered.length > 0 ? start : 0}-${end} dari ${filtered.length} karyawan`;
-        }
+        if (info) info.textContent = `Menampilkan ${filtered.length > 0 ? start : 0}-${end} dari ${filtered.length} karyawan`;
     },
 
     goToPage(page) {
@@ -270,7 +230,7 @@ const adminEmployees = {
     },
 
     getStatusLabel(status) {
-        const labels = { 'active': 'Aktif', 'on-leave': 'Cuti', 'inactive': 'Non-Aktif' };
+        const labels = { active: 'Aktif', 'on-leave': 'Cuti', inactive: 'Non-Aktif' };
         return labels[status] || status;
     },
 
@@ -282,7 +242,6 @@ const adminEmployees = {
             document.body.style.overflow = 'hidden';
         }
     },
-
     hideAddModal() {
         const modal = document.getElementById('modal-add-employee');
         const form = document.getElementById('form-add-employee');
@@ -290,13 +249,10 @@ const adminEmployees = {
             modal.style.display = 'none';
             document.body.style.overflow = '';
         }
-        if (form) {
-            form.reset();
-            const joinDateInput = document.getElementById('emp-join-date');
-            if (joinDateInput) joinDateInput.valueAsDate = new Date();
-        }
+        if (form) form.reset();
+        const joinDateInput = document.getElementById('emp-join-date');
+        if (joinDateInput) joinDateInput.valueAsDate = new Date();
     },
-
     async handleAddEmployee(e) {
         e.preventDefault();
         const name = document.getElementById('emp-name').value;
@@ -306,7 +262,6 @@ const adminEmployees = {
         const shift = document.getElementById('emp-shift').value;
         const status = document.getElementById('emp-status').value;
         const joinDate = document.getElementById('emp-join-date').value;
-
         const employeeData = { name, email, department, position, shift, status, joinDate };
         try {
             const result = await api.addEmployee(employeeData);
@@ -322,39 +277,31 @@ const adminEmployees = {
                 toast.error(result.error || 'Gagal menambahkan karyawan');
             }
         } catch (error) {
-            console.error('Error adding employee:', error);
+            console.error(error);
             toast.error('Terjadi kesalahan');
         }
     },
-
     updateDeptFilterOptions(newDept) {
         const deptFilter = document.getElementById('dept-filter');
-        if (deptFilter) {
-            const existingOptions = Array.from(deptFilter.options).map(opt => opt.value);
-            if (!existingOptions.includes(newDept)) {
-                const option = document.createElement('option');
-                option.value = newDept;
-                option.textContent = newDept;
-                deptFilter.appendChild(option);
-            }
+        if (deptFilter && !Array.from(deptFilter.options).some(opt => opt.value === newDept)) {
+            const option = document.createElement('option');
+            option.value = newDept;
+            option.textContent = newDept;
+            deptFilter.appendChild(option);
         }
         const deptList = document.getElementById('dept-list');
-        if (deptList) {
-            const existingOptions = Array.from(deptList.options).map(opt => opt.value);
-            if (!existingOptions.includes(newDept)) {
-                const option = document.createElement('option');
-                option.value = newDept;
-                deptList.appendChild(option);
-            }
+        if (deptList && !Array.from(deptList.options).some(opt => opt.value === newDept)) {
+            const option = document.createElement('option');
+            option.value = newDept;
+            deptList.appendChild(option);
         }
     },
-
     getRandomColor() {
         const colors = ['3B82F6', '10B981', 'F59E0B', 'EF4444', '8B5CF6', 'EC4899', '06B6D4'];
         return colors[Math.floor(Math.random() * colors.length)];
     },
 
-    // ========== VIEW DETAIL (simple alert) ==========
+    // ========== VIEW DETAIL ==========
     viewEmployee(id) {
         const emp = this.employees.find(e => e.id == id);
         if (emp) {
@@ -364,13 +311,14 @@ const adminEmployees = {
 
     // ========== EDIT EMPLOYEE ==========
     editEmployee(id) {
+        console.log('Edit employee called with id:', id);
         const emp = this.employees.find(e => e.id == id);
         if (!emp) {
             toast.error('Data karyawan tidak ditemukan');
             return;
         }
         this.currentEditId = id;
-        // Isi form edit dengan data karyawan
+        // Isi form edit
         document.getElementById('edit-emp-name').value = emp.name;
         document.getElementById('edit-emp-email').value = emp.email;
         document.getElementById('edit-emp-department').value = emp.department;
@@ -378,11 +326,14 @@ const adminEmployees = {
         document.getElementById('edit-emp-shift').value = emp.shift;
         document.getElementById('edit-emp-status').value = emp.status;
         document.getElementById('edit-emp-join-date').value = emp.joinDate || '';
-        // Tampilkan modal edit
+        // Tampilkan modal
         const modal = document.getElementById('modal-edit-employee');
         if (modal) {
             modal.style.display = 'flex';
             document.body.style.overflow = 'hidden';
+        } else {
+            console.error('Modal edit tidak ditemukan! Pastikan ada elemen dengan id "modal-edit-employee"');
+            toast.error('Modal edit tidak ditemukan, silakan refresh halaman');
         }
     },
 
@@ -398,7 +349,6 @@ const adminEmployees = {
     async handleEditEmployee(e) {
         e.preventDefault();
         if (!this.currentEditId) return;
-
         const name = document.getElementById('edit-emp-name').value;
         const email = document.getElementById('edit-emp-email').value;
         const department = document.getElementById('edit-emp-department').value;
@@ -406,17 +356,12 @@ const adminEmployees = {
         const shift = document.getElementById('edit-emp-shift').value;
         const status = document.getElementById('edit-emp-status').value;
         const joinDate = document.getElementById('edit-emp-join-date').value;
-
         const updateData = { name, email, department, position, shift, status, joinDate };
-
         try {
             const result = await api.updateEmployee(this.currentEditId, updateData);
             if (result.success) {
-                // Update local array
                 const index = this.employees.findIndex(e => e.id == this.currentEditId);
-                if (index !== -1) {
-                    this.employees[index] = { ...this.employees[index], ...updateData };
-                }
+                if (index !== -1) this.employees[index] = { ...this.employees[index], ...updateData };
                 this.hideEditModal();
                 this.renderTable();
                 this.renderMobileCards();
@@ -426,12 +371,12 @@ const adminEmployees = {
                 toast.error(result.error || 'Gagal memperbarui karyawan');
             }
         } catch (error) {
-            console.error('Error updating employee:', error);
+            console.error(error);
             toast.error('Terjadi kesalahan');
         }
     },
 
-    // ========== DELETE EMPLOYEE ==========
+    // ========== DELETE ==========
     async deleteEmployee(id) {
         if (confirm('Apakah Anda yakin ingin menghapus karyawan ini?')) {
             try {
@@ -442,16 +387,12 @@ const adminEmployees = {
                 this.updatePaginationInfo();
                 toast.success('Karyawan berhasil dihapus');
             } catch (error) {
-                console.error('Error deleting employee:', error);
+                console.error(error);
                 toast.error('Gagal menghapus karyawan');
             }
         }
     }
 };
 
-// Global init function
-window.initEmployees = () => {
-    adminEmployees.init();
-};
-
+window.initEmployees = () => { adminEmployees.init(); };
 window.adminEmployees = adminEmployees;
