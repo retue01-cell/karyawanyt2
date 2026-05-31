@@ -270,6 +270,7 @@
                     </div>
 
                     <div class="dashboard-grid">
+                        <!-- Stats Card -->
                         <div class="dashboard-card stats-card">
                             <div class="card-header">
                                 <h3>Statistik Kehadiran</h3>
@@ -292,146 +293,66 @@
                                     </div>
                                 </div>
                                 <div class="stats-legend">
-                                    <div class="legend-item">
-                                        <span class="legend-dot present"></span>
-                                        <span class="legend-label">Hadir</span>
-                                        <span class="legend-value">22 hari</span>
-                                    </div>
-                                    <div class="legend-item">
-                                        <span class="legend-dot late"></span>
-                                        <span class="legend-label">Terlambat</span>
-                                        <span class="legend-value">3 hari</span>
-                                    </div>
-                                    <div class="legend-item">
-                                        <span class="legend-dot absent"></span>
-                                        <span class="legend-label">Tidak Hadir</span>
-                                        <span class="legend-value">1 hari</span>
-                                    </div>
+                                    <div class="legend-item"><span class="legend-dot present"></span><span class="legend-label">Hadir</span><span class="legend-value">22 hari</span></div>
+                                    <div class="legend-item"><span class="legend-dot late"></span><span class="legend-label">Terlambat</span><span class="legend-value">3 hari</span></div>
+                                    <div class="legend-item"><span class="legend-dot absent"></span><span class="legend-label">Tidak Hadir</span><span class="legend-value">1 hari</span></div>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- Session Card -->
                         <div class="dashboard-card session-card">
                             <div class="card-header">
                                 <h3>Sesi Hari Ini</h3>
                                 <span class="status-badge active">Aktif</span>
                             </div>
                             <div class="session-info">
-                                <div class="session-row">
-                                    <span class="session-label">Clock In</span>
-                                    <span class="session-value" id="dashboard-clock-in">--:--</span>
-                                </div>
-                                <div class="session-row">
-                                    <span class="session-label">Clock Out</span>
-                                    <span class="session-value" id="dashboard-clock-out">--:--</span>
-                                </div>
-                                <div class="session-row">
-                                    <span class="session-label">Durasi Kerja</span>
-                                    <span class="session-value highlight" id="dashboard-duration">--:--</span>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill" id="work-progress"></div>
-                                </div>
+                                <div class="session-row"><span class="session-label">Clock In</span><span class="session-value" id="dashboard-clock-in">--:--</span></div>
+                                <div class="session-row"><span class="session-label">Clock Out</span><span class="session-value" id="dashboard-clock-out">--:--</span></div>
+                                <div class="session-row"><span class="session-label">Durasi Kerja</span><span class="session-value highlight" id="dashboard-duration">--:--</span></div>
+                                <div class="progress-bar"><div class="progress-fill" id="work-progress"></div></div>
                                 <p class="progress-text">Progress hari ini</p>
                             </div>
                         </div>
 
+                        <!-- Quick Actions -->
                         <div class="dashboard-card quick-actions">
-                            <div class="card-header">
-                                <h3>Aksi Cepat</h3>
-                            </div>
+                            <div class="card-header"><h3>Aksi Cepat</h3></div>
                             <div class="quick-buttons">
-                                <button class="quick-btn" onclick="router.navigate('absensi')">
-                                    <div class="quick-icon clock-in">
-                                        <i class="fas fa-sign-in-alt"></i>
-                                    </div>
-                                    <span>Clock In</span>
-                                </button>
-                                <button class="quick-btn" onclick="router.navigate('absensi')">
-                                    <div class="quick-icon clock-out">
-                                        <i class="fas fa-sign-out-alt"></i>
-                                    </div>
-                                    <span>Clock Out</span>
-                                </button>
-                                <button class="quick-btn" onclick="router.navigate('jurnal')">
-                                    <div class="quick-icon journal">
-                                        <i class="fas fa-edit"></i>
-                                    </div>
-                                    <span>Jurnal</span>
-                                </button>
-                                <button class="quick-btn" onclick="router.navigate('cuti')">
-                                    <div class="quick-icon leave">
-                                        <i class="fas fa-umbrella-beach"></i>
-                                    </div>
-                                    <span>Ajukan Cuti</span>
-                                </button>
+                                <button class="quick-btn" onclick="router.navigate('absensi')"><div class="quick-icon clock-in"><i class="fas fa-sign-in-alt"></i></div><span>Clock In</span></button>
+                                <button class="quick-btn" onclick="router.navigate('absensi')"><div class="quick-icon clock-out"><i class="fas fa-sign-out-alt"></i></div><span>Clock Out</span></button>
+                                <button class="quick-btn" onclick="router.navigate('jurnal')"><div class="quick-icon journal"><i class="fas fa-edit"></i></div><span>Jurnal</span></button>
+                                <button class="quick-btn" onclick="router.navigate('cuti')"><div class="quick-icon leave"><i class="fas fa-umbrella-beach"></i></div><span>Ajukan Cuti</span></button>
                             </div>
                         </div>
 
+                        <!-- Chart Card -->
                         <div class="dashboard-card chart-card">
-                            <div class="card-header">
-                                <h3>Kehadiran Minggu Ini</h3>
-                            </div>
+                            <div class="card-header"><h3>Kehadiran Minggu Ini</h3></div>
                             <div class="bar-chart">
-                                <div class="bar-item">
-                                    <div class="bar-fill" style="height: 100%"></div><span class="bar-label">Sen</span>
-                                </div>
-                                <div class="bar-item">
-                                    <div class="bar-fill" style="height: 100%"></div><span class="bar-label">Sel</span>
-                                </div>
-                                <div class="bar-item">
-                                    <div class="bar-fill" style="height: 80%"></div><span class="bar-label">Rab</span>
-                                </div>
-                                <div class="bar-item">
-                                    <div class="bar-fill" style="height: 100%"></div><span class="bar-label">Kam</span>
-                                </div>
-                                <div class="bar-item">
-                                    <div class="bar-fill" style="height: 100%"></div><span class="bar-label">Jum</span>
-                                </div>
-                                <div class="bar-item">
-                                    <div class="bar-fill weekend" style="height: 0%"></div><span class="bar-label">Sab</span>
-                                </div>
-                                <div class="bar-item">
-                                    <div class="bar-fill weekend" style="height: 0%"></div><span class="bar-label">Min</span>
-                                </div>
+                                <div class="bar-item"><div class="bar-fill" style="height:100%"></div><span class="bar-label">Sen</span></div>
+                                <div class="bar-item"><div class="bar-fill" style="height:100%"></div><span class="bar-label">Sel</span></div>
+                                <div class="bar-item"><div class="bar-fill" style="height:80%"></div><span class="bar-label">Rab</span></div>
+                                <div class="bar-item"><div class="bar-fill" style="height:100%"></div><span class="bar-label">Kam</span></div>
+                                <div class="bar-item"><div class="bar-fill" style="height:100%"></div><span class="bar-label">Jum</span></div>
+                                <div class="bar-item"><div class="bar-fill weekend" style="height:0%"></div><span class="bar-label">Sab</span></div>
+                                <div class="bar-item"><div class="bar-fill weekend" style="height:0%"></div><span class="bar-label">Min</span></div>
                             </div>
                         </div>
 
+                        <!-- Activity Card -->
                         <div class="dashboard-card activity-card">
-                            <div class="card-header">
-                                <h3>Aktivitas Terbaru</h3>
-                                <a href="#" class="view-all">Lihat Semua</a>
-                            </div>
+                            <div class="card-header"><h3>Aktivitas Terbaru</h3><a href="#" class="view-all">Lihat Semua</a></div>
                             <div class="activity-list">
-                                <div class="activity-item">
-                                    <div class="activity-icon clock-in"><i class="fas fa-sign-in-alt"></i></div>
-                                    <div class="activity-content">
-                                        <p class="activity-title">Clock In</p>
-                                        <p class="activity-time">Hari ini, 07:55</p>
-                                    </div>
-                                </div>
-                                <div class="activity-item">
-                                    <div class="activity-icon journal"><i class="fas fa-book"></i></div>
-                                    <div class="activity-content">
-                                        <p class="activity-title">Mengisi Jurnal</p>
-                                        <p class="activity-time">Kemarin, 17:30</p>
-                                    </div>
-                                </div>
-                                <div class="activity-item">
-                                    <div class="activity-icon clock-out"><i class="fas fa-sign-out-alt"></i></div>
-                                    <div class="activity-content">
-                                        <p class="activity-title">Clock Out</p>
-                                        <p class="activity-time">Kemarin, 17:15</p>
-                                    </div>
-                                </div>
+                                <div class="activity-item"><div class="activity-icon clock-in"><i class="fas fa-sign-in-alt"></i></div><div class="activity-content"><p class="activity-title">Clock In</p><p class="activity-time">Hari ini, 07:55</p></div></div>
+                                <div class="activity-item"><div class="activity-icon journal"><i class="fas fa-book"></i></div><div class="activity-content"><p class="activity-title">Mengisi Jurnal</p><p class="activity-time">Kemarin, 17:30</p></div></div>
+                                <div class="activity-item"><div class="activity-icon clock-out"><i class="fas fa-sign-out-alt"></i></div><div class="activity-content"><p class="activity-title">Clock Out</p><p class="activity-time">Kemarin, 17:15</p></div></div>
                             </div>
                         </div>
 
+                        <!-- Team Card -->
                         <div class="dashboard-card team-card">
-                            <div class="card-header">
-                                <h3>Kehadiran Tim</h3>
-                                <span class="team-count">24 orang</span>
-                            </div>
+                            <div class="card-header"><h3>Kehadiran Tim</h3><span class="team-count">24 orang</span></div>
                             <div class="team-avatars">
                                 <div class="avatar-stack">
                                     <img src="https://ui-avatars.com/api/?name=A&background=F59E0B&color=fff" alt="Team">
@@ -454,181 +375,33 @@
                 <div class="page" id="page-absensi">
                     <div class="absensi-container">
                         <div class="absensi-header">
-                            <div class="shift-info">
-                                <span class="shift-label">Shift Anda</span>
-                                <h2 class="shift-name" id="current-shift-name">Pagi</h2>
-                                <p class="shift-time" id="current-shift-time">08:00 - 17:00</p>
-                            </div>
-                            <div class="current-datetime">
-                                <div class="live-clock" id="live-clock">12:00:00</div>
-                                <div class="live-date" id="live-date">Senin, 7 Maret 2026</div>
-                            </div>
+                            <div class="shift-info"><span class="shift-label">Shift Anda</span><h2 class="shift-name" id="current-shift-name">Pagi</h2><p class="shift-time" id="current-shift-time">08:00 - 17:00</p></div>
+                            <div class="current-datetime"><div class="live-clock" id="live-clock">12:00:00</div><div class="live-date" id="live-date">Senin, 7 Maret 2026</div></div>
                         </div>
-
                         <div class="absensi-grid">
                             <div class="attendance-main-card">
-                                <div class="attendance-status" id="attendance-status">
-                                    <div class="status-ring waiting">
-                                        <div class="status-icon"><i class="fas fa-clock"></i></div>
-                                    </div>
-                                    <h3 class="status-text">Siap Clock In</h3>
-                                    <p class="status-subtext">Tekan tombol di bawah untuk memulai</p>
-                                </div>
-
+                                <div class="attendance-status" id="attendance-status"><div class="status-ring waiting"><div class="status-icon"><i class="fas fa-clock"></i></div></div><h3 class="status-text">Siap Clock In</h3><p class="status-subtext">Tekan tombol di bawah untuk memulai</p></div>
                                 <div class="attendance-buttons">
-                                    <button class="attendance-btn clock-in-btn" id="btn-clock-in">
-                                        <div class="btn-icon"><i class="fas fa-sign-in-alt"></i></div>
-                                        <div class="btn-text"><span class="btn-label">Clock In</span><span class="btn-time" id="clock-in-time">--:--</span></div>
-                                    </button>
-                                    <button class="attendance-btn break-btn" id="btn-break" disabled>
-                                        <div class="btn-icon"><i class="fas fa-coffee"></i></div>
-                                        <div class="btn-text"><span class="btn-label">Istirahat</span><span class="btn-time" id="break-time">--:--</span></div>
-                                    </button>
-                                    <button class="attendance-btn after-break-btn" id="btn-after-break" disabled>
-                                        <div class="btn-icon"><i class="fas fa-utensils"></i></div>
-                                        <div class="btn-text"><span class="btn-label">Selesai Istirahat</span><span class="btn-time" id="after-break-time">--:--</span></div>
-                                    </button>
-                                    <button class="attendance-btn overtime-btn" id="btn-overtime" disabled>
-                                        <div class="btn-icon"><i class="fas fa-business-time"></i></div>
-                                        <div class="btn-text"><span class="btn-label">Lembur</span><span class="btn-time" id="overtime-time">--:--</span></div>
-                                    </button>
-                                    <button class="attendance-btn clock-out-btn" id="btn-clock-out" disabled>
-                                        <div class="btn-icon"><i class="fas fa-sign-out-alt"></i></div>
-                                        <div class="btn-text"><span class="btn-label">Clock Out</span><span class="btn-time" id="clock-out-time">--:--</span></div>
-                                    </button>
+                                    <button class="attendance-btn clock-in-btn" id="btn-clock-in"><div class="btn-icon"><i class="fas fa-sign-in-alt"></i></div><div class="btn-text"><span class="btn-label">Clock In</span><span class="btn-time" id="clock-in-time">--:--</span></div></button>
+                                    <button class="attendance-btn break-btn" id="btn-break" disabled><div class="btn-icon"><i class="fas fa-coffee"></i></div><div class="btn-text"><span class="btn-label">Istirahat</span><span class="btn-time" id="break-time">--:--</span></div></button>
+                                    <button class="attendance-btn after-break-btn" id="btn-after-break" disabled><div class="btn-icon"><i class="fas fa-utensils"></i></div><div class="btn-text"><span class="btn-label">Selesai Istirahat</span><span class="btn-time" id="after-break-time">--:--</span></div></button>
+                                    <button class="attendance-btn overtime-btn" id="btn-overtime" disabled><div class="btn-icon"><i class="fas fa-business-time"></i></div><div class="btn-text"><span class="btn-label">Lembur</span><span class="btn-time" id="overtime-time">--:--</span></div></button>
+                                    <button class="attendance-btn clock-out-btn" id="btn-clock-out" disabled><div class="btn-icon"><i class="fas fa-sign-out-alt"></i></div><div class="btn-text"><span class="btn-label">Clock Out</span><span class="btn-time" id="clock-out-time">--:--</span></div></button>
                                 </div>
                             </div>
-
-                            <div class="timeline-card">
-                                <div class="card-header">
-                                    <h3>Timeline Hari Ini</h3>
-                                </div>
-                                <div class="timeline" id="attendance-timeline">
-                                    <div class="timeline-item pending" data-type="clock-in">
-                                        <div class="timeline-dot"></div>
-                                        <div class="timeline-content"><span class="timeline-title">Clock In</span><span class="timeline-time">--:--</span></div>
-                                    </div>
-                                    <div class="timeline-item pending" data-type="break">
-                                        <div class="timeline-dot"></div>
-                                        <div class="timeline-content"><span class="timeline-title">Istirahat</span><span class="timeline-time">--:--</span></div>
-                                    </div>
-                                    <div class="timeline-item pending" data-type="after-break">
-                                        <div class="timeline-dot"></div>
-                                        <div class="timeline-content"><span class="timeline-title">Selesai Istirahat</span><span class="timeline-time">--:--</span></div>
-                                    </div>
-                                    <div class="timeline-item pending" data-type="clock-out">
-                                        <div class="timeline-dot"></div>
-                                        <div class="timeline-content"><span class="timeline-title">Clock Out</span><span class="timeline-time">--:--</span></div>
-                                    </div>
-                                </div>
-                            </div>
+                            <div class="timeline-card"><div class="card-header"><h3>Timeline Hari Ini</h3></div><div class="timeline" id="attendance-timeline"><div class="timeline-item pending" data-type="clock-in"><div class="timeline-dot"></div><div class="timeline-content"><span class="timeline-title">Clock In</span><span class="timeline-time">--:--</span></div></div><div class="timeline-item pending" data-type="break"><div class="timeline-dot"></div><div class="timeline-content"><span class="timeline-title">Istirahat</span><span class="timeline-time">--:--</span></div></div><div class="timeline-item pending" data-type="after-break"><div class="timeline-dot"></div><div class="timeline-content"><span class="timeline-title">Selesai Istirahat</span><span class="timeline-time">--:--</span></div></div><div class="timeline-item pending" data-type="clock-out"><div class="timeline-dot"></div><div class="timeline-content"><span class="timeline-title">Clock Out</span><span class="timeline-time">--:--</span></div></div></div></div>
                         </div>
-
-                        <div class="history-card">
-                            <div class="card-header">
-                                <h3>Riwayat Absensi</h3>
-                            </div>
-                            <div class="history-table-wrapper">
-                                <table class="history-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Tanggal</th>
-                                            <th>Shift</th>
-                                            <th>Clock In</th>
-                                            <th>Clock Out</th>
-                                            <th>Durasi</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="attendance-history">
-                                        <tr>
-                                            <td>06 Mar 2026</div>
-                                            <td>Pagi</div>
-                                            <td>07:55</div>
-                                            <td>17:15</div>
-                                            <td>9j 20m</div>
-                                            <td><span class="badge-status success">Tepat Waktu</span></div>
-                                        </tr>
-                                        <tr>
-                                            <td>05 Mar 2026</div>
-                                            <td>Pagi</div>
-                                            <td>08:10</div>
-                                            <td>17:05</div>
-                                            <td>8j 55m</div>
-                                            <td><span class="badge-status warning">Terlambat</span></div>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                        <div class="history-card"><div class="card-header"><h3>Riwayat Absensi</h3></div><div class="history-table-wrapper"><table class="history-table"><thead><tr><th>Tanggal</th><th>Shift</th><th>Clock In</th><th>Clock Out</th><th>Durasi</th><th>Status</th></tr></thead><tbody id="attendance-history"><tr><td>06 Mar 2026</td><td>Pagi</td><td>07:55</td><td>17:15</td><td>9j 20m</td><td><span class="badge-status success">Tepat Waktu</span></td></tr><tr><td>05 Mar 2026</td><td>Pagi</td><td>08:10</td><td>17:05</td><td>8j 55m</td><td><span class="badge-status warning">Terlambat</span></td></tr></tbody></table></div></div>
                     </div>
                 </div>
 
                 <!-- Face Recognition Page -->
                 <div class="page" id="page-face-recognition">
                     <div class="face-rec-container">
-                        <div class="face-rec-header">
-                            <h2 id="face-rec-title">Verifikasi Wajah</h2>
-                            <p id="face-rec-subtitle">Pastikan wajah Anda terlihat jelas di kamera</p>
-                        </div>
+                        <div class="face-rec-header"><h2 id="face-rec-title">Verifikasi Wajah</h2><p id="face-rec-subtitle">Pastikan wajah Anda terlihat jelas di kamera</p></div>
                         <div class="face-rec-grid">
-                            <div class="camera-section">
-                                <div class="camera-card">
-                                    <div class="camera-preview" id="camera-preview">
-                                        <video id="camera-video" autoplay playsinline></video>
-                                        <canvas id="camera-canvas" style="display: none;"></canvas>
-                                        <div class="face-overlay" id="face-overlay">
-                                            <div class="face-frame">
-                                                <div class="face-corner top-left"></div>
-                                                <div class="face-corner top-right"></div>
-                                                <div class="face-corner bottom-left"></div>
-                                                <div class="face-corner bottom-right"></div>
-                                            </div>
-                                            <div class="face-guide"><i class="fas fa-user"></i>
-                                                <p>Posisikan wajah di dalam frame</p>
-                                            </div>
-                                        </div>
-                                        <div class="scanning-line" id="scanning-line" style="display: none;"></div>
-                                        <div class="verification-status" id="verification-status">
-                                            <div class="status-icon"><i class="fas fa-check-circle"></i></div>
-                                            <p>Wajah Terverifikasi</p>
-                                        </div>
-                                    </div>
-                                    <div class="camera-controls">
-                                        <button class="btn-camera" id="btn-capture" disabled><i class="fas fa-camera"></i><span>Ambil Foto</span></button>
-                                        <button class="btn-camera btn-secondary" id="btn-retake" style="display: none;"><i class="fas fa-redo"></i><span>Ulangi</span></button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="location-section">
-                                <div class="location-card">
-                                    <div class="card-header">
-                                        <h3>Lokasi Anda</h3><span class="location-status" id="location-status"><i class="fas fa-spinner fa-spin"></i> Mendeteksi...</span>
-                                    </div>
-                                    <div class="location-map" id="location-map">
-                                        <div class="map-placeholder"><i class="fas fa-map-marker-alt"></i>
-                                            <p>Meminta akses lokasi...</p>
-                                        </div>
-                                    </div>
-                                    <div class="location-info" id="location-info" style="display: none;">
-                                        <div class="info-row"><i class="fas fa-map-pin"></i>
-                                            <div><span class="info-label">Koordinat</span><span class="info-value" id="location-coords">--</span></div>
-                                        </div>
-                                        <div class="info-row"><i class="fas fa-building"></i>
-                                            <div><span class="info-label">Lokasi</span><span class="info-value" id="location-address">--</span></div>
-                                        </div>
-                                        <div class="info-row"><i class="fas fa-clock"></i>
-                                            <div><span class="info-label">Waktu</span><span class="info-value" id="location-time">--</span></div>
-                                        </div>
-                                        <div class="info-row"><i class="fas fa-wifi"></i>
-                                            <div><span class="info-label">Akurasi</span><span class="info-value" id="location-accuracy">--</span></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="action-card">
-                                    <button class="btn-primary btn-full" id="btn-confirm-attendance" disabled><i class="fas fa-check-circle"></i><span>Konfirmasi Absensi</span></button>
-                                </div>
-                            </div>
+                            <div class="camera-section"><div class="camera-card"><div class="camera-preview" id="camera-preview"><video id="camera-video" autoplay playsinline></video><canvas id="camera-canvas" style="display: none;"></canvas><div class="face-overlay" id="face-overlay"><div class="face-frame"><div class="face-corner top-left"></div><div class="face-corner top-right"></div><div class="face-corner bottom-left"></div><div class="face-corner bottom-right"></div></div><div class="face-guide"><i class="fas fa-user"></i><p>Posisikan wajah di dalam frame</p></div></div><div class="scanning-line" id="scanning-line" style="display: none;"></div><div class="verification-status" id="verification-status"><div class="status-icon"><i class="fas fa-check-circle"></i></div><p>Wajah Terverifikasi</p></div></div><div class="camera-controls"><button class="btn-camera" id="btn-capture" disabled><i class="fas fa-camera"></i><span>Ambil Foto</span></button><button class="btn-camera btn-secondary" id="btn-retake" style="display: none;"><i class="fas fa-redo"></i><span>Ulangi</span></button></div></div></div>
+                            <div class="location-section"><div class="location-card"><div class="card-header"><h3>Lokasi Anda</h3><span class="location-status" id="location-status"><i class="fas fa-spinner fa-spin"></i> Mendeteksi...</span></div><div class="location-map" id="location-map"><div class="map-placeholder"><i class="fas fa-map-marker-alt"></i><p>Meminta akses lokasi...</p></div></div><div class="location-info" id="location-info" style="display: none;"><div class="info-row"><i class="fas fa-map-pin"></i><div><span class="info-label">Koordinat</span><span class="info-value" id="location-coords">--</span></div></div><div class="info-row"><i class="fas fa-building"></i><div><span class="info-label">Lokasi</span><span class="info-value" id="location-address">--</span></div></div><div class="info-row"><i class="fas fa-clock"></i><div><span class="info-label">Waktu</span><span class="info-value" id="location-time">--</span></div></div><div class="info-row"><i class="fas fa-wifi"></i><div><span class="info-label">Akurasi</span><span class="info-value" id="location-accuracy">--</span></div></div></div></div><div class="action-card"><button class="btn-primary btn-full" id="btn-confirm-attendance" disabled><i class="fas fa-check-circle"></i><span>Konfirmasi Absensi</span></button></div></div>
                         </div>
                     </div>
                 </div>
@@ -636,273 +409,59 @@
                 <!-- Izin/Sakit Page -->
                 <div class="page" id="page-izin">
                     <div class="izin-container">
-                        <div class="izin-header">
-                            <div class="izin-info">
-                                <h2>Pengajuan Izin / Sakit</h2>
-                                <p>Ajukan izin tidak masuk kerja dengan verifikasi wajah</p>
-                            </div>
-                        </div>
+                        <div class="izin-header"><div class="izin-info"><h2>Pengajuan Izin / Sakit</h2><p>Ajukan izin tidak masuk kerja dengan verifikasi wajah</p></div></div>
                         <div class="izin-grid">
-                            <div class="izin-form-card">
-                                <div class="card-header">
-                                    <h3>Form Pengajuan Izin</h3>
-                                </div>
-                                <form id="izin-form" class="izin-form">
-                                    <div class="form-group">
-                                        <label for="izin-type">Jenis Izin</label>
-                                        <select id="izin-type" required>
-                                            <option value="">Pilih Jenis Izin</option>
-                                            <option value="sick">Sakit</option>
-                                            <option value="permission">Izin Penting</option>
-                                            <option value="emergency">Keadaan Darurat</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-row two-col">
-                                        <div class="form-group"><label for="izin-date">Tanggal</label><input type="date" id="izin-date" required></div>
-                                        <div class="form-group"><label for="izin-duration">Durasi (hari)</label><input type="number" id="izin-duration" min="1" max="30" value="1" required></div>
-                                    </div>
-                                    <div class="form-group"><label for="izin-reason">Alasan</label><textarea id="izin-reason" rows="3" placeholder="Jelaskan alasan izin Anda..." required></textarea></div>
-                                    <div class="form-group">
-                                        <label>Surat Keterangan (Opsional)</label>
-                                        <div class="file-upload" id="file-upload">
-                                            <input type="file" id="izin-document" accept=".pdf,.jpg,.jpeg,.png" hidden>
-                                            <div class="upload-area"><i class="fas fa-cloud-upload-alt"></i>
-                                                <p>Klik atau drag file ke sini</p><span class="file-types">PDF, JPG, PNG (Max 5MB)</span>
-                                            </div>
-                                            <div class="file-preview" id="file-preview" style="display: none;"><i class="fas fa-file"></i><span class="filename"></span><button type="button" class="btn-remove-file"><i class="fas fa-times"></i></button></div>
-                                        </div>
-                                    </div>
-                                    <div class="form-actions">
-                                        <button type="button" class="btn-primary" id="btn-verify-izin"><i class="fas fa-camera"></i><span>Verifikasi Wajah & Lokasi</span></button>
-                                    </div>
-                                </form>
-                            </div>
-                            <div class="izin-summary-card">
-                                <div class="card-header">
-                                    <h3>Ringkasan Izin</h3>
-                                </div>
-                                <div class="izin-stats">
-                                    <div class="izin-stat-item">
-                                        <div class="stat-icon pending"><i class="fas fa-clock"></i></div>
-                                        <div class="stat-content"><span class="stat-value" id="izin-pending-count">0</span><span class="stat-label">Menunggu</span></div>
-                                    </div>
-                                    <div class="izin-stat-item">
-                                        <div class="stat-icon approved"><i class="fas fa-check"></i></div>
-                                        <div class="stat-content"><span class="stat-value" id="izin-approved-count">0</span><span class="stat-label">Disetujui</span></div>
-                                    </div>
-                                    <div class="izin-stat-item">
-                                        <div class="stat-icon rejected"><i class="fas fa-times"></i></div>
-                                        <div class="stat-content"><span class="stat-value" id="izin-rejected-count">0</span><span class="stat-label">Ditolak</span></div>
-                                    </div>
-                                </div>
-                            </div>
+                            <div class="izin-form-card"><div class="card-header"><h3>Form Pengajuan Izin</h3></div><form id="izin-form" class="izin-form"><div class="form-group"><label for="izin-type">Jenis Izin</label><select id="izin-type" required><option value="">Pilih Jenis Izin</option><option value="sick">Sakit</option><option value="permission">Izin Penting</option><option value="emergency">Keadaan Darurat</option></select></div><div class="form-row two-col"><div class="form-group"><label for="izin-date">Tanggal</label><input type="date" id="izin-date" required></div><div class="form-group"><label for="izin-duration">Durasi (hari)</label><input type="number" id="izin-duration" min="1" max="30" value="1" required></div></div><div class="form-group"><label for="izin-reason">Alasan</label><textarea id="izin-reason" rows="3" placeholder="Jelaskan alasan izin Anda..." required></textarea></div><div class="form-group"><label>Surat Keterangan (Opsional)</label><div class="file-upload" id="file-upload"><input type="file" id="izin-document" accept=".pdf,.jpg,.jpeg,.png" hidden><div class="upload-area"><i class="fas fa-cloud-upload-alt"></i><p>Klik atau drag file ke sini</p><span class="file-types">PDF, JPG, PNG (Max 5MB)</span></div><div class="file-preview" id="file-preview" style="display: none;"><i class="fas fa-file"></i><span class="filename"></span><button type="button" class="btn-remove-file"><i class="fas fa-times"></i></button></div></div></div><div class="form-actions"><button type="button" class="btn-primary" id="btn-verify-izin"><i class="fas fa-camera"></i><span>Verifikasi Wajah & Lokasi</span></button></div></form></div>
+                            <div class="izin-summary-card"><div class="card-header"><h3>Ringkasan Izin</h3></div><div class="izin-stats"><div class="izin-stat-item"><div class="stat-icon pending"><i class="fas fa-clock"></i></div><div class="stat-content"><span class="stat-value" id="izin-pending-count">0</span><span class="stat-label">Menunggu</span></div></div><div class="izin-stat-item"><div class="stat-icon approved"><i class="fas fa-check"></i></div><div class="stat-content"><span class="stat-value" id="izin-approved-count">0</span><span class="stat-label">Disetujui</span></div></div><div class="izin-stat-item"><div class="stat-icon rejected"><i class="fas fa-times"></i></div><div class="stat-content"><span class="stat-value" id="izin-rejected-count">0</span><span class="stat-label">Ditolak</span></div></div></div></div>
                         </div>
-                        <div class="izin-history-card">
-                            <div class="card-header">
-                                <h3>Riwayat Pengajuan Izin</h3>
-                            </div>
-                            <div class="izin-list" id="izin-list"></div>
-                        </div>
+                        <div class="izin-history-card"><div class="card-header"><h3>Riwayat Pengajuan Izin</h3></div><div class="izin-list" id="izin-list"></div></div>
                     </div>
                 </div>
 
                 <!-- Jurnal Page -->
                 <div class="page" id="page-jurnal">
                     <div class="jurnal-container">
-                        <div class="jurnal-header">
-                            <div class="jurnal-info">
-                                <h2>Jurnal Kerja Harian</h2>
-                                <p>Catat aktivitas dan pencapaian kerja Anda setiap hari</p>
-                            </div>
-                            <div class="jurnal-date-selector">
-                                <button class="btn-date-nav" id="prev-date"><i class="fas fa-chevron-left"></i></button>
-                                <div class="current-date-display"><i class="fas fa-calendar"></i><span id="jurnal-current-date">7 Maret 2026</span></div>
-                                <button class="btn-date-nav" id="next-date"><i class="fas fa-chevron-right"></i></button>
-                            </div>
-                        </div>
+                        <div class="jurnal-header"><div class="jurnal-info"><h2>Jurnal Kerja Harian</h2><p>Catat aktivitas dan pencapaian kerja Anda setiap hari</p></div><div class="jurnal-date-selector"><button class="btn-date-nav" id="prev-date"><i class="fas fa-chevron-left"></i></button><div class="current-date-display"><i class="fas fa-calendar"></i><span id="jurnal-current-date">7 Maret 2026</span></div><button class="btn-date-nav" id="next-date"><i class="fas fa-chevron-right"></i></button></div></div>
                         <div class="jurnal-grid">
-                            <div class="jurnal-form-card">
-                                <div class="card-header">
-                                    <h3>Isi Jurnal Hari Ini</h3><span class="entry-status" id="jurnal-status">Belum Diisi</span>
-                                </div>
-                                <form id="jurnal-form" class="jurnal-form">
-                                    <div class="form-group"><label for="jurnal-tasks">Tugas yang Dikerjakan</label><textarea id="jurnal-tasks" rows="4" placeholder="Deskripsikan tugas-tugas yang Anda kerjakan hari ini..." required></textarea></div>
-                                    <div class="form-group"><label for="jurnal-achievements">Pencapaian/Hasil</label><textarea id="jurnal-achievements" rows="3" placeholder="Apa saja yang berhasil Anda capai?"></textarea></div>
-                                    <div class="form-group"><label for="jurnal-obstacles">Kendala/Tantangan</label><textarea id="jurnal-obstacles" rows="2" placeholder="Ada kendala yang dihadapi?"></textarea></div>
-                                    <div class="form-group"><label for="jurnal-plan">Rencana Besok</label><textarea id="jurnal-plan" rows="2" placeholder="Apa rencana kerja untuk besok?"></textarea></div>
-                                    <div class="form-group">
-                                        <label>Foto Dokumentasi (Opsional)</label>
-                                        <div class="file-upload" id="jurnal-file-upload">
-                                            <input type="file" id="jurnal-photo" accept="image/*" hidden>
-                                            <div class="upload-area" id="jurnal-upload-area">
-                                                <i class="fas fa-camera"></i>
-                                                <p>Klik atau drag foto ke sini</p>
-                                                <span class="file-types">JPG, PNG (Max 5MB)</span>
-                                            </div>
-                                            <div class="file-preview" id="jurnal-file-preview" style="display: none;">
-                                                <img src="" alt="Preview" class="image-preview" id="jurnal-image-preview">
-                                                <button type="button" class="btn-remove-file" id="jurnal-btn-remove-file">
-                                                    <i class="fas fa-times"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="form-actions"><button type="submit" class="btn-primary"><i class="fas fa-save"></i><span>Simpan Jurnal</span></button></div>
-                                </form>
-                            </div>
-                            <div class="jurnal-summary-card">
-                                <div class="card-header">
-                                    <h3>Ringkasan Bulan Ini</h3>
-                                </div>
-                                <div class="summary-stats">
-                                    <div class="summary-item">
-                                        <div class="summary-icon filled"><i class="fas fa-check-circle"></i></div>
-                                        <div class="summary-content"><span class="summary-value">18</span><span class="summary-label">Jurnal Terisi</span></div>
-                                    </div>
-                                    <div class="summary-item">
-                                        <div class="summary-icon pending"><i class="fas fa-clock"></i></div>
-                                        <div class="summary-content"><span class="summary-value">4</span><span class="summary-label">Belum Diisi</span></div>
-                                    </div>
-                                    <div class="summary-item">
-                                        <div class="summary-icon streak"><i class="fas fa-fire"></i></div>
-                                        <div class="summary-content"><span class="summary-value">5</span><span class="summary-label">Streak Hari</span></div>
-                                    </div>
-                                </div>
-                            </div>
+                            <div class="jurnal-form-card"><div class="card-header"><h3>Isi Jurnal Hari Ini</h3><span class="entry-status" id="jurnal-status">Belum Diisi</span></div><form id="jurnal-form" class="jurnal-form"><div class="form-group"><label for="jurnal-tasks">Tugas yang Dikerjakan</label><textarea id="jurnal-tasks" rows="4" placeholder="Deskripsikan tugas-tugas yang Anda kerjakan hari ini..." required></textarea></div><div class="form-group"><label for="jurnal-achievements">Pencapaian/Hasil</label><textarea id="jurnal-achievements" rows="3" placeholder="Apa saja yang berhasil Anda capai?"></textarea></div><div class="form-group"><label for="jurnal-obstacles">Kendala/Tantangan</label><textarea id="jurnal-obstacles" rows="2" placeholder="Ada kendala yang dihadapi?"></textarea></div><div class="form-group"><label for="jurnal-plan">Rencana Besok</label><textarea id="jurnal-plan" rows="2" placeholder="Apa rencana kerja untuk besok?"></textarea></div><div class="form-group"><label>Foto Dokumentasi (Opsional)</label><div class="file-upload" id="jurnal-file-upload"><input type="file" id="jurnal-photo" accept="image/*" hidden><div class="upload-area" id="jurnal-upload-area"><i class="fas fa-camera"></i><p>Klik atau drag foto ke sini</p><span class="file-types">JPG, PNG (Max 5MB)</span></div><div class="file-preview" id="jurnal-file-preview" style="display: none;"><img src="" alt="Preview" class="image-preview" id="jurnal-image-preview"><button type="button" class="btn-remove-file" id="jurnal-btn-remove-file"><i class="fas fa-times"></i></button></div></div></div><div class="form-actions"><button type="submit" class="btn-primary"><i class="fas fa-save"></i><span>Simpan Jurnal</span></button></div></form></div>
+                            <div class="jurnal-summary-card"><div class="card-header"><h3>Ringkasan Bulan Ini</h3></div><div class="summary-stats"><div class="summary-item"><div class="summary-icon filled"><i class="fas fa-check-circle"></i></div><div class="summary-content"><span class="summary-value">18</span><span class="summary-label">Jurnal Terisi</span></div></div><div class="summary-item"><div class="summary-icon pending"><i class="fas fa-clock"></i></div><div class="summary-content"><span class="summary-value">4</span><span class="summary-label">Belum Diisi</span></div></div><div class="summary-item"><div class="summary-icon streak"><i class="fas fa-fire"></i></div><div class="summary-content"><span class="summary-value">5</span><span class="summary-label">Streak Hari</span></div></div></div></div>
                         </div>
-                        <div class="jurnal-history-card">
-                            <div class="card-header">
-                                <h3>Riwayat Jurnal</h3>
-                                <div class="header-actions"><input type="text" class="search-input" placeholder="Cari jurnal..."><select class="select-filter"><option>Terbaru</option><option>Terlama</option></select></div>
-                            </div>
-                            <div class="jurnal-list" id="jurnal-list"></div>
-                        </div>
+                        <div class="jurnal-history-card"><div class="card-header"><h3>Riwayat Jurnal</h3><div class="header-actions"><input type="text" class="search-input" placeholder="Cari jurnal..."><select class="select-filter"><option>Terbaru</option><option>Terlama</option></select></div></div><div class="jurnal-list" id="jurnal-list"></div></div>
                     </div>
                 </div>
 
                 <!-- Cuti Page -->
                 <div class="page" id="page-cuti">
                     <div class="cuti-container">
-                        <div class="cuti-header">
-                            <div class="cuti-info">
-                                <h2>Pengajuan Cuti</h2>
-                                <p>Ajukan cuti Anda dan lihat status pengajuan</p>
-                            </div>
-                            <div class="leave-balance">
-                                <div class="balance-card">
-                                    <div class="balance-icon"><i class="fas fa-umbrella-beach"></i></div>
-                                    <div class="balance-content"><span class="balance-value">12</span><span class="balance-label">Sisa Cuti (hari)</span></div>
-                                </div>
-                            </div>
-                        </div>
+                        <div class="cuti-header"><div class="cuti-info"><h2>Pengajuan Cuti</h2><p>Ajukan cuti Anda dan lihat status pengajuan</p></div><div class="leave-balance"><div class="balance-card"><div class="balance-icon"><i class="fas fa-umbrella-beach"></i></div><div class="balance-content"><span class="balance-value">12</span><span class="balance-label">Sisa Cuti (hari)</span></div></div></div></div>
                         <div class="cuti-grid">
-                            <div class="cuti-form-card">
-                                <div class="card-header">
-                                    <h3>Form Pengajuan Cuti</h3>
-                                </div>
-                                <form id="cuti-form" class="cuti-form">
-                                    <div class="form-group">
-                                        <label for="leave-type">Jenis Cuti</label>
-                                        <select id="leave-type" required>
-                                            <option value="">Pilih Jenis Cuti</option>
-                                            <option value="annual">Cuti Tahunan</option>
-                                            <option value="sick">Cuti Sakit</option>
-                                            <option value="important">Cuti Penting</option>
-                                            <option value="maternity">Cuti Melahirkan</option>
-                                            <option value="other">Lainnya</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-row two-col">
-                                        <div class="form-group"><label for="leave-start">Tanggal Mulai</label><input type="date" id="leave-start" required></div>
-                                        <div class="form-group"><label for="leave-end">Tanggal Selesai</label><input type="date" id="leave-end" required></div>
-                                    </div>
-                                    <div class="form-group"><label for="leave-duration">Durasi</label><input type="text" id="leave-duration" readonly placeholder="0 hari"></div>
-                                    <div class="form-group"><label for="leave-reason">Alasan Cuti</label><textarea id="leave-reason" rows="3" placeholder="Jelaskan alasan pengajuan cuti..." required></textarea></div>
-                                    <div class="form-actions"><button type="submit" class="btn-primary"><i class="fas fa-paper-plane"></i><span>Ajukan Cuti</span></button></div>
-                                </form>
-                            </div>
-                            <div class="cuti-summary-card">
-                                <div class="card-header">
-                                    <h3>Ringkasan Cuti</h3>
-                                </div>
-                                <div class="leave-stats">
-                                    <div class="leave-stat-item">
-                                        <div class="stat-icon pending"><i class="fas fa-clock"></i></div>
-                                        <div class="stat-content"><span class="stat-value">2</span><span class="stat-label">Menunggu</span></div>
-                                    </div>
-                                    <div class="leave-stat-item">
-                                        <div class="stat-icon approved"><i class="fas fa-check"></i></div>
-                                        <div class="stat-content"><span class="stat-value">5</span><span class="stat-label">Disetujui</span></div>
-                                    </div>
-                                    <div class="leave-stat-item">
-                                        <div class="stat-icon rejected"><i class="fas fa-times"></i></div>
-                                        <div class="stat-content"><span class="stat-value">1</span><span class="stat-label">Ditolak</span></div>
-                                    </div>
-                                </div>
-                            </div>
+                            <div class="cuti-form-card"><div class="card-header"><h3>Form Pengajuan Cuti</h3></div><form id="cuti-form" class="cuti-form"><div class="form-group"><label for="leave-type">Jenis Cuti</label><select id="leave-type" required><option value="">Pilih Jenis Cuti</option><option value="annual">Cuti Tahunan</option><option value="sick">Cuti Sakit</option><option value="important">Cuti Penting</option><option value="maternity">Cuti Melahirkan</option><option value="other">Lainnya</option></select></div><div class="form-row two-col"><div class="form-group"><label for="leave-start">Tanggal Mulai</label><input type="date" id="leave-start" required></div><div class="form-group"><label for="leave-end">Tanggal Selesai</label><input type="date" id="leave-end" required></div></div><div class="form-group"><label for="leave-duration">Durasi</label><input type="text" id="leave-duration" readonly placeholder="0 hari"></div><div class="form-group"><label for="leave-reason">Alasan Cuti</label><textarea id="leave-reason" rows="3" placeholder="Jelaskan alasan pengajuan cuti..." required></textarea></div><div class="form-actions"><button type="submit" class="btn-primary"><i class="fas fa-paper-plane"></i><span>Ajukan Cuti</span></button></div></form></div>
+                            <div class="cuti-summary-card"><div class="card-header"><h3>Ringkasan Cuti</h3></div><div class="leave-stats"><div class="leave-stat-item"><div class="stat-icon pending"><i class="fas fa-clock"></i></div><div class="stat-content"><span class="stat-value">2</span><span class="stat-label">Menunggu</span></div></div><div class="leave-stat-item"><div class="stat-icon approved"><i class="fas fa-check"></i></div><div class="stat-content"><span class="stat-value">5</span><span class="stat-label">Disetujui</span></div></div><div class="leave-stat-item"><div class="stat-icon rejected"><i class="fas fa-times"></i></div><div class="stat-content"><span class="stat-value">1</span><span class="stat-label">Ditolak</span></div></div></div></div>
                         </div>
-                        <div class="cuti-history-card">
-                            <div class="card-header">
-                                <h3>Riwayat Pengajuan Cuti</h3>
-                                <div class="header-actions"><select class="select-filter"><option>Semua Status</option><option>Menunggu</option><option>Disetujui</option><option>Ditolak</option></select></div>
-                            </div>
-                            <div class="leave-list" id="leave-list"></div>
-                        </div>
+                        <div class="cuti-history-card"><div class="card-header"><h3>Riwayat Pengajuan Cuti</h3><div class="header-actions"><select class="select-filter"><option>Semua Status</option><option>Menunggu</option><option>Disetujui</option><option>Ditolak</option></select></div></div><div class="leave-list" id="leave-list"></div></div>
                     </div>
                 </div>
 
                 <!-- Admin Dashboard Page -->
                 <div class="page" id="page-admin-dashboard">
                     <div class="admin-dashboard-container">
-                        <div class="admin-header">
-                            <div class="admin-welcome">
-                                <h2>Dashboard Admin</h2>
-                                <p>Ringkasan statistik seluruh karyawan</p>
-                            </div>
-                            <div class="admin-date-filter"><select class="select-filter"><option>Hari Ini</option><option>Minggu Ini</option><option>Bulan Ini</option></select></div>
-                        </div>
-                        <div class="admin-stats-grid">
-                            <div class="admin-stat-card"><div class="stat-icon employees"><i class="fas fa-users"></i></div><div class="stat-details"><span class="stat-number" id="total-employees">0</span><span class="stat-label">Total Karyawan</span></div></div>
-                            <div class="admin-stat-card"><div class="stat-icon present"><i class="fas fa-user-check"></i></div><div class="stat-details"><span class="stat-number" id="present-today">0</span><span class="stat-label">Hadir Hari Ini</span></div></div>
-                            <div class="admin-stat-card"><div class="stat-icon absent"><i class="fas fa-user-times"></i></div><div class="stat-details"><span class="stat-number" id="absent-today">0</span><span class="stat-label">Tidak Hadir</span></div></div>
-                            <div class="admin-stat-card"><div class="stat-icon late"><i class="fas fa-clock"></i></div><div class="stat-details"><span class="stat-number" id="late-today">0</span><span class="stat-label">Terlambat</span></div></div>
-                            <div class="admin-stat-card"><div class="stat-icon on-leave"><i class="fas fa-umbrella-beach"></i></div><div class="stat-details"><span class="stat-number" id="on-leave">0</span><span class="stat-label">Sedang Cuti</span></div></div>
-                            <div class="admin-stat-card"><div class="stat-icon pending"><i class="fas fa-hourglass-half"></i></div><div class="stat-details"><span class="stat-number" id="pending-requests">0</span><span class="stat-label">Menunggu Approval</span></div></div>
-                        </div>
-                        <div class="admin-charts-grid">
-                            <div class="admin-chart-card"><div class="card-header"><h3>Statistik Kehadiran Bulan Ini</h3></div><div class="attendance-chart-container" id="admin-attendance-chart"><div class="chart-placeholder"><i class="fas fa-chart-bar"></i><p>Grafik Kehadiran</p></div></div></div>
-                            <div class="admin-chart-card"><div class="card-header"><h3>Kehadiran per Departemen</h3></div><div class="dept-chart-container" id="admin-dept-chart"><div class="chart-placeholder"><i class="fas fa-chart-pie"></i><p>Distribusi Departemen</p></div></div></div>
-                        </div>
-                        <div class="admin-info-grid">
-                            <div class="admin-info-card"><div class="card-header"><h3>Aktivitas Terbaru</h3><a href="#" class="view-all">Lihat Semua</a></div><div class="recent-activity-list" id="admin-recent-activity"></div></div>
-                            <div class="admin-info-card"><div class="card-header"><h3>Karyawan Online</h3><span class="online-count"><span id="online-count">0</span> online</span></div><div class="online-users-list" id="admin-online-users"></div></div>
-                        </div>
+                        <div class="admin-header"><div class="admin-welcome"><h2>Dashboard Admin</h2><p>Ringkasan statistik seluruh karyawan</p></div><div class="admin-date-filter"><select class="select-filter"><option>Hari Ini</option><option>Minggu Ini</option><option>Bulan Ini</option></select></div></div>
+                        <div class="admin-stats-grid"><div class="admin-stat-card"><div class="stat-icon employees"><i class="fas fa-users"></i></div><div class="stat-details"><span class="stat-number" id="total-employees">0</span><span class="stat-label">Total Karyawan</span></div></div><div class="admin-stat-card"><div class="stat-icon present"><i class="fas fa-user-check"></i></div><div class="stat-details"><span class="stat-number" id="present-today">0</span><span class="stat-label">Hadir Hari Ini</span></div></div><div class="admin-stat-card"><div class="stat-icon absent"><i class="fas fa-user-times"></i></div><div class="stat-details"><span class="stat-number" id="absent-today">0</span><span class="stat-label">Tidak Hadir</span></div></div><div class="admin-stat-card"><div class="stat-icon late"><i class="fas fa-clock"></i></div><div class="stat-details"><span class="stat-number" id="late-today">0</span><span class="stat-label">Terlambat</span></div></div><div class="admin-stat-card"><div class="stat-icon on-leave"><i class="fas fa-umbrella-beach"></i></div><div class="stat-details"><span class="stat-number" id="on-leave">0</span><span class="stat-label">Sedang Cuti</span></div></div><div class="admin-stat-card"><div class="stat-icon pending"><i class="fas fa-hourglass-half"></i></div><div class="stat-details"><span class="stat-number" id="pending-requests">0</span><span class="stat-label">Menunggu Approval</span></div></div></div>
+                        <div class="admin-charts-grid"><div class="admin-chart-card"><div class="card-header"><h3>Statistik Kehadiran Bulan Ini</h3></div><div class="attendance-chart-container" id="admin-attendance-chart"><div class="chart-placeholder"><i class="fas fa-chart-bar"></i><p>Grafik Kehadiran</p></div></div></div><div class="admin-chart-card"><div class="card-header"><h3>Kehadiran per Departemen</h3></div><div class="dept-chart-container" id="admin-dept-chart"><div class="chart-placeholder"><i class="fas fa-chart-pie"></i><p>Distribusi Departemen</p></div></div></div></div>
+                        <div class="admin-info-grid"><div class="admin-info-card"><div class="card-header"><h3>Aktivitas Terbaru</h3><a href="#" class="view-all">Lihat Semua</a></div><div class="recent-activity-list" id="admin-recent-activity"></div></div><div class="admin-info-card"><div class="card-header"><h3>Karyawan Online</h3><span class="online-count"><span id="online-count">0</span> online</span></div><div class="online-users-list" id="admin-online-users"></div></div></div>
                     </div>
                 </div>
 
                 <!-- Employees Page -->
                 <div class="page" id="page-employees">
                     <div class="employees-container">
-                        <div class="employees-header">
-                            <div class="employees-title"><h2>Data Karyawan</h2><p>Kelola data dan informasi karyawan</p></div>
-                            <div class="employees-actions"><button class="btn-primary" id="btn-add-employee"><i class="fas fa-plus"></i><span>Tambah Karyawan</span></button></div>
-                        </div>
-                        <div class="employees-filters-card">
-                            <div class="employees-filters">
-                                <div class="filter-group"><i class="fas fa-search"></i><input type="text" id="employee-search" placeholder="Cari nama karyawan..."></div>
-                                <div class="filter-group"><select id="dept-filter"><option value="">Semua Departemen</option><option value="IT">IT</option><option value="HR">HR</option><option value="Finance">Finance</option><option value="Marketing">Marketing</option><option value="Operations">Operations</option></select></div>
-                                <div class="filter-group"><select id="status-filter"><option value="">Semua Status</option><option value="active">Aktif</option><option value="on-leave">Cuti</option><option value="inactive">Non-Aktif</option></select></div>
-                            </div>
-                        </div>
-                        <div class="employees-table-card">
-                            <div class="table-responsive"><table class="employees-table" id="employees-table"><thead><tr><th>Karyawan</th><th>ID</th><th>Departemen</th><th>Jabatan</th><th>Shift</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="employees-table-body"></tbody></table></div>
-                            <div class="mobile-cards" id="employees-mobile-cards"></div>
-                            <div class="table-pagination"><span class="pagination-info">Menampilkan 1-10 dari 50 karyawan</span><div class="pagination-buttons"><button class="btn-page" disabled><i class="fas fa-chevron-left"></i></button><button class="btn-page active">1</button><button class="btn-page">2</button><button class="btn-page">3</button><button class="btn-page"><i class="fas fa-chevron-right"></i></button></div></div>
-                        </div>
+                        <div class="employees-header"><div class="employees-title"><h2>Data Karyawan</h2><p>Kelola data dan informasi karyawan</p></div><div class="employees-actions"><button class="btn-primary" id="btn-add-employee"><i class="fas fa-plus"></i><span>Tambah Karyawan</span></button></div></div>
+                        <div class="employees-filters-card"><div class="employees-filters"><div class="filter-group"><i class="fas fa-search"></i><input type="text" id="employee-search" placeholder="Cari nama karyawan..."></div><div class="filter-group"><select id="dept-filter"><option value="">Semua Departemen</option><option value="IT">IT</option><option value="HR">HR</option><option value="Finance">Finance</option><option value="Marketing">Marketing</option><option value="Operations">Operations</option></select></div><div class="filter-group"><select id="status-filter"><option value="">Semua Status</option><option value="active">Aktif</option><option value="on-leave">Cuti</option><option value="inactive">Non-Aktif</option></select></div></div></div>
+                        <div class="employees-table-card"><div class="table-responsive"><table class="employees-table" id="employees-table"><thead><tr><th>Karyawan</th><th>ID</th><th>Departemen</th><th>Jabatan</th><th>Shift</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="employees-table-body"></tbody></table></div><div class="mobile-cards" id="employees-mobile-cards"></div><div class="table-pagination"><span class="pagination-info">Menampilkan 1-10 dari 50 karyawan</span><div class="pagination-buttons"><button class="btn-page" disabled><i class="fas fa-chevron-left"></i></button><button class="btn-page active">1</button><button class="btn-page">2</button><button class="btn-page">3</button><button class="btn-page"><i class="fas fa-chevron-right"></i></button></div></div></div>
                     </div>
                 </div>
 
-                <!-- Attendance Reports Page -->
+                <!-- Rekap Absensi Page -->
                 <div class="page" id="page-attendance-reports">
                     <div class="reports-container">
                         <div class="reports-header"><div class="reports-title"><h2>Rekap Absensi</h2><p>Rekap kehadiran seluruh karyawan</p></div><div class="reports-actions"><button class="btn-secondary" id="btn-export-attendance"><i class="fas fa-download"></i><span>Export Excel</span></button><button class="btn-primary" id="btn-print-attendance"><i class="fas fa-print"></i><span>Cetak</span></button></div></div>
@@ -911,7 +470,7 @@
                     </div>
                 </div>
 
-                <!-- Jurnal Reports Page -->
+                <!-- Rekap Jurnal Page -->
                 <div class="page" id="page-jurnal-reports">
                     <div class="reports-container">
                         <div class="reports-header"><div class="reports-title"><h2>Rekap Jurnal</h2><p>Rekap jurnal kerja karyawan</p></div><div class="reports-actions"><button class="btn-secondary" id="btn-export-jurnal"><i class="fas fa-download"></i><span>Export Excel</span></button><button class="btn-primary" id="btn-print-jurnal"><i class="fas fa-print"></i><span>Cetak</span></button></div></div>
@@ -920,7 +479,7 @@
                     </div>
                 </div>
 
-                <!-- Leave Reports Page -->
+                <!-- Rekap Cuti & Izin Page -->
                 <div class="page" id="page-leave-reports">
                     <div class="reports-container">
                         <div class="reports-header"><div class="reports-title"><h2>Rekap Cuti & Izin</h2><p>Rekap pengajuan cuti dan izin karyawan</p></div><div class="reports-actions"><button class="btn-secondary" id="btn-export-leave"><i class="fas fa-download"></i><span>Export Excel</span></button><button class="btn-primary" id="btn-print-leave"><i class="fas fa-print"></i><span>Cetak</span></button></div></div>
@@ -967,13 +526,71 @@
     <!-- Modal Tambah Karyawan -->
     <div class="modal-overlay" id="modal-add-employee" style="display: none;">
         <div class="modal-container">
-            <div class="modal-header"><h3>Tambah Karyawan Baru</h3><button class="btn-close-modal" id="btn-close-modal"><i class="fas fa-times"></i></button></div>
+            <div class="modal-header">
+                <h3>Tambah Karyawan Baru</h3>
+                <button class="btn-close-modal" id="btn-close-modal"><i class="fas fa-times"></i></button>
+            </div>
             <form id="form-add-employee" class="modal-form">
-                <div class="form-row two-col"><div class="form-group"><label for="emp-name">Nama Lengkap</label><input type="text" id="emp-name" placeholder="Nama karyawan" required></div><div class="form-group"><label for="emp-email">Email</label><input type="email" id="emp-email" placeholder="email@company.com" required></div></div>
-                <div class="form-row two-col"><div class="form-group"><label for="emp-department">Departemen</label><input type="text" id="emp-department" list="dept-list" placeholder="Pilih atau ketik departemen" required><datalist id="dept-list"><option value="IT"><option value="HR"><option value="Finance"><option value="Marketing"><option value="Operations"><option value="Sales"><option value="Legal"><option value="Customer Service"><option value="Research & Development"><option value="Quality Assurance"></datalist></div><div class="form-group"><label for="emp-position">Jabatan</label><input type="text" id="emp-position" placeholder="Jabatan" required></div></div>
-                <div class="form-row two-col"><div class="form-group"><label for="emp-shift">Shift</label><select id="emp-shift" required><option value="">Pilih Shift</option><option value="Pagi">Pagi (08:00-17:00)</option><option value="Siang">Siang (14:00-23:00)</option><option value="Malam">Malam (23:00-08:00)</option></select></div><div class="form-group"><label for="emp-status">Status</label><select id="emp-status" required><option value="active">Aktif</option><option value="on-leave">Cuti</option><option value="inactive">Non-Aktif</option></select></div></div>
-                <div class="form-group"><label for="emp-join-date">Tanggal Bergabung</label><input type="date" id="emp-join-date" required></div>
-                <div class="modal-actions"><button type="button" class="btn-secondary" id="btn-cancel-add">Batal</button><button type="submit" class="btn-primary">Simpan Karyawan</button></div>
+                <div class="form-row two-col">
+                    <div class="form-group">
+                        <label for="emp-name">Nama Lengkap</label>
+                        <input type="text" id="emp-name" placeholder="Nama karyawan" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="emp-email">Email</label>
+                        <input type="email" id="emp-email" placeholder="email@company.com" required>
+                    </div>
+                </div>
+                <div class="form-row two-col">
+                    <div class="form-group">
+                        <label for="emp-password">Password</label>
+                        <input type="password" id="emp-password" placeholder="Password (min 4 karakter)" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="emp-confirm-password">Konfirmasi Password</label>
+                        <input type="password" id="emp-confirm-password" placeholder="Konfirmasi password" required>
+                    </div>
+                </div>
+                <div class="form-row two-col">
+                    <div class="form-group">
+                        <label for="emp-department">Departemen</label>
+                        <input type="text" id="emp-department" list="dept-list" placeholder="Pilih atau ketik departemen" required>
+                        <datalist id="dept-list">
+                            <option value="IT"><option value="HR"><option value="Finance"><option value="Marketing"><option value="Operations"><option value="Sales"><option value="Legal"><option value="Customer Service"><option value="Research & Development"><option value="Quality Assurance">
+                        </datalist>
+                    </div>
+                    <div class="form-group">
+                        <label for="emp-position">Jabatan</label>
+                        <input type="text" id="emp-position" placeholder="Jabatan" required>
+                    </div>
+                </div>
+                <div class="form-row two-col">
+                    <div class="form-group">
+                        <label for="emp-shift">Shift</label>
+                        <select id="emp-shift" required>
+                            <option value="">Pilih Shift</option>
+                            <option value="Pagi">Pagi (08:00-17:00)</option>
+                            <option value="Siang">Siang (14:00-23:00)</option>
+                            <option value="Malam">Malam (23:00-08:00)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="emp-status">Status</label>
+                        <select id="emp-status" required>
+                            <option value="active">Aktif</option>
+                            <option value="on-leave">Cuti</option>
+                            <option value="inactive">Non-Aktif</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="emp-join-date">Tanggal Bergabung</label>
+                    <input type="date" id="emp-join-date" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="btn-cancel-add">Batal</button>
+                    <button type="submit" class="btn-primary">Simpan Karyawan</button>
+                </div>
             </form>
         </div>
     </div>
@@ -981,11 +598,23 @@
     <!-- Modal Edit Karyawan -->
     <div class="modal-overlay" id="modal-edit-employee" style="display: none;">
         <div class="modal-container">
-            <div class="modal-header"><h3>Edit Karyawan</h3><button class="btn-close-modal" id="btn-close-edit-modal"><i class="fas fa-times"></i></button></div>
+            <div class="modal-header">
+                <h3>Edit Karyawan</h3>
+                <button class="btn-close-modal" id="btn-close-edit-modal"><i class="fas fa-times"></i></button>
+            </div>
             <form id="form-edit-employee" class="modal-form">
-                <div class="form-row two-col"><div class="form-group"><label for="edit-emp-name">Nama Lengkap</label><input type="text" id="edit-emp-name" placeholder="Nama karyawan" required></div><div class="form-group"><label for="edit-emp-email">Email</label><input type="email" id="edit-emp-email" placeholder="email@company.com" required></div></div>
-                <div class="form-row two-col"><div class="form-group"><label for="edit-emp-department">Departemen</label><input type="text" id="edit-emp-department" list="dept-list-edit" placeholder="Pilih atau ketik departemen" required><datalist id="dept-list-edit"><option value="IT"><option value="HR"><option value="Finance"><option value="Marketing"><option value="Operations"><option value="Sales"><option value="Legal"><option value="Customer Service"><option value="Research & Development"><option value="Quality Assurance"></datalist></div><div class="form-group"><label for="edit-emp-position">Jabatan</label><input type="text" id="edit-emp-position" placeholder="Jabatan" required></div></div>
-                <div class="form-row two-col"><div class="form-group"><label for="edit-emp-shift">Shift</label><select id="edit-emp-shift" required><option value="Pagi">Pagi (08:00-17:00)</option><option value="Siang">Siang (14:00-23:00)</option><option value="Malam">Malam (23:00-08:00)</option></select></div><div class="form-group"><label for="edit-emp-status">Status</label><select id="edit-emp-status" required><option value="active">Aktif</option><option value="on-leave">Cuti</option><option value="inactive">Non-Aktif</option></select></div></div>
+                <div class="form-row two-col">
+                    <div class="form-group"><label for="edit-emp-name">Nama Lengkap</label><input type="text" id="edit-emp-name" placeholder="Nama karyawan" required></div>
+                    <div class="form-group"><label for="edit-emp-email">Email</label><input type="email" id="edit-emp-email" placeholder="email@company.com" required></div>
+                </div>
+                <div class="form-row two-col">
+                    <div class="form-group"><label for="edit-emp-department">Departemen</label><input type="text" id="edit-emp-department" list="dept-list-edit" placeholder="Pilih atau ketik departemen" required><datalist id="dept-list-edit"><option value="IT"><option value="HR"><option value="Finance"><option value="Marketing"><option value="Operations"><option value="Sales"><option value="Legal"><option value="Customer Service"><option value="Research & Development"><option value="Quality Assurance"></datalist></div>
+                    <div class="form-group"><label for="edit-emp-position">Jabatan</label><input type="text" id="edit-emp-position" placeholder="Jabatan" required></div>
+                </div>
+                <div class="form-row two-col">
+                    <div class="form-group"><label for="edit-emp-shift">Shift</label><select id="edit-emp-shift" required><option value="Pagi">Pagi (08:00-17:00)</option><option value="Siang">Siang (14:00-23:00)</option><option value="Malam">Malam (23:00-08:00)</option></select></div>
+                    <div class="form-group"><label for="edit-emp-status">Status</label><select id="edit-emp-status" required><option value="active">Aktif</option><option value="on-leave">Cuti</option><option value="inactive">Non-Aktif</option></select></div>
+                </div>
                 <div class="form-group"><label for="edit-emp-join-date">Tanggal Bergabung</label><input type="date" id="edit-emp-join-date" required></div>
                 <div class="modal-actions"><button type="button" class="btn-secondary" id="btn-cancel-edit">Batal</button><button type="submit" class="btn-primary">Simpan Perubahan</button></div>
             </form>
@@ -1007,7 +636,7 @@
     <!-- Toast Notifications -->
     <div class="toast-container" id="toast-container"></div>
 
-    <!-- Scripts (urutan penting: modal.js sebelum admin-reports.js) -->
+    <!-- Scripts (urutan penting) -->
     <script src="js/api.js"></script>
     <script src="js/main.js"></script>
     <script src="js/router.js"></script>
