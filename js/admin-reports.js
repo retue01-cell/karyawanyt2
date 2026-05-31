@@ -1,8 +1,6 @@
 /**
  * Portal Karyawan - Admin Reports
  * Reports and exports for admin with FULL DETAIL functionality
- * 
- * Fitur: Tombol Delete pada Rekap Jurnal (admin)
  */
 
 const adminReports = {
@@ -20,9 +18,6 @@ const adminReports = {
         leave: { month: '', type: '', status: '' }
     },
 
-    // ----------------------------------------------
-    // INIT FUNCTIONS
-    // ----------------------------------------------
     async initAttendanceReports() {
         if (!auth.isAdmin()) { toast.error('Akses ditolak'); router.navigate('dashboard'); return; }
         await this.loadData();
@@ -48,9 +43,6 @@ const adminReports = {
         this.renderLeaveReports();
     },
 
-    // ----------------------------------------------
-    // LOAD DATA
-    // ----------------------------------------------
     async loadData() {
         try {
             const [empResult, jurnalResult, leaveResult, izinResult, attResult] = await Promise.all([
@@ -169,9 +161,6 @@ const adminReports = {
         });
     },
 
-    // ----------------------------------------------
-    // BIND EVENTS
-    // ----------------------------------------------
     bindAttendanceEvents() {
         const btnExport = document.getElementById('btn-export-attendance');
         if (btnExport) btnExport.onclick = () => this.exportToExcel('attendance');
@@ -209,7 +198,6 @@ const adminReports = {
         if (status) status.onchange = (e) => { this.filters.leave.status = e.target.value; this.renderLeaveReports(); };
     },
 
-    // ========== FILTERING ==========
     getFilteredAttendance() {
         let month = this.filters.attendance.month;
         if (!month) {
@@ -231,9 +219,15 @@ const adminReports = {
 
     getFilteredJurnal() {
         let data = [...this.jurnalData];
-        if (this.filters.jurnal.month) data = data.filter(j => j.date && j.date.startsWith(this.filters.jurnal.month));
-        if (this.filters.jurnal.employee) data = data.filter(j => j.name === this.filters.jurnal.employee);
-        if (this.filters.jurnal.status) data = data.filter(j => j.status === this.filters.jurnal.status);
+        if (this.filters.jurnal.month) {
+            data = data.filter(j => j.date && j.date.startsWith(this.filters.jurnal.month));
+        }
+        if (this.filters.jurnal.employee) {
+            data = data.filter(j => j.name === this.filters.jurnal.employee);
+        }
+        if (this.filters.jurnal.status) {
+            data = data.filter(j => j.status === this.filters.jurnal.status);
+        }
         return data;
     },
 
@@ -250,35 +244,29 @@ const adminReports = {
         });
     },
 
-    // ----------------------------------------------
-    // RENDER FUNCTIONS
-    // ----------------------------------------------
     renderAttendanceReports() {
         const tbody = document.getElementById('attendance-reports-body');
         if (!tbody) return;
         const data = this.getFilteredAttendance();
         tbody.innerHTML = data.map(row => `
             <tr>
-                <td><div class="employee-info"><div class="employee-details"><span class="employee-name">${this.escapeHtml(row.name)}</span></div></div></td>
-                <td>${this.escapeHtml(row.department)}</div></td>
-                <td class="text-center" style="color:var(--color-success); font-weight:600;">${row.present}</td>
-                <td class="text-center" style="color:var(--color-warning); font-weight:600;">${row.late}</td>
-                <td class="text-center" style="color:var(--color-danger); font-weight:600;">${row.absent}</td>
-                <td class="text-center">${row.total}</td>
-                <td><button class="btn-action view" onclick="adminReports.viewAttendanceDetail('${this.escapeHtml(row.name)}')"><i class="fas fa-eye"></i></button></td>
+                <td><div class="employee-info"><div class="employee-details"><span class="employee-name">${this.escapeHtml(row.name)}</span></div></div></div>
+                <td>${this.escapeHtml(row.department)}</div>
+                <td class="text-center" style="color:var(--color-success); font-weight:600;">${row.present}</div>
+                <td class="text-center" style="color:var(--color-warning); font-weight:600;">${row.late}</div>
+                <td class="text-center" style="color:var(--color-danger); font-weight:600;">${row.absent}</div>
+                <td class="text-center">${row.total}</div>
+                <td><button class="btn-action view" onclick="adminReports.viewAttendanceDetail('${this.escapeHtml(row.name)}')"><i class="fas fa-eye"></i></button></div>
             </tr>
         `).join('');
-        
         const mobile = document.getElementById('attendance-mobile-cards');
         if (mobile) {
             mobile.innerHTML = data.map(row => `
-                <div class="mobile-card">
-                    <div class="mobile-card-header"><span class="mobile-card-title">${this.escapeHtml(row.name)}</span><span>${this.escapeHtml(row.department)}</span></div>
-                    <div class="mobile-card-row"><span class="mobile-card-label">Hadir</span><span>${row.present}</span></div>
-                    <div class="mobile-card-row"><span class="mobile-card-label">Telat</span><span>${row.late}</span></div>
-                    <div class="mobile-card-row"><span class="mobile-card-label">Absen</span><span>${row.absent}</span></div>
-                    <button class="btn-primary btn-sm" onclick="adminReports.viewAttendanceDetail('${this.escapeHtml(row.name)}')">Lihat Detail</button>
-                </div>
+                <div class="mobile-card"><div class="mobile-card-header"><span class="mobile-card-title">${this.escapeHtml(row.name)}</span><span>${this.escapeHtml(row.department)}</span></div>
+                <div class="mobile-card-row"><span class="mobile-card-label">Hadir</span><span>${row.present}</span></div>
+                <div class="mobile-card-row"><span class="mobile-card-label">Telat</span><span>${row.late}</span></div>
+                <div class="mobile-card-row"><span class="mobile-card-label">Absen</span><span>${row.absent}</span></div>
+                <button class="btn-primary btn-sm" onclick="adminReports.viewAttendanceDetail('${this.escapeHtml(row.name)}')">Lihat Detail</button></div>
             `).join('');
         }
     },
@@ -295,16 +283,16 @@ const adminReports = {
         }
         tbody.innerHTML = data.map(row => `
             <tr>
-                <td>${row.date || '-'}</div></td>
-                <td>${this.escapeHtml(row.name)}</div></td>
-                <td>${this.escapeHtml(row.department)}</div></td>
-                <td>${(row.tasks || '-').substring(0, 40)}${(row.tasks || '').length > 40 ? '...' : ''}</div></td>
-                <td>${row.photo ? `<img src="${row.photo}" class="jurnal-thumbnail" onclick="adminReports.viewPhoto('${row.photo}')" style="width:40px;height:40px;object-fit:cover;border-radius:6px;cursor:pointer;">` : '-'}</div></td>
-                <td><span class="status-badge ${row.status}">${row.status === 'filled' ? 'Terisi' : 'Kosong'}</span></div></td>
+                <td>${row.date || '-'}</div>
+                <td>${this.escapeHtml(row.name)}</div>
+                <td>${this.escapeHtml(row.department)}</div>
+                <td>${(row.tasks || '-').substring(0, 40)}${(row.tasks || '').length > 40 ? '...' : ''}</div>
+                <td>${row.photo ? `<img src="${row.photo}" class="jurnal-thumbnail" onclick="adminReports.viewPhoto('${row.photo}')" style="width:40px;height:40px;object-fit:cover;border-radius:6px;cursor:pointer;">` : '-'}</div>
+                <td><span class="status-badge ${row.status}">${row.status === 'filled' ? 'Terisi' : 'Kosong'}</span></div>
                 <td>
                     <button class="btn-action view" onclick="adminReports.viewJurnalDetail('${this.escapeHtml(row.name)}', '${row.date}')" title="Lihat"><i class="fas fa-eye"></i></button>
                     <button class="btn-action delete" onclick="adminReports.deleteJournalItem('${row.id}')" title="Hapus" style="background:rgba(239,68,68,0.1);color:#EF4444;"><i class="fas fa-trash"></i></button>
-                 </div></td>
+                 </div>
             </tr>
         `).join('');
 
@@ -344,18 +332,17 @@ const adminReports = {
                 `<button class="btn-action view" onclick="adminReports.viewLeaveDetail('${this.escapeHtml(item.name)}', '${item.type}', ${item.id})"><i class="fas fa-eye"></i></button>`;
             return `
                 <tr>
-                    <td>${this.escapeHtml(item.name)}</div></td>
-                    <td>${this.escapeHtml(item.department)}</div></td>
-                    <td>${item.typeLabel}</td>
-                    <td>${item.dates}</td>
-                    <td>${item.duration} hari</div></td>
-                    <td>${item.reason.substring(0, 40)}${item.reason.length > 40 ? '...' : ''}</td>
-                    <td><span class="status-badge ${item.status}">${statusLabels[item.status]}</span></td>
-                    <td>${actions}</td>
+                    <td>${this.escapeHtml(item.name)}</div>
+                    <td>${this.escapeHtml(item.department)}</div>
+                    <td>${item.typeLabel}</div>
+                    <td>${item.dates}</div>
+                    <td>${item.duration} hari</div>
+                    <td>${item.reason.substring(0, 40)}${item.reason.length > 40 ? '...' : ''}</div>
+                    <td><span class="status-badge ${item.status}">${statusLabels[item.status]}</span></div>
+                    <td>${actions}</div>
                 </tr>
             `;
         }).join('');
-        
         const mobile = document.getElementById('leave-mobile-cards');
         if (mobile) {
             mobile.innerHTML = data.map(item => {
@@ -364,22 +351,18 @@ const adminReports = {
                     `<div style="display:flex; gap:8px; margin-top:8px;"><button class="btn-sm" style="background:#10B981;color:white;" onclick="adminReports.approveLeaveItem('${item.type}', ${item.id})">Setujui</button><button class="btn-sm" style="background:#EF4444;color:white;" onclick="adminReports.rejectLeaveItem('${item.type}', ${item.id})">Tolak</button></div>` :
                     `<button class="btn-primary btn-sm" onclick="adminReports.viewLeaveDetail('${this.escapeHtml(item.name)}', '${item.type}', ${item.id})">Lihat Detail</button>`;
                 return `
-                    <div class="mobile-card">
-                        <div class="mobile-card-header"><span class="mobile-card-title">${this.escapeHtml(item.name)}</span><span class="status-badge ${item.status}">${statusLabels[item.status]}</span></div>
-                        <div class="mobile-card-row"><span>${item.typeLabel}</span><span>${item.dates} (${item.duration} hr)</span></div>
-                        <div class="mobile-card-row"><span>Alasan:</span><span>${item.reason.substring(0, 50)}</span></div>
-                        ${actions}
-                    </div>
+                    <div class="mobile-card"><div class="mobile-card-header"><span class="mobile-card-title">${this.escapeHtml(item.name)}</span><span class="status-badge ${item.status}">${statusLabels[item.status]}</span></div>
+                    <div class="mobile-card-row"><span>${item.typeLabel}</span><span>${item.dates} (${item.duration} hr)</span></div>
+                    <div class="mobile-card-row"><span>Alasan:</span><span>${item.reason.substring(0, 50)}</span></div>
+                    ${actions}</div>
                 `;
             }).join('');
         }
     },
 
-    // ========== DETAIL FUNCTIONS ==========
     viewAttendanceDetail(name) {
         const emp = this.rawEmployees.find(e => e.name === name);
         if (!emp) { toast.error('Karyawan tidak ditemukan'); return; }
-        
         let selectedMonth = this.filters.attendance.month;
         if (!selectedMonth) {
             const today = new Date();
@@ -390,7 +373,6 @@ const adminReports = {
         const attendanceRecords = this.rawAttendance.filter(a => String(a.userId) === String(emp.id) && a.date && a.date.startsWith(selectedMonth));
         const recordsMap = {};
         attendanceRecords.forEach(rec => { recordsMap[rec.date] = rec; });
-        
         let tableRows = '';
         for (let d = 1; d <= daysInMonth; d++) {
             const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -402,61 +384,30 @@ const adminReports = {
             } else if (rec && rec.status === 'libur') {
                 statusHtml = '<span class="badge-status secondary">Libur</span>';
             }
-            tableRows += `<tr><td>${d}</td><td>${dateStr}</td><td>${rec ? rec.clockIn || '-' : '-'}</td><td>${rec ? rec.clockOut || '-' : '-'}</td><td>${statusHtml}</td></tr>`;
+            tableRows += `<tr><td>${d}</div><td>${dateStr}</div><td>${rec ? rec.clockIn || '-' : '-'}</div><td>${rec ? rec.clockOut || '-' : '-'}</div><td>${statusHtml}</div></tr>`;
         }
-        
         const formattedMonth = `${month}-${year}`;
-        const modalContent = `
-            <div style="max-height: 60vh; overflow-y: auto;">
-                <h4>Riwayat Absensi ${emp.name} - Bulan ${formattedMonth}</h4>
-                <table class="history-table" style="width:100%; font-size:12px; border-collapse:collapse;">
-                    <thead><tr><th>Tanggal</th><th>Clock In</th><th>Clock Out</th><th>Status</th></tr></thead>
-                    <tbody>${tableRows}</tbody>
-                </table>
-            </div>
-        `;
+        const modalContent = `<div style="max-height:60vh;overflow-y:auto;"><h4>Riwayat Absensi ${emp.name} - Bulan ${formattedMonth}</h4><table class="history-table" style="width:100%;font-size:12px;border-collapse:collapse;"><thead><tr><th>Tanggal</th><th>Clock In</th><th>Clock Out</th><th>Status</th></tr></thead><tbody>${tableRows}</tbody></table></div>`;
         this._showModal(`Detail Absensi: ${emp.name}`, modalContent);
     },
-    
+
     viewJurnalDetail(name, date) {
         const jurnal = this.jurnalData.find(j => j.name === name && j.date === date);
         if (!jurnal) { toast.error('Jurnal tidak ditemukan'); return; }
         const photoHtml = jurnal.photo ? `<div style="margin-top:12px;"><img src="${jurnal.photo}" style="max-width:100%; max-height:200px; border-radius:8px; cursor:pointer;" onclick="window.open('${jurnal.photo}','_blank')"></div>` : '';
-        const content = `
-            <div style="max-height:60vh; overflow-y:auto;">
-                <p><strong>Nama:</strong> ${this.escapeHtml(jurnal.name)}</p>
-                <p><strong>Departemen:</strong> ${this.escapeHtml(jurnal.department)}</p>
-                <p><strong>Tanggal:</strong> ${date ? dateTime.formatDate(new Date(date), 'long') : 'Tidak ada tanggal'}</p>
-                <hr>
-                <p><strong>Tugas yang dikerjakan:</strong><br>${(jurnal.tasks || '-').replace(/\n/g, '<br>')}</p>
-                <p><strong>Pencapaian:</strong><br>${(jurnal.achievements || '-').replace(/\n/g, '<br>')}</p>
-                <p><strong>Kendala:</strong><br>${(jurnal.obstacles || '-').replace(/\n/g, '<br>')}</p>
-                <p><strong>Rencana besok:</strong><br>${(jurnal.plan || '-').replace(/\n/g, '<br>')}</p>
-                ${photoHtml}
-            </div>
-        `;
+        const content = `<div style="max-height:60vh;overflow-y:auto;"><p><strong>Nama:</strong> ${this.escapeHtml(jurnal.name)}</p><p><strong>Departemen:</strong> ${this.escapeHtml(jurnal.department)}</p><p><strong>Tanggal:</strong> ${date ? dateTime.formatDate(new Date(date), 'long') : 'Tidak ada tanggal'}</p><hr><p><strong>Tugas yang dikerjakan:</strong><br>${(jurnal.tasks || '-').replace(/\n/g, '<br>')}</p><p><strong>Pencapaian:</strong><br>${(jurnal.achievements || '-').replace(/\n/g, '<br>')}</p><p><strong>Kendala:</strong><br>${(jurnal.obstacles || '-').replace(/\n/g, '<br>')}</p><p><strong>Rencana besok:</strong><br>${(jurnal.plan || '-').replace(/\n/g, '<br>')}</p>${photoHtml}</div>`;
         this._showModal('Detail Jurnal', content);
     },
-    
+
     viewLeaveDetail(name, type, id) {
         let item;
         if (type === 'cuti') item = this.rawLeaves.find(l => l.id == id);
         else item = this.rawIzin.find(i => i.id == id);
         if (!item) { toast.error('Data tidak ditemukan'); return; }
-        const content = `
-            <div style="max-height:60vh; overflow-y:auto;">
-                <p><strong>Karyawan:</strong> ${this.escapeHtml(name)}</p>
-                <p><strong>Jenis:</strong> ${type === 'cuti' ? 'Cuti' : 'Izin'}</p>
-                <p><strong>Tanggal:</strong> ${item.startDate ? `${item.startDate} - ${item.endDate}` : item.date}</p>
-                <p><strong>Durasi:</strong> ${item.duration} hari</p>
-                <p><strong>Alasan:</strong><br>${item.reason}</p>
-                ${item.verificationPhoto ? `<p><strong>Foto Verifikasi:</strong><br><img src="${item.verificationPhoto}" style="max-width:100%; max-height:200px; border-radius:8px;"></p>` : ''}
-                <p><strong>Status:</strong> ${item.status === 'pending' ? 'Menunggu' : (item.status === 'approved' ? 'Disetujui' : 'Ditolak')}</p>
-            </div>
-        `;
+        const content = `<div style="max-height:60vh;overflow-y:auto;"><p><strong>Karyawan:</strong> ${this.escapeHtml(name)}</p><p><strong>Jenis:</strong> ${type === 'cuti' ? 'Cuti' : 'Izin'}</p><p><strong>Tanggal:</strong> ${item.startDate ? `${item.startDate} - ${item.endDate}` : item.date}</p><p><strong>Durasi:</strong> ${item.duration} hari</p><p><strong>Alasan:</strong><br>${item.reason}</p>${item.verificationPhoto ? `<p><strong>Foto Verifikasi:</strong><br><img src="${item.verificationPhoto}" style="max-width:100%; max-height:200px; border-radius:8px;"></p>` : ''}<p><strong>Status:</strong> ${item.status === 'pending' ? 'Menunggu' : (item.status === 'approved' ? 'Disetujui' : 'Ditolak')}</p></div>`;
         this._showModal('Detail Pengajuan', content);
     },
-    
+
     viewPhoto(photoUrl) {
         if (window.modal && typeof window.modal.show === 'function') {
             window.modal.show('Foto', `<img src="${photoUrl}" style="max-width:100%; max-height:70vh;">`, [{ label: 'Tutup', class: 'btn-secondary', onClick: () => window.modal.close() }]);
@@ -465,15 +416,9 @@ const adminReports = {
         }
     },
 
-    // ========== DELETE JOURNAL (ADMIN) ==========
     async deleteJournalItem(journalId) {
-        if (!auth.isAdmin()) {
-            toast.error('Akses ditolak');
-            return;
-        }
-        if (!confirm('Yakin ingin menghapus jurnal ini? Tindakan ini tidak dapat dibatalkan.')) {
-            return;
-        }
+        if (!auth.isAdmin()) { toast.error('Akses ditolak'); return; }
+        if (!confirm('Yakin ingin menghapus jurnal ini? Tindakan ini tidak dapat dibatalkan.')) return;
         try {
             const result = await api.deleteJournal(journalId);
             if (result && result.success) {
@@ -488,8 +433,7 @@ const adminReports = {
             toast.error('Terjadi kesalahan saat menghapus');
         }
     },
-    
-    // ========== APPROVE / REJECT ==========
+
     async approveLeaveItem(type, id) {
         if (!auth.isAdmin()) return;
         try {
@@ -517,24 +461,17 @@ const adminReports = {
             } else toast.error(result.error || 'Gagal menolak');
         } catch (error) { toast.error('Terjadi kesalahan'); }
     },
-    
-    // ========== HELPER MODAL ==========
+
     _showModal(title, content) {
         if (window.modal && typeof window.modal.show === 'function') {
             window.modal.show(title, content, [{ label: 'Tutup', class: 'btn-secondary', onClick: () => window.modal.close() }]);
         } else {
             const win = window.open('', '_blank', 'width=800,height=600');
-            win.document.write(`
-                <html><head><title>${title}</title></head><body style="font-family:Arial;padding:20px;">
-                ${content}
-                <button onclick="window.close()">Tutup</button>
-                </body></html>
-            `);
+            win.document.write(`<html><head><title>${title}</title></head><body style="font-family:Arial;padding:20px;">${content}<button onclick="window.close()">Tutup</button></body></html>`);
             win.document.close();
         }
     },
-    
-    // ========== EXPORT & PRINT ==========
+
     exportToExcel(type) {
         let data = [], filename = '';
         switch (type) {
@@ -561,7 +498,7 @@ const adminReports = {
         URL.revokeObjectURL(url);
     },
     printReport(type) { window.print(); },
-    
+
     escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, function(m) {
@@ -573,7 +510,6 @@ const adminReports = {
     }
 };
 
-// Global init functions
 window.initAttendanceReports = () => adminReports.initAttendanceReports();
 window.initJurnalReports = () => adminReports.initJurnalReports();
 window.initLeaveReports = () => adminReports.initLeaveReports();
