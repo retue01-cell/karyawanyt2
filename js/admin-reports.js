@@ -2,7 +2,7 @@
  * Portal Karyawan - Admin Reports
  * Reports and exports for admin with FULL DETAIL functionality
  * 
- * Perbaikan: Jurnal menggunakan field 'updatedAt' jika 'date' tidak ada.
+ * Disesuaikan untuk menggunakan kolom 'date' di sheet Journals.
  */
 
 const adminReports = {
@@ -77,7 +77,6 @@ const adminReports = {
         }
 
         // Build data jurnal yang diperkaya dengan nama karyawan
-        // Gunakan field 'date' jika ada, fallback ke 'updatedAt' jika tidak
         const empMap = {};
         this.rawEmployees.forEach(emp => {
             empMap[String(emp.id)] = { name: emp.name, department: emp.department };
@@ -85,17 +84,13 @@ const adminReports = {
 
         this.jurnalData = this.rawJournals.map(j => {
             const emp = empMap[String(j.userId)] || { name: 'Unknown', department: '-' };
-            // Tentukan tanggal: prioritas date, lalu updatedAt, lalu createdAt, lalu kosong
+            // Gunakan field 'date' yang sudah ada di sheet
             let journalDate = j.date;
-            if (!journalDate && j.updatedAt) {
-                // Ambil hanya tanggal (YYYY-MM-DD) dari updatedAt
-                journalDate = j.updatedAt.split('T')[0];
-            }
-            if (!journalDate && j.createdAt) {
-                journalDate = j.createdAt.split('T')[0];
-            }
             if (!journalDate) {
-                journalDate = ''; // tidak ada tanggal
+                // Fallback jika date kosong (tidak seharusnya terjadi)
+                if (j.updatedAt) journalDate = j.updatedAt.split('T')[0];
+                else if (j.createdAt) journalDate = j.createdAt.split('T')[0];
+                else journalDate = '';
             }
             return {
                 id: j.id,
@@ -112,10 +107,10 @@ const adminReports = {
                 updatedAt: j.updatedAt
             };
         });
-        // Urutkan berdasarkan tanggal (descending)
+        // Urutkan berdasarkan tanggal terbaru
         this.jurnalData.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
-        // Build leave/izin combined
+        // Build leave/izin combined (sama seperti sebelumnya)
         this.leaveData = [];
         this.rawLeaves.forEach(l => {
             const emp = this.rawEmployees.find(e => String(e.id) === String(l.userId));
@@ -262,7 +257,7 @@ const adminReports = {
 
     getFilteredJurnal() {
         let data = [...this.jurnalData];
-        // Filter bulan (periode) - pastikan date ada
+        // Filter bulan (periode) - gunakan field 'date'
         if (this.filters.jurnal.month) {
             data = data.filter(j => j.date && j.date.startsWith(this.filters.jurnal.month));
         }
@@ -297,6 +292,10 @@ const adminReports = {
         const tbody = document.getElementById('attendance-reports-body');
         if (!tbody) return;
         const data = this.getFilteredAttendance();
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:40px;">Tidak ada data absensi untuk periode ini</td></tr>`;
+            return;
+        }
         tbody.innerHTML = data.map(row => `
             <tr>
                 <td><div class="employee-info"><div class="employee-details"><span class="employee-name">${this.escapeHtml(row.name)}</span></div></div></td>
@@ -328,7 +327,7 @@ const adminReports = {
         if (!tbody) return;
         const data = this.getFilteredJurnal();
         if (data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:40px;">Tidak ada data jurnal untuk periode ini (pastikan kolom date ada di sheet Journals)</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:40px;">Tidak ada data jurnal untuk periode ini</td></tr>`;
             const mobile = document.getElementById('jurnal-mobile-cards');
             if (mobile) mobile.innerHTML = '<div class="empty-state">Tidak ada data jurnal</div>';
             return;
@@ -366,7 +365,7 @@ const adminReports = {
         const data = this.getFilteredLeave();
         const statusLabels = { pending: 'Menunggu', approved: 'Disetujui', rejected: 'Ditolak' };
         if (data.length === 0) {
-            tbody.innerHTML = `<td><td colspan="8" style="text-align:center; padding:40px;">Tidak ada data cuti/izin</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:40px;">Tidak ada data cuti/izin</td></tr>`;
             const mobile = document.getElementById('leave-mobile-cards');
             if (mobile) mobile.innerHTML = '<div class="empty-state">Tidak ada data</div>';
             return;
@@ -445,7 +444,7 @@ const adminReports = {
             <div style="max-height: 60vh; overflow-y: auto;">
                 <h4>Riwayat Absensi ${emp.name} - Bulan ${formattedMonth}</h4>
                 <table class="history-table" style="width:100%; font-size:12px; border-collapse:collapse;">
-                    <thead><tr><th>Tanggal</th><th>Clock In</th><th>Clock Out</th><th>Status</th></tr></thead>
+                    <thead><tr><th>Tanggal</th><th>Clock In</th><th>Clock Out</th><th>Status</th></table></thead>
                     <tbody>${tableRows}</tbody>
                 </table>
             </div>
