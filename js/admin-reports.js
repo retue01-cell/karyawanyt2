@@ -2,7 +2,7 @@
  * Portal Karyawan - Admin Reports
  * Reports and exports for admin with FULL DETAIL functionality
  * 
- * Perbaikan: Filter periode dan jenis pada Rekap Cuti & Izin (dengan debugging)
+ * Perbaikan: Filter periode dan jenis pada Rekap Cuti & Izin (final)
  */
 
 const adminReports = {
@@ -80,9 +80,8 @@ const adminReports = {
             this.rawAttendance = attResult.data || [];
 
             console.log('=== Admin Reports Load Data ===');
-            console.log('Employees count:', this.rawEmployees.length);
-            console.log('Leaves raw count:', this.rawLeaves.length);
-            console.log('Izin raw count:', this.rawIzin.length);
+            console.log('Leaves count:', this.rawLeaves.length);
+            console.log('Izin count:', this.rawIzin.length);
         } catch (error) {
             console.error('Load error:', error);
             this.rawEmployees = storage.get('admin_employees', []);
@@ -92,7 +91,7 @@ const adminReports = {
             this.rawAttendance = storage.get('attendance', []);
         }
 
-        // Build jurnal data (enriched with employee names) - tidak berubah
+        // Build jurnal data
         const empMap = new Map();
         this.rawEmployees.forEach(emp => {
             empMap.set(String(emp.id), { name: emp.name, department: emp.department });
@@ -120,14 +119,12 @@ const adminReports = {
             };
         });
         this.jurnalData.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-        console.log('Processed jurnalData length:', this.jurnalData.length);
 
-        // Build leave/izin combined with proper date fields for filtering
+        // Build leave/izin combined
         this.leaveData = [];
         this.rawLeaves.forEach(l => {
             const emp = this.rawEmployees.find(e => String(e.id) === String(l.userId));
             if (emp) {
-                // Pastikan startDate dalam format YYYY-MM-DD
                 let startDateStr = l.startDate;
                 if (startDateStr && startDateStr.includes('T')) startDateStr = startDateStr.split('T')[0];
                 const startDateObj = new Date(startDateStr);
@@ -143,8 +140,6 @@ const adminReports = {
                     reason: l.reason,
                     status: l.status,
                     appliedAt: l.appliedAt,
-                    startDate: startDateStr,
-                    endDate: l.endDate,
                     monthYear: monthYear
                 });
             }
@@ -167,15 +162,12 @@ const adminReports = {
                     reason: i.reason,
                     status: i.status,
                     appliedAt: i.appliedAt,
-                    startDate: dateStr,
-                    endDate: dateStr,
                     monthYear: monthYear
                 });
             }
         });
         this.leaveData.sort((a, b) => new Date(b.appliedAt) - new Date(a.appliedAt));
-        console.log('Processed leaveData length:', this.leaveData.length);
-        console.log('Sample leaveData (first 2 items):', this.leaveData.slice(0, 2));
+        console.log('Total leaveData after combine:', this.leaveData.length);
     },
 
     getLeaveTypeLabel(type) {
@@ -256,19 +248,16 @@ const adminReports = {
         if (btnPrint) btnPrint.onclick = () => this.printReport('leave');
         const month = document.getElementById('leave-month');
         if (month) month.onchange = (e) => {
-            console.log('Leave month changed to:', e.target.value);
             this.filters.leave.month = e.target.value;
             this.renderLeaveReports();
         };
         const type = document.getElementById('leave-type-filter');
         if (type) type.onchange = (e) => {
-            console.log('Leave type changed to:', e.target.value);
             this.filters.leave.type = e.target.value;
             this.renderLeaveReports();
         };
         const status = document.getElementById('leave-status-filter');
         if (status) status.onchange = (e) => {
-            console.log('Leave status changed to:', e.target.value);
             this.filters.leave.status = e.target.value;
             this.renderLeaveReports();
         };
@@ -307,22 +296,17 @@ const adminReports = {
         return data;
     },
 
-    // ========== PERBAIKAN: Filter untuk Rekap Cuti & Izin ==========
+    // ========== FILTER UNTUK REKAP CUTI & IZIN ==========
     getFilteredLeave() {
         let data = [...this.leaveData];
-        console.log('All leaveData before filter:', data);
-        console.log('Current filters:', this.filters.leave);
         
         // Filter bulan (periode)
         if (this.filters.leave.month && this.filters.leave.month !== '') {
-            console.log('Filtering by month:', this.filters.leave.month);
             data = data.filter(item => item.monthYear === this.filters.leave.month);
-            console.log('After month filter, count:', data.length);
         }
         
-        // Filter jenis (cuti/izin/sakit)
+        // Filter jenis
         if (this.filters.leave.type && this.filters.leave.type !== '') {
-            console.log('Filtering by type:', this.filters.leave.type);
             if (this.filters.leave.type === 'cuti') {
                 data = data.filter(item => item.type === 'cuti');
             } else if (this.filters.leave.type === 'izin') {
@@ -330,14 +314,11 @@ const adminReports = {
             } else if (this.filters.leave.type === 'sakit') {
                 data = data.filter(item => item.type === 'izin' && item.typeLabel.toLowerCase().includes('sakit'));
             }
-            console.log('After type filter, count:', data.length);
         }
         
         // Filter status
         if (this.filters.leave.status && this.filters.leave.status !== '') {
-            console.log('Filtering by status:', this.filters.leave.status);
             data = data.filter(item => item.status === this.filters.leave.status);
-            console.log('After status filter, count:', data.length);
         }
         
         return data;
@@ -348,7 +329,7 @@ const adminReports = {
         if (!tbody) return;
         const data = this.getFilteredAttendance();
         if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px;">Tidak ada数据</div></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px;">Tidak ada data</div></tr>';
             return;
         }
         tbody.innerHTML = data.map(row => `
@@ -382,9 +363,9 @@ const adminReports = {
         if (!tbody) return;
         const data = this.getFilteredJurnal();
         if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:40px;">Tidak ada数据 jurnal untuk periode ini</div></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:40px;">Tidak ada data jurnal untuk periode ini</div><tr>';
             const mobile = document.getElementById('jurnal-mobile-cards');
-            if (mobile) mobile.innerHTML = '<div class="empty-state">Tidak ada数据 jurnal</div>';
+            if (mobile) mobile.innerHTML = '<div class="empty-state">Tidak ada data jurnal</div>';
             return;
         }
         tbody.innerHTML = data.map(row => `
@@ -419,25 +400,22 @@ const adminReports = {
         }
     },
 
-    // ========== RENDER LEAVE REPORTS WITH CONDITIONAL BUTTONS ==========
     renderLeaveReports() {
         const tbody = document.getElementById('leave-reports-body');
         if (!tbody) return;
         const data = this.getFilteredLeave();
         const statusLabels = { pending: 'Menunggu', approved: 'Disetujui', rejected: 'Ditolak' };
         if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:40px;">Tidak ada data cuti/izin untuk periode/filter yang dipilih</div></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:40px;">Tidak ada data cuti/izin untuk filter yang dipilih</div></tr>';
             const mobile = document.getElementById('leave-mobile-cards');
-            if (mobile) mobile.innerHTML = '<div class="empty-state">Tidak ada数据</div>';
+            if (mobile) mobile.innerHTML = '<div class="empty-state">Tidak ada data</div>';
             return;
         }
         tbody.innerHTML = data.map(item => {
-            // Tombol approve dan reject hanya jika status pending
             const approveRejectButtons = item.status === 'pending' ? `
                 <button class="btn-action approve" style="background:rgba(16,185,129,0.1);color:#10B981;" onclick="adminReports.approveLeaveItem('${item.type}', ${item.id})" title="Setujui"><i class="fas fa-check"></i></button>
                 <button class="btn-action reject" style="background:rgba(239,68,68,0.1);color:#EF4444;" onclick="adminReports.rejectLeaveItem('${item.type}', ${item.id})" title="Tolak"><i class="fas fa-times"></i></button>
             ` : '';
-            // Tombol delete selalu muncul
             const deleteButton = `
                 <button class="btn-action delete" style="background:rgba(239,68,68,0.1);color:#EF4444;" onclick="adminReports.deleteLeaveItem('${item.type}', ${item.id})" title="Hapus"><i class="fas fa-trash"></i></button>
             `;
@@ -496,7 +474,6 @@ const adminReports = {
     viewAttendanceDetail(name) {
         const emp = this.rawEmployees.find(e => e.name === name);
         if (!emp) { toast.error('Karyawan tidak ditemukan'); return; }
-        
         let selectedMonth = this.filters.attendance.month;
         if (!selectedMonth) {
             const today = new Date();
@@ -507,7 +484,6 @@ const adminReports = {
         const attendanceRecords = this.rawAttendance.filter(a => String(a.userId) === String(emp.id) && a.date && a.date.startsWith(selectedMonth));
         const recordsMap = {};
         attendanceRecords.forEach(rec => { recordsMap[rec.date] = rec; });
-        
         let tableRows = '';
         for (let d = 1; d <= daysInMonth; d++) {
             const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -521,82 +497,46 @@ const adminReports = {
             }
             tableRows += `<tr><td>${d}</td><td>${dateStr}</td><td>${rec ? rec.clockIn || '-' : '-'}</td><td>${rec ? rec.clockOut || '-' : '-'}</td><td>${statusHtml}</td></tr>`;
         }
-        
         const formattedMonth = `${month}-${year}`;
-        const modalContent = `
-            <div style="max-height: 60vh; overflow-y: auto;">
-                <h4>Riwayat Absensi ${emp.name} - Bulan ${formattedMonth}</h4>
-                <table class="history-table" style="width:100%; font-size:12px; border-collapse:collapse;">
-                    <thead><tr><th>Tanggal</th><th>Clock In</th><th>Clock Out</th><th>Status</th></tr></thead>
-                    <tbody>${tableRows}</tbody>
-                </table>
-            </div>
-        `;
+        const modalContent = `<div style="max-height:60vh;overflow-y:auto;"><h4>Riwayat Absensi ${emp.name} - Bulan ${formattedMonth}</h4><table class="history-table"><thead><tr><th>Tanggal</th><th>Clock In</th><th>Clock Out</th><th>Status</th></tr></thead><tbody>${tableRows}</tbody></table></div>`;
         this._showModal(`Detail Absensi: ${emp.name}`, modalContent);
     },
-    
+
     viewJurnalDetail(name, date) {
         const jurnal = this.jurnalData.find(j => j.name === name && j.date === date);
         if (!jurnal) { toast.error('Jurnal tidak ditemukan'); return; }
-        const photoHtml = jurnal.photo ? `<div style="margin-top:12px;"><img src="${jurnal.photo}" style="max-width:100%; max-height:200px; border-radius:8px; cursor:pointer;" onclick="window.open('${jurnal.photo}','_blank')"></div>` : '';
-        const content = `
-            <div style="max-height:60vh; overflow-y:auto;">
-                <p><strong>Nama:</strong> ${this.escapeHtml(jurnal.name)}</p>
-                <p><strong>Departemen:</strong> ${this.escapeHtml(jurnal.department)}</p>
-                <p><strong>Tanggal:</strong> ${date ? dateTime.formatDate(new Date(date), 'long') : 'Tidak ada tanggal'}</p>
-                <hr>
-                <p><strong>Tugas yang dikerjakan:</strong><br>${(jurnal.tasks || '-').replace(/\n/g, '<br>')}</p>
-                <p><strong>Pencapaian:</strong><br>${(jurnal.achievements || '-').replace(/\n/g, '<br>')}</p>
-                <p><strong>Kendala:</strong><br>${(jurnal.obstacles || '-').replace(/\n/g, '<br>')}</p>
-                <p><strong>Rencana besok:</strong><br>${(jurnal.plan || '-').replace(/\n/g, '<br>')}</p>
-                ${photoHtml}
-            </div>
-        `;
+        const photoHtml = jurnal.photo ? `<div style="margin-top:12px;"><img src="${jurnal.photo}" style="max-width:100%;max-height:200px;border-radius:8px;cursor:pointer;" onclick="window.open('${jurnal.photo}','_blank')"></div>` : '';
+        const content = `<div style="max-height:60vh;overflow-y:auto;"><p><strong>Nama:</strong> ${this.escapeHtml(jurnal.name)}</p><p><strong>Departemen:</strong> ${this.escapeHtml(jurnal.department)}</p><p><strong>Tanggal:</strong> ${date ? dateTime.formatDate(new Date(date), 'long') : 'Tidak ada tanggal'}</p><hr><p><strong>Tugas:</strong><br>${(jurnal.tasks || '-').replace(/\n/g, '<br>')}</p><p><strong>Pencapaian:</strong><br>${(jurnal.achievements || '-').replace(/\n/g, '<br>')}</p><p><strong>Kendala:</strong><br>${(jurnal.obstacles || '-').replace(/\n/g, '<br>')}</p><p><strong>Rencana:</strong><br>${(jurnal.plan || '-').replace(/\n/g, '<br>')}</p>${photoHtml}</div>`;
         this._showModal('Detail Jurnal', content);
     },
-    
+
     viewLeaveDetail(name, type, id) {
         let item;
         if (type === 'cuti') item = this.rawLeaves.find(l => l.id == id);
         else item = this.rawIzin.find(i => i.id == id);
         if (!item) { toast.error('Data tidak ditemukan'); return; }
-        const content = `
-            <div style="max-height:60vh; overflow-y:auto;">
-                <p><strong>Karyawan:</strong> ${this.escapeHtml(name)}</p>
-                <p><strong>Jenis:</strong> ${type === 'cuti' ? 'Cuti' : 'Izin'}</p>
-                <p><strong>Tanggal:</strong> ${item.startDate ? `${item.startDate} - ${item.endDate}` : item.date}</p>
-                <p><strong>Durasi:</strong> ${item.duration} hari</p>
-                <p><strong>Alasan:</strong><br>${item.reason}</p>
-                ${item.verificationPhoto ? `<p><strong>Foto Verifikasi:</strong><br><img src="${item.verificationPhoto}" style="max-width:100%; max-height:200px; border-radius:8px;"></p>` : ''}
-                <p><strong>Status:</strong> ${item.status === 'pending' ? 'Menunggu' : (item.status === 'approved' ? 'Disetujui' : 'Ditolak')}</p>
-            </div>
-        `;
+        const content = `<div style="max-height:60vh;overflow-y:auto;"><p><strong>Karyawan:</strong> ${this.escapeHtml(name)}</p><p><strong>Jenis:</strong> ${type === 'cuti' ? 'Cuti' : 'Izin'}</p><p><strong>Tanggal:</strong> ${item.startDate ? `${item.startDate} - ${item.endDate}` : item.date}</p><p><strong>Durasi:</strong> ${item.duration} hari</p><p><strong>Alasan:</strong><br>${item.reason}</p>${item.verificationPhoto ? `<p><strong>Foto Verifikasi:</strong><br><img src="${item.verificationPhoto}" style="max-width:100%;max-height:200px;border-radius:8px;"></p>` : ''}<p><strong>Status:</strong> ${item.status === 'pending' ? 'Menunggu' : (item.status === 'approved' ? 'Disetujui' : 'Ditolak')}</p></div>`;
         this._showModal('Detail Pengajuan', content);
     },
-    
+
     viewPhoto(photoUrl) {
         if (window.modal && typeof window.modal.show === 'function') {
-            window.modal.show('Foto', `<img src="${photoUrl}" style="max-width:100%; max-height:70vh;">`, [{ label: 'Tutup', class: 'btn-secondary', onClick: () => window.modal.close() }]);
+            window.modal.show('Foto', `<img src="${photoUrl}" style="max-width:100%;max-height:70vh;">`, [{ label: 'Tutup', class: 'btn-secondary', onClick: () => window.modal.close() }]);
         } else {
             window.open(photoUrl, '_blank');
         }
     },
-    
+
     _showModal(title, content) {
         if (window.modal && typeof window.modal.show === 'function') {
             window.modal.show(title, content, [{ label: 'Tutup', class: 'btn-secondary', onClick: () => window.modal.close() }]);
         } else {
             const win = window.open('', '_blank', 'width=800,height=600');
-            win.document.write(`
-                <html><head><title>${title}</title></head><body style="font-family:Arial;padding:20px;">
-                ${content}
-                <button onclick="window.close()">Tutup</button>
-                </body></html>
-            `);
+            win.document.write(`<html><head><title>${title}</title></head><body style="font-family:Arial;padding:20px;">${content}<button onclick="window.close()">Tutup</button></body></html>`);
             win.document.close();
         }
     },
-    
+
     async approveLeaveItem(type, id) {
         if (!auth.isAdmin()) return;
         try {
@@ -626,13 +566,8 @@ const adminReports = {
     },
 
     async deleteJournalItem(journalId) {
-        if (!auth.isAdmin()) {
-            toast.error('Akses ditolak');
-            return;
-        }
-        if (!confirm('Yakin ingin menghapus jurnal ini? Tindakan ini tidak dapat dibatalkan.')) {
-            return;
-        }
+        if (!auth.isAdmin()) { toast.error('Akses ditolak'); return; }
+        if (!confirm('Yakin ingin menghapus jurnal ini?')) return;
         try {
             const result = await api.deleteJournal(journalId);
             if (result && result.success) {
@@ -642,27 +577,16 @@ const adminReports = {
             } else {
                 toast.error(result?.error || 'Gagal menghapus jurnal');
             }
-        } catch (error) {
-            console.error('Delete journal error:', error);
-            toast.error('Terjadi kesalahan saat menghapus');
-        }
+        } catch (error) { toast.error('Terjadi kesalahan saat menghapus'); }
     },
 
     async deleteLeaveItem(type, id) {
-        if (!auth.isAdmin()) {
-            toast.error('Akses ditolak');
-            return;
-        }
-        if (!confirm(`Yakin ingin menghapus pengajuan ${type === 'cuti' ? 'cuti' : 'izin'} ini? Tindakan ini tidak dapat dibatalkan.`)) {
-            return;
-        }
+        if (!auth.isAdmin()) { toast.error('Akses ditolak'); return; }
+        if (!confirm(`Yakin ingin menghapus pengajuan ${type === 'cuti' ? 'cuti' : 'izin'} ini?`)) return;
         try {
             let result;
-            if (type === 'cuti') {
-                result = await api.deleteLeave(id);
-            } else {
-                result = await api.deleteIzin(id);
-            }
+            if (type === 'cuti') result = await api.deleteLeave(id);
+            else result = await api.deleteIzin(id);
             if (result && result.success) {
                 toast.success('Pengajuan berhasil dihapus');
                 await this.loadData();
@@ -670,12 +594,9 @@ const adminReports = {
             } else {
                 toast.error(result?.error || 'Gagal menghapus pengajuan');
             }
-        } catch (error) {
-            console.error('Delete leave/izin error:', error);
-            toast.error('Terjadi kesalahan saat menghapus');
-        }
+        } catch (error) { toast.error('Terjadi kesalahan saat menghapus'); }
     },
-    
+
     exportToExcel(type) {
         let data = [], filename = '';
         switch (type) {
@@ -702,7 +623,7 @@ const adminReports = {
         URL.revokeObjectURL(url);
     },
     printReport(type) { window.print(); },
-    
+
     escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, function(m) {
