@@ -102,7 +102,10 @@ const api = {
     },
     async getAllJournals() {
         if (!API_BASE_URL) return { success: true, data: storage.get('jurnals', []) };
-        return this.request('getAllJournals');
+        console.log('Calling getAllJournals API');
+        const result = await this.request('getAllJournals');
+        console.log('getAllJournals response:', result);
+        return result;
     },
     async deleteJournal(id) {
         if (!API_BASE_URL) {
