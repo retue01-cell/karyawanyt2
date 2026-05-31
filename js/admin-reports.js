@@ -2,7 +2,7 @@
  * Portal Karyawan - Admin Reports
  * Reports and exports for admin with FULL DETAIL functionality
  * 
- * Disesuaikan untuk menggunakan kolom 'date' di sheet Journals.
+ * Fitur: Tombol Delete pada Rekap Jurnal (admin)
  */
 
 const adminReports = {
@@ -84,14 +84,10 @@ const adminReports = {
 
         this.jurnalData = this.rawJournals.map(j => {
             const emp = empMap[String(j.userId)] || { name: 'Unknown', department: '-' };
-            // Gunakan field 'date' yang sudah ada di sheet
             let journalDate = j.date;
-            if (!journalDate) {
-                // Fallback jika date kosong (tidak seharusnya terjadi)
-                if (j.updatedAt) journalDate = j.updatedAt.split('T')[0];
-                else if (j.createdAt) journalDate = j.createdAt.split('T')[0];
-                else journalDate = '';
-            }
+            if (!journalDate && j.updatedAt) journalDate = j.updatedAt.split('T')[0];
+            if (!journalDate && j.createdAt) journalDate = j.createdAt.split('T')[0];
+            if (!journalDate) journalDate = '';
             return {
                 id: j.id,
                 userId: j.userId,
@@ -107,10 +103,9 @@ const adminReports = {
                 updatedAt: j.updatedAt
             };
         });
-        // Urutkan berdasarkan tanggal terbaru
         this.jurnalData.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
-        // Build leave/izin combined (sama seperti sebelumnya)
+        // Build leave/izin combined
         this.leaveData = [];
         this.rawLeaves.forEach(l => {
             const emp = this.rawEmployees.find(e => String(e.id) === String(l.userId));
@@ -201,26 +196,11 @@ const adminReports = {
         const btnPrint = document.getElementById('btn-print-jurnal');
         if (btnPrint) btnPrint.onclick = () => this.printReport('jurnal');
         const month = document.getElementById('jurnal-month');
-        if (month) {
-            month.onchange = (e) => {
-                this.filters.jurnal.month = e.target.value;
-                this.renderJurnalReports();
-            };
-        }
+        if (month) month.onchange = (e) => { this.filters.jurnal.month = e.target.value; this.renderJurnalReports(); };
         const emp = document.getElementById('jurnal-employee-filter');
-        if (emp) {
-            emp.onchange = (e) => {
-                this.filters.jurnal.employee = e.target.value;
-                this.renderJurnalReports();
-            };
-        }
+        if (emp) emp.onchange = (e) => { this.filters.jurnal.employee = e.target.value; this.renderJurnalReports(); };
         const status = document.getElementById('jurnal-status-filter');
-        if (status) {
-            status.onchange = (e) => {
-                this.filters.jurnal.status = e.target.value;
-                this.renderJurnalReports();
-            };
-        }
+        if (status) status.onchange = (e) => { this.filters.jurnal.status = e.target.value; this.renderJurnalReports(); };
     },
     bindLeaveEvents() {
         const btnExport = document.getElementById('btn-export-leave');
@@ -257,18 +237,9 @@ const adminReports = {
 
     getFilteredJurnal() {
         let data = [...this.jurnalData];
-        // Filter bulan (periode) - gunakan field 'date'
-        if (this.filters.jurnal.month) {
-            data = data.filter(j => j.date && j.date.startsWith(this.filters.jurnal.month));
-        }
-        // Filter karyawan
-        if (this.filters.jurnal.employee) {
-            data = data.filter(j => j.name === this.filters.jurnal.employee);
-        }
-        // Filter status
-        if (this.filters.jurnal.status) {
-            data = data.filter(j => j.status === this.filters.jurnal.status);
-        }
+        if (this.filters.jurnal.month) data = data.filter(j => j.date && j.date.startsWith(this.filters.jurnal.month));
+        if (this.filters.jurnal.employee) data = data.filter(j => j.name === this.filters.jurnal.employee);
+        if (this.filters.jurnal.status) data = data.filter(j => j.status === this.filters.jurnal.status);
         return data;
     },
 
@@ -292,10 +263,6 @@ const adminReports = {
         const tbody = document.getElementById('attendance-reports-body');
         if (!tbody) return;
         const data = this.getFilteredAttendance();
-        if (data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:40px;">Tidak ada data absensi untuk periode ini</td></tr>`;
-            return;
-        }
         tbody.innerHTML = data.map(row => `
             <tr>
                 <td><div class="employee-info"><div class="employee-details"><span class="employee-name">${this.escapeHtml(row.name)}</span></div></div></td>
@@ -327,7 +294,7 @@ const adminReports = {
         if (!tbody) return;
         const data = this.getFilteredJurnal();
         if (data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:40px;">Tidak ada data jurnal untuk periode ini</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:40px;">Tidak ada data jurnal untuk periode ini</td></tr>`;
             const mobile = document.getElementById('jurnal-mobile-cards');
             if (mobile) mobile.innerHTML = '<div class="empty-state">Tidak ada data jurnal</div>';
             return;
@@ -340,7 +307,10 @@ const adminReports = {
                 <td>${(row.tasks || '-').substring(0, 40)}${(row.tasks || '').length > 40 ? '...' : ''}</div></td>
                 <td>${row.photo ? `<img src="${row.photo}" class="jurnal-thumbnail" onclick="adminReports.viewPhoto('${row.photo}')" style="width:40px;height:40px;object-fit:cover;border-radius:6px;cursor:pointer;">` : '-'}</div></td>
                 <td><span class="status-badge ${row.status}">${row.status === 'filled' ? 'Terisi' : 'Kosong'}</span></div></td>
-                <td><button class="btn-action view" onclick="adminReports.viewJurnalDetail('${this.escapeHtml(row.name)}', '${row.date}')"><i class="fas fa-eye"></i></button></div></td>
+                <td>
+                    <button class="btn-action view" onclick="adminReports.viewJurnalDetail('${this.escapeHtml(row.name)}', '${row.date}')" title="Lihat"><i class="fas fa-eye"></i></button>
+                    <button class="btn-action delete" onclick="adminReports.deleteJournalItem('${row.id}')" title="Hapus" style="background:rgba(239,68,68,0.1);color:#EF4444;"><i class="fas fa-trash"></i></button>
+                 </div></td>
             </tr>
         `).join('');
 
@@ -353,7 +323,10 @@ const adminReports = {
                     <div class="mobile-card-row"><span>Tanggal:</span><span>${row.date}</span></div>
                     <div class="mobile-card-row"><span>Departemen:</span><span>${row.department}</span></div>
                     <div class="mobile-card-row"><span>Tugas:</span><span>${(row.tasks || '-').substring(0, 50)}</span></div>
-                    <button class="btn-primary btn-sm" style="margin-top:8px;" onclick="adminReports.viewJurnalDetail('${this.escapeHtml(row.name)}', '${row.date}')">Lihat Detail</button>
+                    <div style="display:flex; gap:8px; margin-top:8px;">
+                        <button class="btn-primary btn-sm" onclick="adminReports.viewJurnalDetail('${this.escapeHtml(row.name)}', '${row.date}')">Lihat</button>
+                        <button class="btn-sm" style="background:#EF4444;color:white;" onclick="adminReports.deleteJournalItem('${row.id}')">Hapus</button>
+                    </div>
                 </div>
             `).join('');
         }
@@ -444,7 +417,7 @@ const adminReports = {
             <div style="max-height: 60vh; overflow-y: auto;">
                 <h4>Riwayat Absensi ${emp.name} - Bulan ${formattedMonth}</h4>
                 <table class="history-table" style="width:100%; font-size:12px; border-collapse:collapse;">
-                    <thead><tr><th>Tanggal</th><th>Clock In</th><th>Clock Out</th><th>Status</th></table></thead>
+                    <thead><tr><th>Tanggal</th><th>Clock In</th><th>Clock Out</th><th>Status</th></tr></thead>
                     <tbody>${tableRows}</tbody>
                 </table>
             </div>
@@ -496,6 +469,31 @@ const adminReports = {
             window.modal.show('Foto', `<img src="${photoUrl}" style="max-width:100%; max-height:70vh;">`, [{ label: 'Tutup', class: 'btn-secondary', onClick: () => window.modal.close() }]);
         } else {
             window.open(photoUrl, '_blank');
+        }
+    },
+
+    // ========== DELETE JOURNAL (ADMIN) ==========
+    async deleteJournalItem(journalId) {
+        if (!auth.isAdmin()) {
+            toast.error('Akses ditolak');
+            return;
+        }
+        if (!confirm('Yakin ingin menghapus jurnal ini? Tindakan ini tidak dapat dibatalkan.')) {
+            return;
+        }
+        try {
+            const result = await api.deleteJournal(journalId);
+            if (result && result.success) {
+                toast.success('Jurnal berhasil dihapus');
+                // Refresh data dan render ulang
+                await this.loadData();
+                this.renderJurnalReports();
+            } else {
+                toast.error(result?.error || 'Gagal menghapus jurnal');
+            }
+        } catch (error) {
+            console.error('Delete journal error:', error);
+            toast.error('Terjadi kesalahan saat menghapus');
         }
     },
     
