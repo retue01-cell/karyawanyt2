@@ -1,6 +1,6 @@
 /**
  * Portal Karyawan - Admin Employees
- * Employee management for admin
+ * Employee management for admin (with Edit functionality)
  */
 
 const adminEmployees = {
@@ -12,6 +12,7 @@ const adminEmployees = {
         department: '',
         status: ''
     },
+    currentEditId: null, // untuk menyimpan ID karyawan yang sedang diedit
 
     async init() {
         if (!auth.isAdmin()) {
@@ -80,44 +81,58 @@ const adminEmployees = {
             addBtn.addEventListener('click', () => this.showAddModal());
         }
 
-        // Close modal
+        // Close modal (add)
         const closeBtn = document.getElementById('btn-close-modal');
         const cancelBtn = document.getElementById('btn-cancel-add');
         const modal = document.getElementById('modal-add-employee');
 
         if (closeBtn) closeBtn.addEventListener('click', () => this.hideAddModal());
         if (cancelBtn) cancelBtn.addEventListener('click', () => this.hideAddModal());
-
-        // Close modal when clicking overlay
         if (modal) {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) this.hideAddModal();
             });
         }
 
-        // Form submit
+        // Form submit (add)
         const form = document.getElementById('form-add-employee');
         if (form) {
             form.addEventListener('submit', (e) => this.handleAddEmployee(e));
         }
 
-        // Set default date
+        // Set default date for add modal
         const joinDateInput = document.getElementById('emp-join-date');
         if (joinDateInput) {
             joinDateInput.valueAsDate = new Date();
         }
+
+        // ========== EDIT MODAL EVENTS ==========
+        const editModal = document.getElementById('modal-edit-employee');
+        const closeEditBtn = document.getElementById('btn-close-edit-modal');
+        const cancelEditBtn = document.getElementById('btn-cancel-edit');
+        const editForm = document.getElementById('form-edit-employee');
+
+        if (closeEditBtn) closeEditBtn.addEventListener('click', () => this.hideEditModal());
+        if (cancelEditBtn) cancelEditBtn.addEventListener('click', () => this.hideEditModal());
+        if (editModal) {
+            editModal.addEventListener('click', (e) => {
+                if (e.target === editModal) this.hideEditModal();
+            });
+        }
+        if (editForm) {
+            editForm.addEventListener('submit', (e) => this.handleEditEmployee(e));
+        }
     },
 
+    // ========== FILTER & PAGINATION ==========
     getFilteredEmployees() {
         return this.employees.filter(emp => {
             const matchesSearch = !this.filters.search ||
                 emp.name.toLowerCase().includes(this.filters.search) ||
                 emp.email.toLowerCase().includes(this.filters.search) ||
                 emp.position.toLowerCase().includes(this.filters.search);
-
             const matchesDept = !this.filters.department || emp.department === this.filters.department;
             const matchesStatus = !this.filters.status || emp.status === this.filters.status;
-
             return matchesSearch && matchesDept && matchesStatus;
         });
     },
@@ -131,13 +146,7 @@ const adminEmployees = {
         const paginated = filtered.slice(start, start + this.perPage);
 
         if (paginated.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="7" style="text-align: center; padding: var(--spacing-xl);">
-                        Tidak ada data karyawan
-                    </td>
-                </tr>
-            `;
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: var(--spacing-xl);">Tidak ada data karyawan</td></tr>`;
             return;
         }
 
@@ -158,11 +167,7 @@ const adminEmployees = {
                 <td>${emp.department}</td>
                 <td>${emp.position}</td>
                 <td>${emp.shift}</td>
-                <td>
-                    <span class="status-badge ${emp.status}">
-                        ${this.getStatusLabel(emp.status)}
-                    </span>
-                </td>
+                <td><span class="status-badge ${emp.status}">${this.getStatusLabel(emp.status)}</span></td>
                 <td>
                     <button class="btn-action view" onclick="adminEmployees.viewEmployee(${emp.id})" title="Lihat">
                         <i class="fas fa-eye"></i>
@@ -233,29 +238,14 @@ const adminEmployees = {
     updatePagination(totalItems) {
         const totalPages = Math.ceil(totalItems / this.perPage);
         const paginationButtons = document.querySelector('.pagination-buttons');
-
         if (paginationButtons) {
-            let buttonsHtml = `
-                <button class="btn-page" ${this.currentPage === 1 ? 'disabled' : ''} onclick="adminEmployees.goToPage(${this.currentPage - 1})">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-            `;
-
+            let buttonsHtml = `<button class="btn-page" ${this.currentPage === 1 ? 'disabled' : ''} onclick="adminEmployees.goToPage(${this.currentPage - 1})"><i class="fas fa-chevron-left"></i></button>`;
             for (let i = 1; i <= totalPages; i++) {
-                buttonsHtml += `
-                    <button class="btn-page ${i === this.currentPage ? 'active' : ''}" onclick="adminEmployees.goToPage(${i})">${i}</button>
-                `;
+                buttonsHtml += `<button class="btn-page ${i === this.currentPage ? 'active' : ''}" onclick="adminEmployees.goToPage(${i})">${i}</button>`;
             }
-
-            buttonsHtml += `
-                <button class="btn-page" ${this.currentPage === totalPages ? 'disabled' : ''} onclick="adminEmployees.goToPage(${this.currentPage + 1})">
-                    <i class="fas fa-chevron-right"></i>
-                </button>
-            `;
-
+            buttonsHtml += `<button class="btn-page" ${this.currentPage === totalPages ? 'disabled' : ''} onclick="adminEmployees.goToPage(${this.currentPage + 1})"><i class="fas fa-chevron-right"></i></button>`;
             paginationButtons.innerHTML = buttonsHtml;
         }
-
         this.updatePaginationInfo();
     },
 
@@ -264,7 +254,6 @@ const adminEmployees = {
         const start = (this.currentPage - 1) * this.perPage + 1;
         const end = Math.min(start + this.perPage - 1, filtered.length);
         const info = document.querySelector('.pagination-info');
-
         if (info) {
             info.textContent = `Menampilkan ${filtered.length > 0 ? start : 0}-${end} dari ${filtered.length} karyawan`;
         }
@@ -273,7 +262,6 @@ const adminEmployees = {
     goToPage(page) {
         const filtered = this.getFilteredEmployees();
         const totalPages = Math.ceil(filtered.length / this.perPage);
-
         if (page >= 1 && page <= totalPages) {
             this.currentPage = page;
             this.renderTable();
@@ -282,14 +270,11 @@ const adminEmployees = {
     },
 
     getStatusLabel(status) {
-        const labels = {
-            'active': 'Aktif',
-            'on-leave': 'Cuti',
-            'inactive': 'Non-Aktif'
-        };
+        const labels = { 'active': 'Aktif', 'on-leave': 'Cuti', 'inactive': 'Non-Aktif' };
         return labels[status] || status;
     },
 
+    // ========== MODAL ADD ==========
     showAddModal() {
         const modal = document.getElementById('modal-add-employee');
         if (modal) {
@@ -307,7 +292,6 @@ const adminEmployees = {
         }
         if (form) {
             form.reset();
-            // Reset date to today
             const joinDateInput = document.getElementById('emp-join-date');
             if (joinDateInput) joinDateInput.valueAsDate = new Date();
         }
@@ -315,7 +299,6 @@ const adminEmployees = {
 
     async handleAddEmployee(e) {
         e.preventDefault();
-
         const name = document.getElementById('emp-name').value;
         const email = document.getElementById('emp-email').value;
         const department = document.getElementById('emp-department').value;
@@ -324,30 +307,16 @@ const adminEmployees = {
         const status = document.getElementById('emp-status').value;
         const joinDate = document.getElementById('emp-join-date').value;
 
-        const employeeData = {
-            name,
-            email,
-            department,
-            position,
-            shift,
-            status,
-            joinDate,
-            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${this.getRandomColor()}&color=fff`
-        };
-
+        const employeeData = { name, email, department, position, shift, status, joinDate };
         try {
             const result = await api.addEmployee(employeeData);
             if (result.success) {
                 this.employees.unshift(result.data);
-
-                // Update dept filter options if new department
                 this.updateDeptFilterOptions(department);
-
                 this.hideAddModal();
                 this.renderTable();
                 this.renderMobileCards();
                 this.updatePaginationInfo();
-
                 toast.success(`Karyawan ${name} berhasil ditambahkan!`);
             } else {
                 toast.error(result.error || 'Gagal menambahkan karyawan');
@@ -359,7 +328,6 @@ const adminEmployees = {
     },
 
     updateDeptFilterOptions(newDept) {
-        // Update filter dropdown
         const deptFilter = document.getElementById('dept-filter');
         if (deptFilter) {
             const existingOptions = Array.from(deptFilter.options).map(opt => opt.value);
@@ -370,8 +338,6 @@ const adminEmployees = {
                 deptFilter.appendChild(option);
             }
         }
-
-        // Update datalist in modal
         const deptList = document.getElementById('dept-list');
         if (deptList) {
             const existingOptions = Array.from(deptList.options).map(opt => opt.value);
@@ -388,22 +354,89 @@ const adminEmployees = {
         return colors[Math.floor(Math.random() * colors.length)];
     },
 
+    // ========== VIEW DETAIL (simple alert) ==========
     viewEmployee(id) {
-        const emp = this.employees.find(e => e.id === id);
+        const emp = this.employees.find(e => e.id == id);
         if (emp) {
             alert(`Detail Karyawan:\n\nNama: ${emp.name}\nEmail: ${emp.email}\nDepartemen: ${emp.department}\nJabatan: ${emp.position}\nShift: ${emp.shift}\nStatus: ${this.getStatusLabel(emp.status)}\nBergabung: ${emp.joinDate}`);
         }
     },
 
+    // ========== EDIT EMPLOYEE ==========
     editEmployee(id) {
-        toast.info('Fitur edit karyawan akan segera hadir');
+        const emp = this.employees.find(e => e.id == id);
+        if (!emp) {
+            toast.error('Data karyawan tidak ditemukan');
+            return;
+        }
+        this.currentEditId = id;
+        // Isi form edit dengan data karyawan
+        document.getElementById('edit-emp-name').value = emp.name;
+        document.getElementById('edit-emp-email').value = emp.email;
+        document.getElementById('edit-emp-department').value = emp.department;
+        document.getElementById('edit-emp-position').value = emp.position;
+        document.getElementById('edit-emp-shift').value = emp.shift;
+        document.getElementById('edit-emp-status').value = emp.status;
+        document.getElementById('edit-emp-join-date').value = emp.joinDate || '';
+        // Tampilkan modal edit
+        const modal = document.getElementById('modal-edit-employee');
+        if (modal) {
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
     },
 
+    hideEditModal() {
+        const modal = document.getElementById('modal-edit-employee');
+        if (modal) {
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        this.currentEditId = null;
+    },
+
+    async handleEditEmployee(e) {
+        e.preventDefault();
+        if (!this.currentEditId) return;
+
+        const name = document.getElementById('edit-emp-name').value;
+        const email = document.getElementById('edit-emp-email').value;
+        const department = document.getElementById('edit-emp-department').value;
+        const position = document.getElementById('edit-emp-position').value;
+        const shift = document.getElementById('edit-emp-shift').value;
+        const status = document.getElementById('edit-emp-status').value;
+        const joinDate = document.getElementById('edit-emp-join-date').value;
+
+        const updateData = { name, email, department, position, shift, status, joinDate };
+
+        try {
+            const result = await api.updateEmployee(this.currentEditId, updateData);
+            if (result.success) {
+                // Update local array
+                const index = this.employees.findIndex(e => e.id == this.currentEditId);
+                if (index !== -1) {
+                    this.employees[index] = { ...this.employees[index], ...updateData };
+                }
+                this.hideEditModal();
+                this.renderTable();
+                this.renderMobileCards();
+                this.updatePaginationInfo();
+                toast.success(`Karyawan ${name} berhasil diperbarui!`);
+            } else {
+                toast.error(result.error || 'Gagal memperbarui karyawan');
+            }
+        } catch (error) {
+            console.error('Error updating employee:', error);
+            toast.error('Terjadi kesalahan');
+        }
+    },
+
+    // ========== DELETE EMPLOYEE ==========
     async deleteEmployee(id) {
         if (confirm('Apakah Anda yakin ingin menghapus karyawan ini?')) {
             try {
                 await api.deleteEmployee(id);
-                this.employees = this.employees.filter(e => e.id !== id);
+                this.employees = this.employees.filter(e => e.id != id);
                 this.renderTable();
                 this.renderMobileCards();
                 this.updatePaginationInfo();
@@ -421,5 +454,4 @@ window.initEmployees = () => {
     adminEmployees.init();
 };
 
-// Expose
 window.adminEmployees = adminEmployees;
