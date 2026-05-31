@@ -1,12 +1,10 @@
 /**
  * Portal Karyawan - Izin/Sakit
- * Pengajuan izin & pembatalan (hanya jika pending)
  */
 
 const izin = {
     izinData: [],
     currentFile: null,
-    verifiedData: null,
     filterStatus: '',
 
     async init() {
@@ -177,7 +175,6 @@ const izin = {
 
         list.innerHTML = sortedData.map(izin => {
             const dateFormatted = dateTime.formatDate(new Date(izin.date), 'short');
-            // Tombol hapus hanya untuk status pending
             const deleteButton = izin.status === 'pending'
                 ? `<button class="btn-icon-sm delete-btn" onclick="izin.deleteIzin(${izin.id})" title="Batalkan Pengajuan" style="background:rgba(239,68,68,0.1);color:#EF4444;"><i class="fas fa-trash"></i></button>`
                 : '';
@@ -209,14 +206,13 @@ const izin = {
         return labels[status] || status;
     },
 
-    // ========== FUNGSI HAPUS / BATALKAN (untuk karyawan) ==========
     async deleteIzin(id) {
         if (!confirm('Batalkan pengajuan izin ini? Setelah dibatalkan tidak dapat dikembalikan.')) return;
 
         try {
             const result = await api.deleteIzin(id);
             if (result.success) {
-                this.izinData = this.izinData.filter(i => i.id !== id);
+                this.izinData = this.izinData.filter(i => i.id != id);
                 this.renderIzinList();
                 this.updateStats();
                 toast.success('Pengajuan izin berhasil dibatalkan');
@@ -229,30 +225,8 @@ const izin = {
         }
     },
 
-    // Fungsi untuk admin (tetap dipertahankan)
-    async approveIzin(id) {
-        if (!auth.isAdmin()) return;
-        try {
-            await api.approveIzin(id);
-            const izin = this.izinData.find(i => i.id === id);
-            if (izin) izin.status = 'approved';
-            this.renderIzinList();
-            this.updateStats();
-            toast.success('Pengajuan izin disetujui');
-        } catch (error) { console.error(error); }
-    },
-
-    async rejectIzin(id) {
-        if (!auth.isAdmin()) return;
-        try {
-            await api.rejectIzin(id);
-            const izin = this.izinData.find(i => i.id === id);
-            if (izin) izin.status = 'rejected';
-            this.renderIzinList();
-            this.updateStats();
-            toast.info('Pengajuan izin ditolak');
-        } catch (error) { console.error(error); }
-    }
+    async approveIzin(id) { /* admin function */ },
+    async rejectIzin(id) { /* admin function */ }
 };
 
 window.initIzin = () => { izin.init(); };
