@@ -1,24 +1,16 @@
 /**
  * Portal Karyawan - API Layer
  * Abstraction layer for backend communication
- * 
- * Mode:
- * - Jika API_BASE_URL kosong → fallback ke localStorage (untuk testing lokal)
- * - Jika API_BASE_URL diisi → semua request dikirim ke Google Apps Script
- * - Khusus deleteLeave & deleteIzin selalu menggunakan localStorage (karena backend tidak support)
  */
 
-const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbzn2Z9CWJHczeoQcSgSru-MD6f3aWv0cBpZIIdDG2xa0VVWkFDeW-n4ETQfRX1FcA33OA/exec'; // Kosongkan untuk mode localStorage
+const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbzn2Z9CWJHczeoQcSgSru-MD6f3aWv0cBpZIIdDG2xa0VVWkFDeW-n4ETQfRX1FcA33OA/exec';
 
 const api = {
-
-    // ========== CORE REQUEST ==========
 
     async request(action, data = {}) {
         if (!API_BASE_URL) {
             return this._localFallback(action, data);
         }
-
         try {
             const response = await fetch(API_BASE_URL, {
                 method: 'POST',
@@ -26,7 +18,6 @@ const api = {
                 headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify({ action, ...data })
             });
-
             const text = await response.text();
             try {
                 return JSON.parse(text);
@@ -41,30 +32,20 @@ const api = {
     },
 
     // ========== AUTH ==========
-
     async login(email, password) {
-        if (!API_BASE_URL) {
-            return this._localLogin(email, password);
-        }
+        if (!API_BASE_URL) return this._localLogin(email, password);
         return this.request('login', { email, password });
     },
-
     async changePassword(userId, oldPassword, newPassword) {
-        if (!API_BASE_URL) {
-            return { success: true, data: { message: 'Password changed (local)' } };
-        }
+        if (!API_BASE_URL) return { success: true, data: { message: 'Password changed (local)' } };
         return this.request('changePassword', { userId, oldPassword, newPassword });
     },
-
     async getEmployeeProfile(userId) {
-        if (!API_BASE_URL) {
-            return { success: true, data: {} };
-        }
+        if (!API_BASE_URL) return { success: true, data: {} };
         return this.request('getEmployeeProfile', { userId });
     },
 
     // ========== ATTENDANCE ==========
-
     async getAttendance(userId) {
         if (!API_BASE_URL) {
             const all = storage.get('attendance', []);
@@ -72,7 +53,6 @@ const api = {
         }
         return this.request('getAttendance', { userId });
     },
-
     async getTodayAttendance(userId) {
         if (!API_BASE_URL) {
             const today = dateTime.getLocalDate();
@@ -88,61 +68,48 @@ const api = {
         }
         return this.request('getTodayAttendance', { userId });
     },
-
     async saveAttendance(data) {
         if (!API_BASE_URL) {
             const all = storage.get('attendance', []);
             const idx = all.findIndex(a => a.date === data.date);
-            if (idx >= 0) { all[idx] = data; } else { all.unshift(data); }
+            if (idx >= 0) all[idx] = data;
+            else all.unshift(data);
             storage.set('attendance', all);
             return { success: true, data: data };
         }
         return this.request('saveAttendance', data);
     },
-
     async getAllAttendance() {
-        if (!API_BASE_URL) {
-            return { success: true, data: storage.get('attendance', []) };
-        }
+        if (!API_BASE_URL) return { success: true, data: storage.get('attendance', []) };
         return this.request('getAllAttendance');
     },
 
     // ========== JOURNALS ==========
-
     async getJournals(userId) {
-        if (!API_BASE_URL) {
-            return { success: true, data: storage.get('jurnals', []) };
-        }
+        if (!API_BASE_URL) return { success: true, data: storage.get('jurnals', []) };
         return this.request('getJournals', { userId });
     },
-
     async saveJournal(data) {
         if (!API_BASE_URL) {
             const all = storage.get('jurnals', []);
             const idx = all.findIndex(j => j.date === data.date);
-            if (idx >= 0) { all[idx] = data; } else { all.unshift(data); }
+            if (idx >= 0) all[idx] = data;
+            else all.unshift(data);
             storage.set('jurnals', all);
             return { success: true, data: data };
         }
         return this.request('saveJournal', data);
     },
-
     async getAllJournals() {
-        if (!API_BASE_URL) {
-            return { success: true, data: storage.get('jurnals', []) };
-        }
+        if (!API_BASE_URL) return { success: true, data: storage.get('jurnals', []) };
         return this.request('getAllJournals');
     },
 
     // ========== LEAVES (CUTI) ==========
-
     async getLeaves(userId) {
-        if (!API_BASE_URL) {
-            return { success: true, data: storage.get('leaves', []) };
-        }
+        if (!API_BASE_URL) return { success: true, data: storage.get('leaves', []) };
         return this.request('getLeaves', { userId });
     },
-
     async submitLeave(data) {
         if (!API_BASE_URL) {
             const all = storage.get('leaves', []);
@@ -155,43 +122,34 @@ const api = {
         }
         return this.request('submitLeave', data);
     },
-
     async approveLeave(id) {
         if (!API_BASE_URL) {
             const all = storage.get('leaves', []);
-            const leave = all.find(l => l.id === id);
+            const leave = all.find(l => l.id == id);
             if (leave) { leave.status = 'approved'; storage.set('leaves', all); }
             return { success: true, data: leave };
         }
         return this.request('approveLeave', { id });
     },
-
     async rejectLeave(id) {
         if (!API_BASE_URL) {
             const all = storage.get('leaves', []);
-            const leave = all.find(l => l.id === id);
+            const leave = all.find(l => l.id == id);
             if (leave) { leave.status = 'rejected'; storage.set('leaves', all); }
             return { success: true, data: leave };
         }
         return this.request('rejectLeave', { id });
     },
-
     async getAllLeaves() {
-        if (!API_BASE_URL) {
-            return { success: true, data: storage.get('leaves', []) };
-        }
+        if (!API_BASE_URL) return { success: true, data: storage.get('leaves', []) };
         return this.request('getAllLeaves');
     },
 
     // ========== IZIN / PERMISSION ==========
-
     async getIzin(userId) {
-        if (!API_BASE_URL) {
-            return { success: true, data: storage.get('izin', []) };
-        }
+        if (!API_BASE_URL) return { success: true, data: storage.get('izin', []) };
         return this.request('getIzin', { userId });
     },
-
     async submitIzin(data) {
         if (!API_BASE_URL) {
             const all = storage.get('izin', []);
@@ -204,74 +162,59 @@ const api = {
         }
         return this.request('submitIzin', data);
     },
-
     async approveIzin(id) {
         if (!API_BASE_URL) {
             const all = storage.get('izin', []);
-            const item = all.find(i => i.id === id);
+            const item = all.find(i => i.id == id);
             if (item) { item.status = 'approved'; storage.set('izin', all); }
             return { success: true, data: item };
         }
         return this.request('approveIzin', { id });
     },
-
     async rejectIzin(id) {
         if (!API_BASE_URL) {
             const all = storage.get('izin', []);
-            const item = all.find(i => i.id === id);
+            const item = all.find(i => i.id == id);
             if (item) { item.status = 'rejected'; storage.set('izin', all); }
             return { success: true, data: item };
         }
         return this.request('rejectIzin', { id });
     },
-
     async getAllIzin() {
-        if (!API_BASE_URL) {
-            return { success: true, data: storage.get('izin', []) };
-        }
+        if (!API_BASE_URL) return { success: true, data: storage.get('izin', []) };
         return this.request('getAllIzin');
     },
 
     // ========== EMPLOYEES ==========
-
     async getEmployees() {
-        if (!API_BASE_URL) {
-            return { success: true, data: storage.get('admin_employees', []) };
-        }
+        if (!API_BASE_URL) return { success: true, data: storage.get('admin_employees', []) };
         return this.request('getEmployees');
     },
-
     async addEmployee(data) {
         if (!API_BASE_URL) {
             const all = storage.get('admin_employees', []);
-            if (all.some(e => e.email === data.email)) {
-                return { success: false, error: 'Email sudah terdaftar' };
-            }
+            if (all.some(e => e.email === data.email)) return { success: false, error: 'Email sudah terdaftar' };
             data.id = Date.now();
-            if (!data.avatar) {
-                data.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=F59E0B&color=fff`;
-            }
+            if (!data.avatar) data.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=F59E0B&color=fff`;
             all.unshift(data);
             storage.set('admin_employees', all);
             return { success: true, data: data };
         }
         return this.request('addEmployee', data);
     },
-
     async updateEmployee(id, data) {
         if (!API_BASE_URL) {
             const all = storage.get('admin_employees', []);
-            const idx = all.findIndex(e => e.id === id);
+            const idx = all.findIndex(e => e.id == id);
             if (idx >= 0) { Object.assign(all[idx], data); storage.set('admin_employees', all); }
             return { success: true, data: all[idx] };
         }
         return this.request('updateEmployee', { id, ...data });
     },
-
     async deleteEmployee(id) {
         if (!API_BASE_URL) {
             let all = storage.get('admin_employees', []);
-            all = all.filter(e => e.id !== id);
+            all = all.filter(e => e.id != id);
             storage.set('admin_employees', all);
             return { success: true, data: { id } };
         }
@@ -279,18 +222,13 @@ const api = {
     },
 
     // ========== SETTINGS ==========
-
     async getSettings() {
         if (!API_BASE_URL) {
             const company = storage.get('company', { name: 'Portal Karyawan', logo: '' });
-            return {
-                success: true,
-                data: { company_name: company.name, company_logo: company.logo }
-            };
+            return { success: true, data: { company_name: company.name, company_logo: company.logo } };
         }
         return this.request('getSettings');
     },
-
     async saveSetting(key, value) {
         if (!API_BASE_URL) {
             if (key === 'company_name' || key === 'company_logo') {
@@ -305,14 +243,10 @@ const api = {
     },
 
     // ========== SHIFTS ==========
-
     async getShifts() {
-        if (!API_BASE_URL) {
-            return { success: true, data: storage.get('shifts', []) };
-        }
+        if (!API_BASE_URL) return { success: true, data: storage.get('shifts', []) };
         return this.request('getShifts');
     },
-
     async addShift(data) {
         if (!API_BASE_URL) {
             const all = storage.get('shifts', []);
@@ -323,21 +257,19 @@ const api = {
         }
         return this.request('addShift', data);
     },
-
     async updateShift(id, data) {
         if (!API_BASE_URL) {
             const all = storage.get('shifts', []);
-            const idx = all.findIndex(s => s.id === id || s.id === Number(id));
+            const idx = all.findIndex(s => s.id == id);
             if (idx >= 0) { Object.assign(all[idx], data); storage.set('shifts', all); }
             return { success: true, data: all[idx] };
         }
         return this.request('updateShift', { id, ...data });
     },
-
     async deleteShift(id) {
         if (!API_BASE_URL) {
             let all = storage.get('shifts', []);
-            all = all.filter(s => s.id !== id && s.id !== Number(id));
+            all = all.filter(s => s.id != id);
             storage.set('shifts', all);
             return { success: true, data: { id } };
         }
@@ -345,7 +277,6 @@ const api = {
     },
 
     // ========== SCHEDULE ==========
-
     async getSchedule(month, year) {
         if (!API_BASE_URL) {
             const key = `schedule_${year}_${month}`;
@@ -353,7 +284,6 @@ const api = {
         }
         return this.request('getSchedule', { month, year });
     },
-
     async saveSchedule(data) {
         if (!API_BASE_URL) {
             const key = `schedule_${data.year}_${data.month}`;
@@ -363,50 +293,52 @@ const api = {
         return this.request('saveSchedule', data);
     },
 
-    // ========== LOCAL AUTH FALLBACK ==========
-
+    // ========== LOCAL FALLBACK ==========
     _localLogin(email, password) {
         return { success: true, data: null };
     },
-
     _localFallback(action, data) {
         console.warn(`API Fallback: ${action} - using localStorage`);
         return { success: false, error: 'No fallback for action: ' + action };
     },
 
-    // ========== DELETE METHODS (khusus untuk cuti/izin, selalu pakai localStorage) ==========
+    // ========== DELETE METHODS (langsung ke localStorage) ==========
     async deleteLeave(id) {
-        // Selalu gunakan localStorage karena backend mungkin tidak mendukung action ini
-        let leaves = storage.get('leaves', []);
-        const beforeLength = leaves.length;
-        leaves = leaves.filter(l => l.id !== id);
-        if (leaves.length === beforeLength) {
-            return { success: false, error: 'Data tidak ditemukan' };
+        try {
+            let leaves = storage.get('leaves', []);
+            const before = leaves.length;
+            leaves = leaves.filter(l => l.id != id);
+            if (leaves.length === before) {
+                return { success: false, error: 'Data tidak ditemukan' };
+            }
+            storage.set('leaves', leaves);
+            return { success: true };
+        } catch (error) {
+            console.error('Delete leave error:', error);
+            return { success: false, error: error.message };
         }
-        storage.set('leaves', leaves);
-        return { success: true };
     },
-
     async deleteIzin(id) {
-        let izin = storage.get('izin', []);
-        const beforeLength = izin.length;
-        izin = izin.filter(i => i.id !== id);
-        if (izin.length === beforeLength) {
-            return { success: false, error: 'Data tidak ditemukan' };
+        try {
+            let izin = storage.get('izin', []);
+            const before = izin.length;
+            izin = izin.filter(i => i.id != id);
+            if (izin.length === before) {
+                return { success: false, error: 'Data tidak ditemukan' };
+            }
+            storage.set('izin', izin);
+            return { success: true };
+        } catch (error) {
+            console.error('Delete izin error:', error);
+            return { success: false, error: error.message };
         }
-        storage.set('izin', izin);
-        return { success: true };
     }
 };
 
-// Expose to global
 window.api = api;
 
-// Helper: always return a valid avatar URL
 window.getAvatarUrl = function (emp) {
-    if (emp && emp.avatar && emp.avatar.startsWith('http')) {
-        return emp.avatar;
-    }
+    if (emp && emp.avatar && emp.avatar.startsWith('http')) return emp.avatar;
     const name = (emp && emp.name) ? emp.name : 'User';
     const colors = ['3B82F6', '10B981', 'F59E0B', 'EF4444', '8B5CF6', 'EC4899', '14B8A6', '6B7280'];
     const colorIdx = name.charCodeAt(0) % colors.length;
