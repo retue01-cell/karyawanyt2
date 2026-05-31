@@ -209,8 +209,8 @@ const adminReports = {
         const data = this.getFilteredAttendance();
         tbody.innerHTML = data.map(row => `
             <tr>
-                <td><div class="employee-info"><div class="employee-details"><span class="employee-name">${row.name}</span></div></div></td>
-                <td>${row.department}</td>
+                <td><div class="employee-info"><div class="employee-details"><span class="employee-name">${this.escapeHtml(row.name)}</span></div></div></td>
+                <td>${this.escapeHtml(row.department)}</div></td>
                 <td class="text-center" style="color:var(--color-success); font-weight:600;">${row.present}</td>
                 <td class="text-center" style="color:var(--color-warning); font-weight:600;">${row.late}</td>
                 <td class="text-center" style="color:var(--color-danger); font-weight:600;">${row.absent}</td>
@@ -223,7 +223,7 @@ const adminReports = {
         if (mobile) {
             mobile.innerHTML = data.map(row => `
                 <div class="mobile-card">
-                    <div class="mobile-card-header"><span class="mobile-card-title">${row.name}</span><span>${row.department}</span></div>
+                    <div class="mobile-card-header"><span class="mobile-card-title">${this.escapeHtml(row.name)}</span><span>${this.escapeHtml(row.department)}</span></div>
                     <div class="mobile-card-row"><span class="mobile-card-label">Hadir</span><span>${row.present}</span></div>
                     <div class="mobile-card-row"><span class="mobile-card-label">Telat</span><span>${row.late}</span></div>
                     <div class="mobile-card-row"><span class="mobile-card-label">Absen</span><span>${row.absent}</span></div>
@@ -240,8 +240,8 @@ const adminReports = {
         tbody.innerHTML = data.map(row => `
             <tr>
                 <td>${row.date}</td>
-                <td>${row.name}</td>
-                <td>${row.department}</td>
+                <td>${this.escapeHtml(row.name)}</div></td>
+                <td>${this.escapeHtml(row.department)}</div></td>
                 <td>${(row.tasks || '-').substring(0, 30)}${(row.tasks || '').length > 30 ? '...' : ''}</td>
                 <td>${row.photo ? `<img src="${row.photo}" class="jurnal-thumbnail" onclick="adminReports.viewPhoto('${row.photo}')" style="width:40px;height:40px;object-fit:cover;border-radius:6px;cursor:pointer;">` : '-'}</td>
                 <td><span class="status-badge ${row.status}">${row.status === 'filled' ? 'Terisi' : 'Kosong'}</span></td>
@@ -263,11 +263,11 @@ const adminReports = {
                 `<button class="btn-action view" onclick="adminReports.viewLeaveDetail('${this.escapeHtml(item.name)}', '${item.type}', ${item.id})"><i class="fas fa-eye"></i></button>`;
             return `
                 <tr>
-                    <td>${item.name}</td>
-                    <td>${item.department}</td>
+                    <td>${this.escapeHtml(item.name)}</div></td>
+                    <td>${this.escapeHtml(item.department)}</div></td>
                     <td>${item.typeLabel}</td>
                     <td>${item.dates}</td>
-                    <td>${item.duration} hari</td>
+                    <td>${item.duration} hari</div></td>
                     <td>${item.reason.substring(0, 40)}${item.reason.length > 40 ? '...' : ''}</td>
                     <td><span class="status-badge ${item.status}">${statusLabels[item.status]}</span></td>
                     <td>${actions}</td>
@@ -284,7 +284,7 @@ const adminReports = {
                     `<button class="btn-primary btn-sm" onclick="adminReports.viewLeaveDetail('${this.escapeHtml(item.name)}', '${item.type}', ${item.id})">Lihat Detail</button>`;
                 return `
                     <div class="mobile-card">
-                        <div class="mobile-card-header"><span class="mobile-card-title">${item.name}</span><span class="status-badge ${item.status}">${statusLabels[item.status]}</span></div>
+                        <div class="mobile-card-header"><span class="mobile-card-title">${this.escapeHtml(item.name)}</span><span class="status-badge ${item.status}">${statusLabels[item.status]}</span></div>
                         <div class="mobile-card-row"><span>${item.typeLabel}</span><span>${item.dates} (${item.duration} hr)</span></div>
                         <div class="mobile-card-row"><span>Alasan:</span><span>${item.reason.substring(0, 50)}</span></div>
                         ${actions}
@@ -294,8 +294,7 @@ const adminReports = {
         }
     },
 
-    // ========== DETAIL FUNCTIONS (YANG DIPANGGIL TOMBOL AKSI) ==========
-    
+    // ========== DETAIL FUNCTIONS (dipanggil tombol aksi) ==========
     viewAttendanceDetail(name) {
         console.log('viewAttendanceDetail dipanggil untuk:', name);
         const emp = this.rawEmployees.find(e => e.name === name);
@@ -335,12 +334,7 @@ const adminReports = {
                 </table>
             </div>
         `;
-        if (typeof modal !== 'undefined' && modal.show) {
-            modal.show(`Detail Absensi: ${emp.name}`, modalContent, [{ label: 'Tutup', class: 'btn-secondary', onClick: () => modal.close() }]);
-        } else {
-            console.error('Modal tidak tersedia');
-            alert('Fungsi modal belum siap. Silakan refresh halaman.');
-        }
+        this._showModal(`Detail Absensi: ${emp.name}`, modalContent);
     },
     
     viewJurnalDetail(name, date) {
@@ -349,8 +343,8 @@ const adminReports = {
         const photoHtml = jurnal.photo ? `<div style="margin-top:12px;"><img src="${jurnal.photo}" style="max-width:100%; max-height:200px; border-radius:8px;"></div>` : '';
         const content = `
             <div style="max-height:60vh; overflow-y:auto;">
-                <p><strong>Nama:</strong> ${jurnal.name}</p>
-                <p><strong>Departemen:</strong> ${jurnal.department}</p>
+                <p><strong>Nama:</strong> ${this.escapeHtml(jurnal.name)}</p>
+                <p><strong>Departemen:</strong> ${this.escapeHtml(jurnal.department)}</p>
                 <p><strong>Tanggal:</strong> ${dateTime.formatDate(new Date(jurnal.date), 'long')}</p>
                 <hr>
                 <p><strong>Tugas yang dikerjakan:</strong><br>${(jurnal.tasks || '-').replace(/\n/g, '<br>')}</p>
@@ -360,11 +354,7 @@ const adminReports = {
                 ${photoHtml}
             </div>
         `;
-        if (typeof modal !== 'undefined' && modal.show) {
-            modal.show('Detail Jurnal', content, [{ label: 'Tutup', class: 'btn-secondary', onClick: () => modal.close() }]);
-        } else {
-            alert('Modal tidak tersedia');
-        }
+        this._showModal('Detail Jurnal', content);
     },
     
     viewLeaveDetail(name, type, id) {
@@ -374,7 +364,7 @@ const adminReports = {
         if (!item) { toast.error('Data tidak ditemukan'); return; }
         const content = `
             <div style="max-height:60vh; overflow-y:auto;">
-                <p><strong>Karyawan:</strong> ${name}</p>
+                <p><strong>Karyawan:</strong> ${this.escapeHtml(name)}</p>
                 <p><strong>Jenis:</strong> ${type === 'cuti' ? 'Cuti' : 'Izin'}</p>
                 <p><strong>Tanggal:</strong> ${item.startDate ? `${item.startDate} - ${item.endDate}` : item.date}</p>
                 <p><strong>Durasi:</strong> ${item.duration} hari</p>
@@ -383,19 +373,31 @@ const adminReports = {
                 <p><strong>Status:</strong> ${item.status === 'pending' ? 'Menunggu' : (item.status === 'approved' ? 'Disetujui' : 'Ditolak')}</p>
             </div>
         `;
-        if (typeof modal !== 'undefined' && modal.show) {
-            modal.show('Detail Pengajuan', content, [{ label: 'Tutup', class: 'btn-secondary', onClick: () => modal.close() }]);
-        } else {
-            alert('Modal tidak tersedia');
-        }
+        this._showModal('Detail Pengajuan', content);
     },
     
     viewPhoto(photoUrl) {
-        if (typeof modal !== 'undefined' && modal.show) {
-            const content = `<img src="${photoUrl}" style="max-width:100%; max-height:70vh;">`;
-            modal.show('Foto', content, [{ label: 'Tutup', class: 'btn-secondary', onClick: () => modal.close() }]);
+        if (window.modal && typeof window.modal.show === 'function') {
+            window.modal.show('Foto', `<img src="${photoUrl}" style="max-width:100%; max-height:70vh;">`, [{ label: 'Tutup', class: 'btn-secondary', onClick: () => window.modal.close() }]);
         } else {
             window.open(photoUrl, '_blank');
+        }
+    },
+    
+    // Helper untuk menampilkan modal dengan fallback jika modal.js belum siap
+    _showModal(title, content) {
+        if (window.modal && typeof window.modal.show === 'function') {
+            window.modal.show(title, content, [{ label: 'Tutup', class: 'btn-secondary', onClick: () => window.modal.close() }]);
+        } else {
+            // Fallback: buat alert dengan HTML
+            const win = window.open('', '_blank', 'width=800,height=600');
+            win.document.write(`
+                <html><head><title>${title}</title></head><body style="font-family:Arial;padding:20px;">
+                ${content}
+                <button onclick="window.close()">Tutup</button>
+                </body></html>
+            `);
+            win.document.close();
         }
     },
     
@@ -443,7 +445,7 @@ const adminReports = {
     convertToCSV(data) {
         if (!data.length) return '';
         const headers = Object.keys(data[0]);
-        const rows = data.map(row => headers.map(h => `"${row[h] || ''}"`).join(','));
+        const rows = data.map(row => headers.map(h => `"${(row[h] || '').toString().replace(/"/g, '""')}"`).join(','));
         return [headers.join(','), ...rows].join('\n');
     },
     downloadFile(content, filename, contentType) {
