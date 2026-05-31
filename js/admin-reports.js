@@ -2,7 +2,7 @@
  * Portal Karyawan - Admin Reports
  * Reports and exports for admin with FULL DETAIL functionality
  * 
- * Versi final: Rekap Jurnal telah diperbaiki.
+ * Fitur: Tombol Delete pada Rekap Cuti & Izin
  */
 
 const adminReports = {
@@ -20,9 +20,6 @@ const adminReports = {
         leave: { month: '', type: '', status: '' }
     },
 
-    // ----------------------------------------------
-    // INIT FUNCTIONS
-    // ----------------------------------------------
     async initAttendanceReports() {
         if (!auth.isAdmin()) {
             toast.error('Akses ditolak');
@@ -41,7 +38,6 @@ const adminReports = {
         }
         await this.loadData();
         this.bindJurnalEvents();
-        // Set default bulan ke bulan saat ini jika belum ada filter
         if (!this.filters.jurnal.month) {
             const today = new Date();
             this.filters.jurnal.month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
@@ -61,9 +57,6 @@ const adminReports = {
         this.renderLeaveReports();
     },
 
-    // ----------------------------------------------
-    // LOAD DATA (Perbaikan untuk Rekap Jurnal)
-    // ----------------------------------------------
     async loadData() {
         try {
             const [empResult, jurnalResult, leaveResult, izinResult, attResult] = await Promise.all([
@@ -121,16 +114,22 @@ const adminReports = {
         this.jurnalData.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
         console.log('Processed jurnalData length:', this.jurnalData.length);
 
-        // Build leave/izin combined (tidak berubah)
+        // Build leave/izin combined
         this.leaveData = [];
         this.rawLeaves.forEach(l => {
             const emp = this.rawEmployees.find(e => String(e.id) === String(l.userId));
             if (emp) {
                 this.leaveData.push({
-                    id: l.id, type: 'cuti', typeLabel: this.getLeaveTypeLabel(l.type),
-                    name: emp.name, department: emp.department,
+                    id: l.id,
+                    type: 'cuti',
+                    typeLabel: this.getLeaveTypeLabel(l.type),
+                    name: emp.name,
+                    department: emp.department,
                     dates: l.startDate === l.endDate ? l.startDate : `${l.startDate} - ${l.endDate}`,
-                    duration: l.duration, reason: l.reason, status: l.status, appliedAt: l.appliedAt
+                    duration: l.duration,
+                    reason: l.reason,
+                    status: l.status,
+                    appliedAt: l.appliedAt
                 });
             }
         });
@@ -138,9 +137,16 @@ const adminReports = {
             const emp = this.rawEmployees.find(e => String(e.id) === String(i.userId));
             if (emp) {
                 this.leaveData.push({
-                    id: i.id, type: 'izin', typeLabel: i.typeLabel || this.getIzinTypeLabel(i.type),
-                    name: emp.name, department: emp.department,
-                    dates: i.date, duration: i.duration, reason: i.reason, status: i.status, appliedAt: i.appliedAt
+                    id: i.id,
+                    type: 'izin',
+                    typeLabel: i.typeLabel || this.getIzinTypeLabel(i.type),
+                    name: emp.name,
+                    department: emp.department,
+                    dates: i.date,
+                    duration: i.duration,
+                    reason: i.reason,
+                    status: i.status,
+                    appliedAt: i.appliedAt
                 });
             }
         });
@@ -156,7 +162,6 @@ const adminReports = {
         return map[type] || type;
     },
 
-    // ========== HELPER: Bangun data absensi berdasarkan bulan ==========
     buildAttendanceDataForMonth(monthStr) {
         if (!monthStr) {
             const today = new Date();
@@ -191,9 +196,6 @@ const adminReports = {
         });
     },
 
-    // ----------------------------------------------
-    // BIND EVENTS
-    // ----------------------------------------------
     bindAttendanceEvents() {
         const btnExport = document.getElementById('btn-export-attendance');
         if (btnExport) btnExport.onclick = () => this.exportToExcel('attendance');
@@ -215,7 +217,6 @@ const adminReports = {
         if (month) month.onchange = (e) => { this.filters.jurnal.month = e.target.value; this.renderJurnalReports(); };
         const emp = document.getElementById('jurnal-employee-filter');
         if (emp) {
-            // Isi dropdown karyawan
             const employees = this.rawEmployees.map(e => `<option value="${e.name}">${e.name}</option>`).join('');
             emp.innerHTML = '<option value="">Semua Karyawan</option>' + employees;
             emp.onchange = (e) => { this.filters.jurnal.employee = e.target.value; this.renderJurnalReports(); };
@@ -236,7 +237,6 @@ const adminReports = {
         if (status) status.onchange = (e) => { this.filters.leave.status = e.target.value; this.renderLeaveReports(); };
     },
 
-    // ========== FILTERING ==========
     getFilteredAttendance() {
         let month = this.filters.attendance.month;
         if (!month) {
@@ -283,15 +283,12 @@ const adminReports = {
         });
     },
 
-    // ----------------------------------------------
-    // RENDER FUNCTIONS
-    // ----------------------------------------------
     renderAttendanceReports() {
         const tbody = document.getElementById('attendance-reports-body');
         if (!tbody) return;
         const data = this.getFilteredAttendance();
         if (data.length === 0) {
-            tbody.innerHTML = '</td><td colspan="7" style="text-align:center; padding:40px;">Tidak ada data</div></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px;">Tidak ada数据</div></table>';
             return;
         }
         tbody.innerHTML = data.map(row => `
@@ -325,7 +322,7 @@ const adminReports = {
         if (!tbody) return;
         const data = this.getFilteredJurnal();
         if (data.length === 0) {
-            tbody.innerHTML = '</td><td colspan="8" style="text-align:center; padding:40px;">Tidak ada data jurnal untuk periode ini</div></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:40px;">Tidak ada data jurnal untuk periode ini</div></tr>';
             const mobile = document.getElementById('jurnal-mobile-cards');
             if (mobile) mobile.innerHTML = '<div class="empty-state">Tidak ada data jurnal</div>';
             return;
@@ -362,23 +359,27 @@ const adminReports = {
         }
     },
 
+    // ========== PERBAIKAN: RENDER LEAVE REPORTS DENGAN TOMBOL DELETE ==========
     renderLeaveReports() {
         const tbody = document.getElementById('leave-reports-body');
         if (!tbody) return;
         const data = this.getFilteredLeave();
         const statusLabels = { pending: 'Menunggu', approved: 'Disetujui', rejected: 'Ditolak' };
         if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:40px;">Tidak ada data cuti/izin</div></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:40px;">Tidak ada data cuti/izin</div></tr>';
             const mobile = document.getElementById('leave-mobile-cards');
             if (mobile) mobile.innerHTML = '<div class="empty-state">Tidak ada data</div>';
             return;
         }
         tbody.innerHTML = data.map(item => {
             const isPending = item.status === 'pending';
-            const actions = isPending ?
-                `<button class="btn-action approve" style="background:rgba(16,185,129,0.1);color:#10B981;" onclick="adminReports.approveLeaveItem('${item.type}', ${item.id})"><i class="fas fa-check"></i></button>
-                 <button class="btn-action reject" style="background:rgba(239,68,68,0.1);color:#EF4444;" onclick="adminReports.rejectLeaveItem('${item.type}', ${item.id})"><i class="fas fa-times"></i></button>` :
-                `<button class="btn-action view" onclick="adminReports.viewLeaveDetail('${this.escapeHtml(item.name)}', '${item.type}', ${item.id})"><i class="fas fa-eye"></i></button>`;
+            // Tombol approve, reject, delete, view
+            const actions = `
+                <button class="btn-action approve" style="background:rgba(16,185,129,0.1);color:#10B981;" onclick="adminReports.approveLeaveItem('${item.type}', ${item.id})" title="Setujui"><i class="fas fa-check"></i></button>
+                <button class="btn-action reject" style="background:rgba(239,68,68,0.1);color:#EF4444;" onclick="adminReports.rejectLeaveItem('${item.type}', ${item.id})" title="Tolak"><i class="fas fa-times"></i></button>
+                <button class="btn-action delete" style="background:rgba(239,68,68,0.1);color:#EF4444;" onclick="adminReports.deleteLeaveItem('${item.type}', ${item.id})" title="Hapus"><i class="fas fa-trash"></i></button>
+                <button class="btn-action view" onclick="adminReports.viewLeaveDetail('${this.escapeHtml(item.name)}', '${item.type}', ${item.id})" title="Lihat"><i class="fas fa-eye"></i></button>
+            `;
             return `
                 <tr>
                     <td>${this.escapeHtml(item.name)}</div>
@@ -397,14 +398,21 @@ const adminReports = {
         if (mobile) {
             mobile.innerHTML = data.map(item => {
                 const isPending = item.status === 'pending';
-                const actions = isPending ?
-                    `<div style="display:flex; gap:8px; margin-top:8px;"><button class="btn-sm" style="background:#10B981;color:white;" onclick="adminReports.approveLeaveItem('${item.type}', ${item.id})">Setujui</button><button class="btn-sm" style="background:#EF4444;color:white;" onclick="adminReports.rejectLeaveItem('${item.type}', ${item.id})">Tolak</button></div>` :
-                    `<button class="btn-primary btn-sm" onclick="adminReports.viewLeaveDetail('${this.escapeHtml(item.name)}', '${item.type}', ${item.id})">Lihat Detail</button>`;
+                const actions = `
+                    <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+                        <button class="btn-sm" style="background:#10B981;color:white;" onclick="adminReports.approveLeaveItem('${item.type}', ${item.id})">Setujui</button>
+                        <button class="btn-sm" style="background:#EF4444;color:white;" onclick="adminReports.rejectLeaveItem('${item.type}', ${item.id})">Tolak</button>
+                        <button class="btn-sm" style="background:#EF4444;color:white;" onclick="adminReports.deleteLeaveItem('${item.type}', ${item.id})">Hapus</button>
+                        <button class="btn-primary btn-sm" onclick="adminReports.viewLeaveDetail('${this.escapeHtml(item.name)}', '${item.type}', ${item.id})">Lihat</button>
+                    </div>
+                `;
                 return `
                     <div class="mobile-card">
                         <div class="mobile-card-header"><span class="mobile-card-title">${this.escapeHtml(item.name)}</span><span class="status-badge ${item.status}">${statusLabels[item.status]}</span></div>
-                        <div class="mobile-card-row"><span>${item.typeLabel}</span><span>${item.dates} (${item.duration} hr)</span></div>
-                        <div class="mobile-card-row"><span>Alasan:</span><span>${item.reason.substring(0, 50)}</span></div>
+                        <div class="mobile-card-row"><span>Jenis:</span> ${item.typeLabel}</div>
+                        <div class="mobile-card-row"><span>Tanggal:</span> ${item.dates}</div>
+                        <div class="mobile-card-row"><span>Durasi:</span> ${item.duration} hari</div>
+                        <div class="mobile-card-row"><span>Alasan:</span> ${item.reason.substring(0, 50)}</div>
                         ${actions}
                     </div>
                 `;
@@ -412,7 +420,7 @@ const adminReports = {
         }
     },
 
-    // ========== DETAIL FUNCTIONS (dipanggil tombol aksi) ==========
+    // ========== DETAIL FUNCTIONS ==========
     viewAttendanceDetail(name) {
         const emp = this.rawEmployees.find(e => e.name === name);
         if (!emp) { toast.error('Karyawan tidak ditemukan'); return; }
@@ -518,7 +526,7 @@ const adminReports = {
         }
     },
     
-    // ========== APPROVE / REJECT (untuk cuti/izin) ==========
+    // ========== APPROVE / REJECT (cuti/izin) ==========
     async approveLeaveItem(type, id) {
         if (!auth.isAdmin()) return;
         try {
@@ -567,6 +575,35 @@ const adminReports = {
             }
         } catch (error) {
             console.error('Delete journal error:', error);
+            toast.error('Terjadi kesalahan saat menghapus');
+        }
+    },
+
+    // ========== DELETE LEAVE/IZIN (ADMIN) ==========
+    async deleteLeaveItem(type, id) {
+        if (!auth.isAdmin()) {
+            toast.error('Akses ditolak');
+            return;
+        }
+        if (!confirm(`Yakin ingin menghapus pengajuan ${type === 'cuti' ? 'cuti' : 'izin'} ini? Tindakan ini tidak dapat dibatalkan.`)) {
+            return;
+        }
+        try {
+            let result;
+            if (type === 'cuti') {
+                result = await api.deleteLeave(id);
+            } else {
+                result = await api.deleteIzin(id);
+            }
+            if (result && result.success) {
+                toast.success('Pengajuan berhasil dihapus');
+                await this.loadData();
+                this.renderLeaveReports();
+            } else {
+                toast.error(result?.error || 'Gagal menghapus pengajuan');
+            }
+        } catch (error) {
+            console.error('Delete leave/izin error:', error);
             toast.error('Terjadi kesalahan saat menghapus');
         }
     },
