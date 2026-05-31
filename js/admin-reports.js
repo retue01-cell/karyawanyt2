@@ -6,7 +6,6 @@
  */
 
 const adminReports = {
-    // Data mentah dari API
     rawAttendance: [],
     rawEmployees: [],
     rawLeaves: [],
@@ -34,7 +33,6 @@ const adminReports = {
         if (!auth.isAdmin()) { toast.error('Akses ditolak'); router.navigate('dashboard'); return; }
         await this.loadData();
         this.bindJurnalEvents();
-        // Set default bulan ke bulan saat ini jika belum ada filter
         if (!this.filters.jurnal.month) {
             const today = new Date();
             this.filters.jurnal.month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
@@ -76,22 +74,19 @@ const adminReports = {
             this.rawAttendance = storage.get('attendance', []);
         }
 
-        // Build data jurnal yang diperkaya dengan nama karyawan
+        // Build data jurnal dengan nama karyawan
         const empMap = {};
-        this.rawEmployees.forEach(emp => {
-            empMap[String(emp.id)] = { name: emp.name, department: emp.department };
-        });
+        this.rawEmployees.forEach(emp => { empMap[String(emp.id)] = { name: emp.name, department: emp.department }; });
 
         this.jurnalData = this.rawJournals.map(j => {
             const emp = empMap[String(j.userId)] || { name: 'Unknown', department: '-' };
             let journalDate = j.date;
             if (!journalDate && j.updatedAt) journalDate = j.updatedAt.split('T')[0];
             if (!journalDate && j.createdAt) journalDate = j.createdAt.split('T')[0];
-            if (!journalDate) journalDate = '';
             return {
                 id: j.id,
                 userId: j.userId,
-                date: journalDate,
+                date: journalDate || '',
                 name: emp.name,
                 department: emp.department,
                 tasks: j.tasks || '-',
@@ -140,7 +135,6 @@ const adminReports = {
         return map[type] || type;
     },
 
-    // ========== HELPER: Bangun data absensi berdasarkan bulan ==========
     buildAttendanceDataForMonth(monthStr) {
         if (!monthStr) {
             const today = new Date();
@@ -294,7 +288,7 @@ const adminReports = {
         if (!tbody) return;
         const data = this.getFilteredJurnal();
         if (data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:40px;">Tidak ada data jurnal untuk periode ini</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:40px;">Tidak ada data jurnal untuk periode ini</div></tr>`;
             const mobile = document.getElementById('jurnal-mobile-cards');
             if (mobile) mobile.innerHTML = '<div class="empty-state">Tidak ada data jurnal</div>';
             return;
@@ -314,7 +308,6 @@ const adminReports = {
             </tr>
         `).join('');
 
-        // Mobile cards
         const mobile = document.getElementById('jurnal-mobile-cards');
         if (mobile) {
             mobile.innerHTML = data.map(row => `
@@ -338,7 +331,7 @@ const adminReports = {
         const data = this.getFilteredLeave();
         const statusLabels = { pending: 'Menunggu', approved: 'Disetujui', rejected: 'Ditolak' };
         if (data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:40px;">Tidak ada data cuti/izin</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:40px;">Tidak ada data cuti/izin</div></tr>`;
             const mobile = document.getElementById('leave-mobile-cards');
             if (mobile) mobile.innerHTML = '<div class="empty-state">Tidak ada data</div>';
             return;
@@ -485,7 +478,6 @@ const adminReports = {
             const result = await api.deleteJournal(journalId);
             if (result && result.success) {
                 toast.success('Jurnal berhasil dihapus');
-                // Refresh data dan render ulang
                 await this.loadData();
                 this.renderJurnalReports();
             } else {
@@ -494,22 +486,6 @@ const adminReports = {
         } catch (error) {
             console.error('Delete journal error:', error);
             toast.error('Terjadi kesalahan saat menghapus');
-        }
-    },
-    
-    // Helper modal
-    _showModal(title, content) {
-        if (window.modal && typeof window.modal.show === 'function') {
-            window.modal.show(title, content, [{ label: 'Tutup', class: 'btn-secondary', onClick: () => window.modal.close() }]);
-        } else {
-            const win = window.open('', '_blank', 'width=800,height=600');
-            win.document.write(`
-                <html><head><title>${title}</title></head><body style="font-family:Arial;padding:20px;">
-                ${content}
-                <button onclick="window.close()">Tutup</button>
-                </body></html>
-            `);
-            win.document.close();
         }
     },
     
@@ -540,6 +516,22 @@ const adminReports = {
                 this.renderLeaveReports();
             } else toast.error(result.error || 'Gagal menolak');
         } catch (error) { toast.error('Terjadi kesalahan'); }
+    },
+    
+    // ========== HELPER MODAL ==========
+    _showModal(title, content) {
+        if (window.modal && typeof window.modal.show === 'function') {
+            window.modal.show(title, content, [{ label: 'Tutup', class: 'btn-secondary', onClick: () => window.modal.close() }]);
+        } else {
+            const win = window.open('', '_blank', 'width=800,height=600');
+            win.document.write(`
+                <html><head><title>${title}</title></head><body style="font-family:Arial;padding:20px;">
+                ${content}
+                <button onclick="window.close()">Tutup</button>
+                </body></html>
+            `);
+            win.document.close();
+        }
     },
     
     // ========== EXPORT & PRINT ==========
