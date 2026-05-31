@@ -289,7 +289,7 @@ const adminReports = {
         if (!tbody) return;
         const data = this.getFilteredAttendance();
         if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px;">Tidak ada数据</div><tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px;">Tidak ada数据</div></tr>';
             return;
         }
         tbody.innerHTML = data.map(row => `
@@ -369,7 +369,7 @@ const adminReports = {
         if (data.length === 0) {
             tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:40px;">Tidak ada data cuti/izin</div></tr>';
             const mobile = document.getElementById('leave-mobile-cards');
-            if (mobile) mobile.innerHTML = '<div class="empty-state">Tidak ada data</div>';
+            if (mobile) mobile.innerHTML = '<div class="empty-state">Tidak ada数据</div>';
             return;
         }
         tbody.innerHTML = data.map(item => {
