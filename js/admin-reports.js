@@ -28,6 +28,7 @@ const adminReports = {
         if (!auth.isAdmin()) { toast.error('Akses ditolak'); router.navigate('dashboard'); return; }
         await this.loadData();
         this.bindJurnalEvents();
+        // Set default bulan ke bulan saat ini jika belum ada filter
         if (!this.filters.jurnal.month) {
             const today = new Date();
             this.filters.jurnal.month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
@@ -57,6 +58,7 @@ const adminReports = {
             this.rawLeaves = leaveResult.data || [];
             this.rawIzin = izinResult.data || [];
             this.rawAttendance = attResult.data || [];
+            console.log('Jurnal data from API:', this.rawJournals);
         } catch (error) {
             console.error('Load error:', error);
             this.rawEmployees = storage.get('admin_employees', []);
