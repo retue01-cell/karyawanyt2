@@ -294,7 +294,7 @@ const adminReports = {
         }
     },
 
-    // ========== DETAIL FUNCTIONS (dipanggil tombol aksi) ==========
+    // ========== DETAIL FUNCTIONS ==========
     viewAttendanceDetail(name) {
         console.log('viewAttendanceDetail dipanggil untuk:', name);
         const emp = this.rawEmployees.find(e => e.name === name);
@@ -322,12 +322,14 @@ const adminReports = {
             } else if (rec && rec.status === 'libur') {
                 statusHtml = '<span class="badge-status secondary">Libur</span>';
             }
-            tableRows += `<tr><td>${d}</td><td>${dateStr}</td><td>${rec ? rec.clockIn || '-' : '-'}</td><td>${rec ? rec.clockOut || '-' : '-'}</td><td>${statusHtml}</td></tr>`;
+            tableRows += `<tr><td>${d}</div><td>${dateStr}</div><td>${rec ? rec.clockIn || '-' : '-'}</div><td>${rec ? rec.clockOut || '-' : '-'}</div><td>${statusHtml}</div></tr>`;
         }
         
+        // === PERBAIKAN: Format bulan menjadi MM-YYYY ===
+        const formattedMonth = `${month}-${year}`;
         const modalContent = `
             <div style="max-height: 60vh; overflow-y: auto;">
-                <h4>Riwayat Absensi ${emp.name} - Bulan ${selectedMonth}</h4>
+                <h4>Riwayat Absensi ${emp.name} - Bulan ${formattedMonth}</h4>
                 <table class="history-table" style="width:100%; font-size:12px; border-collapse:collapse;">
                     <thead><tr><th>Tanggal</th><th>Clock In</th><th>Clock Out</th><th>Status</th></tr></thead>
                     <tbody>${tableRows}</tbody>
@@ -384,12 +386,11 @@ const adminReports = {
         }
     },
     
-    // Helper untuk menampilkan modal dengan fallback jika modal.js belum siap
+    // Helper untuk menampilkan modal dengan fallback
     _showModal(title, content) {
         if (window.modal && typeof window.modal.show === 'function') {
             window.modal.show(title, content, [{ label: 'Tutup', class: 'btn-secondary', onClick: () => window.modal.close() }]);
         } else {
-            // Fallback: buat alert dengan HTML
             const win = window.open('', '_blank', 'width=800,height=600');
             win.document.write(`
                 <html><head><title>${title}</title></head><body style="font-family:Arial;padding:20px;">
