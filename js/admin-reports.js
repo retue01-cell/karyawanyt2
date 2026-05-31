@@ -2,7 +2,7 @@
  * Portal Karyawan - Admin Reports
  * Reports and exports for admin with FULL DETAIL functionality
  * 
- * Perbaikan: Rekap Jurnal sekarang menampilkan data sesuai filter.
+ * Perbaikan: Rekap Jurnal filter periode (bulan) sekarang berfungsi.
  */
 
 const adminReports = {
@@ -11,8 +11,8 @@ const adminReports = {
     rawEmployees: [],
     rawLeaves: [],
     rawIzin: [],
-    rawJournals: [],     // tambahan untuk jurnal mentah
-    jurnalData: [],      // data jurnal yang sudah diperkaya dengan nama karyawan
+    rawJournals: [],
+    jurnalData: [],
     leaveData: [],
 
     filters: {
@@ -34,6 +34,13 @@ const adminReports = {
         if (!auth.isAdmin()) { toast.error('Akses ditolak'); router.navigate('dashboard'); return; }
         await this.loadData();
         this.bindJurnalEvents();
+        // Set default bulan ke bulan saat ini jika belum ada filter
+        if (!this.filters.jurnal.month) {
+            const today = new Date();
+            this.filters.jurnal.month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+            const monthInput = document.getElementById('jurnal-month');
+            if (monthInput) monthInput.value = this.filters.jurnal.month;
+        }
         this.renderJurnalReports();
     },
     async initLeaveReports() {
@@ -69,8 +76,7 @@ const adminReports = {
             this.rawAttendance = storage.get('attendance', []);
         }
 
-        // ========== PERBAIKAN: Proses Jurnal Data dengan benar ==========
-        // Mapping employeeId ke nama dan departemen
+        // Build data jurnal yang diperkaya dengan nama karyawan
         const empMap = {};
         this.rawEmployees.forEach(emp => {
             empMap[String(emp.id)] = { name: emp.name, department: emp.department };
@@ -93,7 +99,6 @@ const adminReports = {
                 updatedAt: j.updatedAt
             };
         });
-        // Urutkan berdasarkan tanggal terbaru
         this.jurnalData.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
         // Build leave/izin combined
@@ -187,11 +192,26 @@ const adminReports = {
         const btnPrint = document.getElementById('btn-print-jurnal');
         if (btnPrint) btnPrint.onclick = () => this.printReport('jurnal');
         const month = document.getElementById('jurnal-month');
-        if (month) month.onchange = (e) => { this.filters.jurnal.month = e.target.value; this.renderJurnalReports(); };
+        if (month) {
+            month.onchange = (e) => {
+                this.filters.jurnal.month = e.target.value;
+                this.renderJurnalReports();
+            };
+        }
         const emp = document.getElementById('jurnal-employee-filter');
-        if (emp) emp.onchange = (e) => { this.filters.jurnal.employee = e.target.value; this.renderJurnalReports(); };
+        if (emp) {
+            emp.onchange = (e) => {
+                this.filters.jurnal.employee = e.target.value;
+                this.renderJurnalReports();
+            };
+        }
         const status = document.getElementById('jurnal-status-filter');
-        if (status) status.onchange = (e) => { this.filters.jurnal.status = e.target.value; this.renderJurnalReports(); };
+        if (status) {
+            status.onchange = (e) => {
+                this.filters.jurnal.status = e.target.value;
+                this.renderJurnalReports();
+            };
+        }
     },
     bindLeaveEvents() {
         const btnExport = document.getElementById('btn-export-leave');
@@ -226,18 +246,17 @@ const adminReports = {
         return data;
     },
 
-    // ========== PERBAIKAN: Filter Jurnal yang benar ==========
     getFilteredJurnal() {
         let data = [...this.jurnalData];
-        // Filter bulan (periode) - format YYYY-MM
+        // Filter bulan (periode)
         if (this.filters.jurnal.month) {
             data = data.filter(j => j.date && j.date.startsWith(this.filters.jurnal.month));
         }
-        // Filter karyawan berdasarkan nama
+        // Filter karyawan
         if (this.filters.jurnal.employee) {
             data = data.filter(j => j.name === this.filters.jurnal.employee);
         }
-        // Filter status (terisi/kosong)
+        // Filter status
         if (this.filters.jurnal.status) {
             data = data.filter(j => j.status === this.filters.jurnal.status);
         }
@@ -290,7 +309,6 @@ const adminReports = {
         }
     },
 
-    // ========== PERBAIKAN: Render Jurnal Reports dengan data yang sudah difilter ==========
     renderJurnalReports() {
         const tbody = document.getElementById('jurnal-reports-body');
         if (!tbody) return;
@@ -333,6 +351,12 @@ const adminReports = {
         if (!tbody) return;
         const data = this.getFilteredLeave();
         const statusLabels = { pending: 'Menunggu', approved: 'Disetujui', rejected: 'Ditolak' };
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:40px;">Tidak ada data cuti/izin</td></tr>`;
+            const mobile = document.getElementById('leave-mobile-cards');
+            if (mobile) mobile.innerHTML = '<div class="empty-state">Tidak ada data</div>';
+            return;
+        }
         tbody.innerHTML = data.map(item => {
             const isPending = item.status === 'pending';
             const actions = isPending ?
