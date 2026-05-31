@@ -2,7 +2,7 @@
  * Portal Karyawan - Admin Reports
  * Reports and exports for admin with FULL DETAIL functionality
  * 
- * Fitur: Tombol Delete pada Rekap Cuti & Izin
+ * Fitur: Tombol Delete pada Rekap Cuti & Izin (sudah ditambahkan)
  */
 
 const adminReports = {
@@ -288,7 +288,7 @@ const adminReports = {
         if (!tbody) return;
         const data = this.getFilteredAttendance();
         if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px;">Tidak ada数据</div></table>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px;">Tidak ada数据</div></tr>';
             return;
         }
         tbody.innerHTML = data.map(row => `
@@ -359,21 +359,19 @@ const adminReports = {
         }
     },
 
-    // ========== PERBAIKAN: RENDER LEAVE REPORTS DENGAN TOMBOL DELETE ==========
+    // ========== RENDER LEAVE REPORTS WITH DELETE BUTTON ==========
     renderLeaveReports() {
         const tbody = document.getElementById('leave-reports-body');
         if (!tbody) return;
         const data = this.getFilteredLeave();
         const statusLabels = { pending: 'Menunggu', approved: 'Disetujui', rejected: 'Ditolak' };
         if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:40px;">Tidak ada data cuti/izin</div></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:40px;">Tidak ada data cuti/izin</div></td>';
             const mobile = document.getElementById('leave-mobile-cards');
             if (mobile) mobile.innerHTML = '<div class="empty-state">Tidak ada data</div>';
             return;
         }
         tbody.innerHTML = data.map(item => {
-            const isPending = item.status === 'pending';
-            // Tombol approve, reject, delete, view
             const actions = `
                 <button class="btn-action approve" style="background:rgba(16,185,129,0.1);color:#10B981;" onclick="adminReports.approveLeaveItem('${item.type}', ${item.id})" title="Setujui"><i class="fas fa-check"></i></button>
                 <button class="btn-action reject" style="background:rgba(239,68,68,0.1);color:#EF4444;" onclick="adminReports.rejectLeaveItem('${item.type}', ${item.id})" title="Tolak"><i class="fas fa-times"></i></button>
@@ -397,7 +395,6 @@ const adminReports = {
         const mobile = document.getElementById('leave-mobile-cards');
         if (mobile) {
             mobile.innerHTML = data.map(item => {
-                const isPending = item.status === 'pending';
                 const actions = `
                     <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
                         <button class="btn-sm" style="background:#10B981;color:white;" onclick="adminReports.approveLeaveItem('${item.type}', ${item.id})">Setujui</button>
@@ -420,7 +417,6 @@ const adminReports = {
         }
     },
 
-    // ========== DETAIL FUNCTIONS ==========
     viewAttendanceDetail(name) {
         const emp = this.rawEmployees.find(e => e.name === name);
         if (!emp) { toast.error('Karyawan tidak ditemukan'); return; }
@@ -510,7 +506,6 @@ const adminReports = {
         }
     },
     
-    // Helper untuk menampilkan modal
     _showModal(title, content) {
         if (window.modal && typeof window.modal.show === 'function') {
             window.modal.show(title, content, [{ label: 'Tutup', class: 'btn-secondary', onClick: () => window.modal.close() }]);
@@ -526,7 +521,6 @@ const adminReports = {
         }
     },
     
-    // ========== APPROVE / REJECT (cuti/izin) ==========
     async approveLeaveItem(type, id) {
         if (!auth.isAdmin()) return;
         try {
@@ -555,7 +549,6 @@ const adminReports = {
         } catch (error) { toast.error('Terjadi kesalahan'); }
     },
 
-    // ========== DELETE JOURNAL (ADMIN) ==========
     async deleteJournalItem(journalId) {
         if (!auth.isAdmin()) {
             toast.error('Akses ditolak');
@@ -579,7 +572,6 @@ const adminReports = {
         }
     },
 
-    // ========== DELETE LEAVE/IZIN (ADMIN) ==========
     async deleteLeaveItem(type, id) {
         if (!auth.isAdmin()) {
             toast.error('Akses ditolak');
@@ -608,7 +600,6 @@ const adminReports = {
         }
     },
     
-    // ========== EXPORT & PRINT ==========
     exportToExcel(type) {
         let data = [], filename = '';
         switch (type) {
@@ -647,7 +638,6 @@ const adminReports = {
     }
 };
 
-// Global init functions
 window.initAttendanceReports = () => adminReports.initAttendanceReports();
 window.initJurnalReports = () => adminReports.initJurnalReports();
 window.initLeaveReports = () => adminReports.initLeaveReports();
