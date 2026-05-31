@@ -1,6 +1,6 @@
 /**
  * Portal Karyawan - Admin Employees
- * Employee management for admin (with Edit functionality and prevent double submit)
+ * Employee management for admin (with password)
  */
 
 const adminEmployees = {
@@ -13,7 +13,7 @@ const adminEmployees = {
         status: ''
     },
     currentEditId: null,
-    isSubmitting: false, // flag untuk mencegah double submit
+    isSubmitting: false,
 
     async init() {
         if (!auth.isAdmin()) {
@@ -95,7 +95,7 @@ const adminEmployees = {
             });
         }
 
-        // Form submit (add) - prevent double submit
+        // Form submit (add)
         const form = document.getElementById('form-add-employee');
         if (form) {
             form.addEventListener('submit', (e) => this.handleAddEmployee(e));
@@ -146,7 +146,7 @@ const adminEmployees = {
         const paginated = filtered.slice(start, start + this.perPage);
 
         if (paginated.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: var(--spacing-xl);">Tidak ada data karyawan</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: var(--spacing-xl);">Tidak ada data karyawan</div></tr>`;
             return;
         }
 
@@ -274,16 +274,19 @@ const adminEmployees = {
         return labels[status] || status;
     },
 
-    // ========== MODAL ADD with double submit prevention ==========
     showAddModal() {
         const modal = document.getElementById('modal-add-employee');
         if (modal) {
             modal.style.display = 'flex';
             document.body.style.overflow = 'hidden';
-            // Reset flag saat modal dibuka
             this.isSubmitting = false;
             const submitBtn = document.querySelector('#form-add-employee button[type="submit"]');
             if (submitBtn) submitBtn.disabled = false;
+            // Reset password fields
+            const pwdField = document.getElementById('emp-password');
+            const confirmField = document.getElementById('emp-confirm-password');
+            if (pwdField) pwdField.value = '';
+            if (confirmField) confirmField.value = '';
         }
     },
 
@@ -305,7 +308,6 @@ const adminEmployees = {
     async handleAddEmployee(e) {
         e.preventDefault();
         if (this.isSubmitting) {
-            console.warn('Tunggu, sedang memproses...');
             toast.warning('Sedang memproses, harap tunggu');
             return;
         }
@@ -316,20 +318,37 @@ const adminEmployees = {
 
         const name = document.getElementById('emp-name').value.trim();
         const email = document.getElementById('emp-email').value.trim();
+        const password = document.getElementById('emp-password').value.trim();
+        const confirmPassword = document.getElementById('emp-confirm-password').value.trim();
         const department = document.getElementById('emp-department').value.trim();
         const position = document.getElementById('emp-position').value.trim();
         const shift = document.getElementById('emp-shift').value;
         const status = document.getElementById('emp-status').value;
         const joinDate = document.getElementById('emp-join-date').value;
 
-        if (!name || !email || !department || !position || !shift || !status || !joinDate) {
+        // Validasi
+        if (!name || !email || !password || !confirmPassword || !department || !position || !shift || !status || !joinDate) {
             toast.error('Semua field harus diisi!');
             this.isSubmitting = false;
             if (submitBtn) submitBtn.disabled = false;
             return;
         }
+        if (password.length < 4) {
+            toast.error('Password minimal 4 karakter');
+            this.isSubmitting = false;
+            if (submitBtn) submitBtn.disabled = false;
+            return;
+        }
+        if (password !== confirmPassword) {
+            toast.error('Password dan konfirmasi password tidak cocok');
+            this.isSubmitting = false;
+            if (submitBtn) submitBtn.disabled = false;
+            return;
+        }
 
-        const employeeData = { name, email, department, position, shift, status, joinDate };
+        const employeeData = {
+            name, email, password, department, position, shift, status, joinDate
+        };
 
         try {
             const result = await api.addEmployee(employeeData);
@@ -380,7 +399,6 @@ const adminEmployees = {
         return colors[Math.floor(Math.random() * colors.length)];
     },
 
-    // ========== VIEW DETAIL ==========
     viewEmployee(id) {
         const emp = this.employees.find(e => e.id == id);
         if (emp) {
@@ -388,7 +406,6 @@ const adminEmployees = {
         }
     },
 
-    // ========== EDIT EMPLOYEE ==========
     editEmployee(id) {
         const emp = this.employees.find(e => e.id == id);
         if (!emp) {
@@ -454,7 +471,6 @@ const adminEmployees = {
         }
     },
 
-    // ========== DELETE EMPLOYEE ==========
     async deleteEmployee(id) {
         if (confirm('Apakah Anda yakin ingin menghapus karyawan ini?')) {
             try {
