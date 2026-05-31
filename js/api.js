@@ -374,8 +374,28 @@ const api = {
 
     _localFallback(action, data) {
         console.warn(`API Fallback: ${action} - using localStorage`);
-        // This shouldn't be called normally since each method has its own fallback
         return { success: false, error: 'No fallback for action: ' + action };
+    },
+
+    // ========== DELETE METHODS (untuk pembatalan cuti/izin oleh karyawan) ==========
+    async deleteLeave(id) {
+        if (!API_BASE_URL) {
+            let leaves = storage.get('leaves', []);
+            leaves = leaves.filter(l => l.id !== id);
+            storage.set('leaves', leaves);
+            return { success: true };
+        }
+        return this.request('deleteLeave', { id });
+    },
+
+    async deleteIzin(id) {
+        if (!API_BASE_URL) {
+            let izin = storage.get('izin', []);
+            izin = izin.filter(i => i.id !== id);
+            storage.set('izin', izin);
+            return { success: true };
+        }
+        return this.request('deleteIzin', { id });
     }
 };
 
