@@ -1,6 +1,6 @@
 /**
  * Portal Karyawan - Admin Employees
- * Employee management for admin (with password)
+ * Employee management for admin (with Edit password)
  */
 
 const adminEmployees = {
@@ -282,7 +282,6 @@ const adminEmployees = {
             this.isSubmitting = false;
             const submitBtn = document.querySelector('#form-add-employee button[type="submit"]');
             if (submitBtn) submitBtn.disabled = false;
-            // Reset password fields
             const pwdField = document.getElementById('emp-password');
             const confirmField = document.getElementById('emp-confirm-password');
             if (pwdField) pwdField.value = '';
@@ -326,7 +325,6 @@ const adminEmployees = {
         const status = document.getElementById('emp-status').value;
         const joinDate = document.getElementById('emp-join-date').value;
 
-        // Validasi
         if (!name || !email || !password || !confirmPassword || !department || !position || !shift || !status || !joinDate) {
             toast.error('Semua field harus diisi!');
             this.isSubmitting = false;
@@ -346,9 +344,7 @@ const adminEmployees = {
             return;
         }
 
-        const employeeData = {
-            name, email, password, department, position, shift, status, joinDate
-        };
+        const employeeData = { name, email, password, department, position, shift, status, joinDate };
 
         try {
             const result = await api.addEmployee(employeeData);
@@ -420,6 +416,9 @@ const adminEmployees = {
         document.getElementById('edit-emp-shift').value = emp.shift;
         document.getElementById('edit-emp-status').value = emp.status;
         document.getElementById('edit-emp-join-date').value = emp.joinDate || '';
+        // Kosongkan field password
+        document.getElementById('edit-emp-password').value = '';
+        document.getElementById('edit-emp-confirm-password').value = '';
         const modal = document.getElementById('modal-edit-employee');
         if (modal) {
             modal.style.display = 'flex';
@@ -447,8 +446,22 @@ const adminEmployees = {
         const shift = document.getElementById('edit-emp-shift').value;
         const status = document.getElementById('edit-emp-status').value;
         const joinDate = document.getElementById('edit-emp-join-date').value;
+        const newPassword = document.getElementById('edit-emp-password').value.trim();
+        const confirmPassword = document.getElementById('edit-emp-confirm-password').value.trim();
+
+        if (newPassword && newPassword.length < 4) {
+            toast.error('Password minimal 4 karakter');
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            toast.error('Password dan konfirmasi tidak cocok');
+            return;
+        }
 
         const updateData = { name, email, department, position, shift, status, joinDate };
+        if (newPassword) {
+            updateData.password = newPassword;
+        }
 
         try {
             const result = await api.updateEmployee(this.currentEditId, updateData);
