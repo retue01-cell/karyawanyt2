@@ -28,7 +28,6 @@ const adminReports = {
         if (!auth.isAdmin()) { toast.error('Akses ditolak'); router.navigate('dashboard'); return; }
         await this.loadData();
         this.bindJurnalEvents();
-        // Set default bulan ke bulan saat ini jika belum ada filter
         if (!this.filters.jurnal.month) {
             const today = new Date();
             this.filters.jurnal.month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
@@ -58,7 +57,10 @@ const adminReports = {
             this.rawLeaves = leaveResult.data || [];
             this.rawIzin = izinResult.data || [];
             this.rawAttendance = attResult.data || [];
-            console.log('Jurnal data from API:', this.rawJournals);
+
+            console.log('Data dari API:');
+            console.log('Employees:', this.rawEmployees);
+            console.log('Journals (mentah):', this.rawJournals);
         } catch (error) {
             console.error('Load error:', error);
             this.rawEmployees = storage.get('admin_employees', []);
@@ -93,6 +95,7 @@ const adminReports = {
             };
         });
         this.jurnalData.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+        console.log('Jurnal data setelah diproses:', this.jurnalData);
 
         // Build leave/izin combined
         this.leaveData = [];
@@ -277,6 +280,7 @@ const adminReports = {
         const tbody = document.getElementById('jurnal-reports-body');
         if (!tbody) return;
         const data = this.getFilteredJurnal();
+        console.log('Data untuk renderJurnalReports (setelah filter):', data);
         if (data.length === 0) {
             tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:40px;">Tidak ada data jurnal untuk periode ini</div></tr>`;
             const mobile = document.getElementById('jurnal-mobile-cards');
