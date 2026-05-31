@@ -2,7 +2,7 @@
  * Portal Karyawan - Admin Reports
  * Reports and exports for admin with FULL DETAIL functionality
  * 
- * Perbaikan: Rekap Jurnal filter periode (bulan) sekarang berfungsi.
+ * Perbaikan: Jurnal menggunakan field 'updatedAt' jika 'date' tidak ada.
  */
 
 const adminReports = {
@@ -77,6 +77,7 @@ const adminReports = {
         }
 
         // Build data jurnal yang diperkaya dengan nama karyawan
+        // Gunakan field 'date' jika ada, fallback ke 'updatedAt' jika tidak
         const empMap = {};
         this.rawEmployees.forEach(emp => {
             empMap[String(emp.id)] = { name: emp.name, department: emp.department };
@@ -84,10 +85,22 @@ const adminReports = {
 
         this.jurnalData = this.rawJournals.map(j => {
             const emp = empMap[String(j.userId)] || { name: 'Unknown', department: '-' };
+            // Tentukan tanggal: prioritas date, lalu updatedAt, lalu createdAt, lalu kosong
+            let journalDate = j.date;
+            if (!journalDate && j.updatedAt) {
+                // Ambil hanya tanggal (YYYY-MM-DD) dari updatedAt
+                journalDate = j.updatedAt.split('T')[0];
+            }
+            if (!journalDate && j.createdAt) {
+                journalDate = j.createdAt.split('T')[0];
+            }
+            if (!journalDate) {
+                journalDate = ''; // tidak ada tanggal
+            }
             return {
                 id: j.id,
                 userId: j.userId,
-                date: j.date,
+                date: journalDate,
                 name: emp.name,
                 department: emp.department,
                 tasks: j.tasks || '-',
@@ -99,6 +112,7 @@ const adminReports = {
                 updatedAt: j.updatedAt
             };
         });
+        // Urutkan berdasarkan tanggal (descending)
         this.jurnalData.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
         // Build leave/izin combined
@@ -248,7 +262,7 @@ const adminReports = {
 
     getFilteredJurnal() {
         let data = [...this.jurnalData];
-        // Filter bulan (periode)
+        // Filter bulan (periode) - pastikan date ada
         if (this.filters.jurnal.month) {
             data = data.filter(j => j.date && j.date.startsWith(this.filters.jurnal.month));
         }
@@ -314,7 +328,7 @@ const adminReports = {
         if (!tbody) return;
         const data = this.getFilteredJurnal();
         if (data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:40px;">Tidak ada data jurnal untuk periode ini</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:40px;">Tidak ada data jurnal untuk periode ini (pastikan kolom date ada di sheet Journals)</td></tr>`;
             const mobile = document.getElementById('jurnal-mobile-cards');
             if (mobile) mobile.innerHTML = '<div class="empty-state">Tidak ada data jurnal</div>';
             return;
@@ -352,7 +366,7 @@ const adminReports = {
         const data = this.getFilteredLeave();
         const statusLabels = { pending: 'Menunggu', approved: 'Disetujui', rejected: 'Ditolak' };
         if (data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:40px;">Tidak ada data cuti/izin</td></tr>`;
+            tbody.innerHTML = `<td><td colspan="8" style="text-align:center; padding:40px;">Tidak ada data cuti/izin</td></tr>`;
             const mobile = document.getElementById('leave-mobile-cards');
             if (mobile) mobile.innerHTML = '<div class="empty-state">Tidak ada data</div>';
             return;
@@ -447,7 +461,7 @@ const adminReports = {
             <div style="max-height:60vh; overflow-y:auto;">
                 <p><strong>Nama:</strong> ${this.escapeHtml(jurnal.name)}</p>
                 <p><strong>Departemen:</strong> ${this.escapeHtml(jurnal.department)}</p>
-                <p><strong>Tanggal:</strong> ${dateTime.formatDate(new Date(jurnal.date), 'long')}</p>
+                <p><strong>Tanggal:</strong> ${date ? dateTime.formatDate(new Date(date), 'long') : 'Tidak ada tanggal'}</p>
                 <hr>
                 <p><strong>Tugas yang dikerjakan:</strong><br>${(jurnal.tasks || '-').replace(/\n/g, '<br>')}</p>
                 <p><strong>Pencapaian:</strong><br>${(jurnal.achievements || '-').replace(/\n/g, '<br>')}</p>
