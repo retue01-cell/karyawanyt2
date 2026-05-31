@@ -1541,6 +1541,77 @@
             </form>
         </div>
     </div>
+
+    <!-- Modal Edit Karyawan -->
+    <div class="modal-overlay" id="modal-edit-employee" style="display: none;">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>Edit Karyawan</h3>
+                <button class="btn-close-modal" id="btn-close-edit-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="form-edit-employee" class="modal-form">
+                <div class="form-row two-col">
+                    <div class="form-group">
+                        <label for="edit-emp-name">Nama Lengkap</label>
+                        <input type="text" id="edit-emp-name" placeholder="Nama karyawan" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-emp-email">Email</label>
+                        <input type="email" id="edit-emp-email" placeholder="email@company.com" required>
+                    </div>
+                </div>
+                <div class="form-row two-col">
+                    <div class="form-group">
+                        <label for="edit-emp-department">Departemen</label>
+                        <input type="text" id="edit-emp-department" list="dept-list-edit" placeholder="Pilih atau ketik departemen" required>
+                        <datalist id="dept-list-edit">
+                            <option value="IT">
+                            <option value="HR">
+                            <option value="Finance">
+                            <option value="Marketing">
+                            <option value="Operations">
+                            <option value="Sales">
+                            <option value="Legal">
+                            <option value="Customer Service">
+                            <option value="Research & Development">
+                            <option value="Quality Assurance">
+                        </datalist>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-emp-position">Jabatan</label>
+                        <input type="text" id="edit-emp-position" placeholder="Jabatan" required>
+                    </div>
+                </div>
+                <div class="form-row two-col">
+                    <div class="form-group">
+                        <label for="edit-emp-shift">Shift</label>
+                        <select id="edit-emp-shift" required>
+                            <option value="Pagi">Pagi (08:00-17:00)</option>
+                            <option value="Siang">Siang (14:00-23:00)</option>
+                            <option value="Malam">Malam (23:00-08:00)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-emp-status">Status</label>
+                        <select id="edit-emp-status" required>
+                            <option value="active">Aktif</option>
+                            <option value="on-leave">Cuti</option>
+                            <option value="inactive">Non-Aktif</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="edit-emp-join-date">Tanggal Bergabung</label>
+                    <input type="date" id="edit-emp-join-date" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="btn-cancel-edit">Batal</button>
+                    <button type="submit" class="btn-primary">Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Profile Modal -->
     <div class="modal-overlay" id="modal-profile" style="display: none;">
         <div class="modal-container modal-profile">
@@ -1551,7 +1622,6 @@
                         class="fas fa-times"></i></button>
             </div>
             <div class="profile-modal-body">
-                <!-- Profile Info Section -->
                 <div class="profile-info-section">
                     <div class="profile-avatar-large">
                         <img id="profile-avatar" src="https://ui-avatars.com/api/?name=User&background=F59E0B&color=fff"
@@ -1564,7 +1634,6 @@
                     </div>
                 </div>
 
-                <!-- Employee-specific fields -->
                 <div id="profile-employee-fields" class="profile-fields">
                     <div class="profile-field-row">
                         <div class="profile-field">
@@ -1584,7 +1653,6 @@
                     </div>
                 </div>
 
-                <!-- Change Password Section -->
                 <div class="profile-password-section">
                     <h4><i class="fas fa-key"></i> Ubah Password</h4>
                     <div class="form-group">
