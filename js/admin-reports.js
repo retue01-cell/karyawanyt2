@@ -2,7 +2,7 @@
  * Portal Karyawan - Admin Reports
  * Reports and exports for admin with FULL DETAIL functionality
  * 
- * Perbaikan: Filter periode (bulan) pada Rekap Absensi sekarang berfungsi.
+ * Perbaikan: Rekap Jurnal sekarang menampilkan data sesuai filter.
  */
 
 const adminReports = {
@@ -11,7 +11,8 @@ const adminReports = {
     rawEmployees: [],
     rawLeaves: [],
     rawIzin: [],
-    jurnalData: [],
+    rawJournals: [],     // tambahan untuk jurnal mentah
+    jurnalData: [],      // data jurnal yang sudah diperkaya dengan nama karyawan
     leaveData: [],
 
     filters: {
@@ -55,31 +56,47 @@ const adminReports = {
                 api.getAllAttendance()
             ]);
             this.rawEmployees = empResult.data || [];
-            this.jurnalData = jurnalResult.data || [];
+            this.rawJournals = jurnalResult.data || [];
             this.rawLeaves = leaveResult.data || [];
             this.rawIzin = izinResult.data || [];
             this.rawAttendance = attResult.data || [];
         } catch (error) {
             console.error('Load error:', error);
             this.rawEmployees = storage.get('admin_employees', []);
-            this.jurnalData = storage.get('jurnals', []);
+            this.rawJournals = storage.get('jurnals', []);
             this.rawLeaves = storage.get('leaves', []);
             this.rawIzin = storage.get('izin', []);
             this.rawAttendance = storage.get('attendance', []);
         }
 
-        // Prepare jurnal data for rendering (enrich with employee name)
-        this.jurnalData = this.jurnalData.map(j => {
-            const emp = this.rawEmployees.find(e => String(e.id) === String(j.userId));
-            return {
-                ...j,
-                name: emp ? emp.name : 'Unknown',
-                department: emp ? emp.department : '-',
-                status: j.tasks ? 'filled' : 'empty'
-            };
+        // ========== PERBAIKAN: Proses Jurnal Data dengan benar ==========
+        // Mapping employeeId ke nama dan departemen
+        const empMap = {};
+        this.rawEmployees.forEach(emp => {
+            empMap[String(emp.id)] = { name: emp.name, department: emp.department };
         });
 
-        // Prepare leave/izin combined
+        this.jurnalData = this.rawJournals.map(j => {
+            const emp = empMap[String(j.userId)] || { name: 'Unknown', department: '-' };
+            return {
+                id: j.id,
+                userId: j.userId,
+                date: j.date,
+                name: emp.name,
+                department: emp.department,
+                tasks: j.tasks || '-',
+                achievements: j.achievements || '-',
+                obstacles: j.obstacles || '-',
+                plan: j.plan || '-',
+                photo: j.photo || null,
+                status: (j.tasks && j.tasks !== '-') ? 'filled' : 'empty',
+                updatedAt: j.updatedAt
+            };
+        });
+        // Urutkan berdasarkan tanggal terbaru
+        this.jurnalData.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+        // Build leave/izin combined
         this.leaveData = [];
         this.rawLeaves.forEach(l => {
             const emp = this.rawEmployees.find(e => String(e.id) === String(l.userId));
@@ -116,18 +133,12 @@ const adminReports = {
 
     // ========== HELPER: Bangun data absensi berdasarkan bulan ==========
     buildAttendanceDataForMonth(monthStr) {
-        // monthStr format: YYYY-MM (contoh: "2026-05")
         if (!monthStr) {
             const today = new Date();
             monthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
         }
         const [year, month] = monthStr.split('-');
-        const daysInMonth = new Date(parseInt(year), parseInt(month), 0).getDate();
-
-        // Filter attendance records yang sesuai bulan
         const monthAttendance = this.rawAttendance.filter(a => a.date && a.date.startsWith(monthStr));
-
-        // Hitung per karyawan
         return this.rawEmployees.map(emp => {
             const empAtt = monthAttendance.filter(a => String(a.userId) === String(emp.id));
             let present = 0, late = 0;
@@ -137,33 +148,21 @@ const adminReports = {
                     if (a.status && a.status.toLowerCase() === 'terlambat') late++;
                 }
             });
-            // Hitung cuti/izin yang disetujui dan jatuh pada bulan ini
             const empLeaves = this.rawLeaves.filter(l => String(l.userId) === String(emp.id) && l.status === 'approved');
             const empIzin = this.rawIzin.filter(i => String(i.userId) === String(emp.id) && i.status === 'approved');
             let leaveDays = 0;
             empLeaves.forEach(l => {
-                // Cek apakah overlap dengan bulan ini
                 const start = new Date(l.startDate);
                 const end = new Date(l.endDate);
                 const monthStart = new Date(year, parseInt(month)-1, 1);
                 const monthEnd = new Date(year, parseInt(month), 0);
-                if (start <= monthEnd && end >= monthStart) {
-                    leaveDays += parseInt(l.duration) || 1;
-                }
+                if (start <= monthEnd && end >= monthStart) leaveDays += parseInt(l.duration) || 1;
             });
             empIzin.forEach(i => {
                 const izinDate = new Date(i.date);
-                if (izinDate.getFullYear() == year && izinDate.getMonth() == parseInt(month)-1) {
-                    leaveDays += parseInt(i.duration) || 1;
-                }
+                if (izinDate.getFullYear() == year && izinDate.getMonth() == parseInt(month)-1) leaveDays += parseInt(i.duration) || 1;
             });
-            return {
-                name: emp.name,
-                department: emp.department,
-                present, late,
-                absent: leaveDays,
-                total: present + leaveDays
-            };
+            return { name: emp.name, department: emp.department, present, late, absent: leaveDays, total: present + leaveDays };
         });
     },
 
@@ -207,22 +206,15 @@ const adminReports = {
         if (status) status.onchange = (e) => { this.filters.leave.status = e.target.value; this.renderLeaveReports(); };
     },
 
-    // ----------------------------------------------
-    // FILTERING untuk ATTENDANCE (dengan bulan)
-    // ----------------------------------------------
+    // ========== FILTERING ==========
     getFilteredAttendance() {
         let month = this.filters.attendance.month;
         if (!month) {
             const today = new Date();
             month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
         }
-        // Bangun data berdasarkan bulan
         let data = this.buildAttendanceDataForMonth(month);
-        // Filter department
-        if (this.filters.attendance.dept) {
-            data = data.filter(row => row.department === this.filters.attendance.dept);
-        }
-        // Filter status
+        if (this.filters.attendance.dept) data = data.filter(row => row.department === this.filters.attendance.dept);
         if (this.filters.attendance.status) {
             data = data.filter(row => {
                 if (this.filters.attendance.status === 'present') return row.present > 0;
@@ -234,13 +226,24 @@ const adminReports = {
         return data;
     },
 
+    // ========== PERBAIKAN: Filter Jurnal yang benar ==========
     getFilteredJurnal() {
-        let data = this.jurnalData;
-        if (this.filters.jurnal.month) data = data.filter(j => j.date && j.date.startsWith(this.filters.jurnal.month));
-        if (this.filters.jurnal.employee) data = data.filter(j => j.name === this.filters.jurnal.employee);
-        if (this.filters.jurnal.status) data = data.filter(j => j.status === this.filters.jurnal.status);
+        let data = [...this.jurnalData];
+        // Filter bulan (periode) - format YYYY-MM
+        if (this.filters.jurnal.month) {
+            data = data.filter(j => j.date && j.date.startsWith(this.filters.jurnal.month));
+        }
+        // Filter karyawan berdasarkan nama
+        if (this.filters.jurnal.employee) {
+            data = data.filter(j => j.name === this.filters.jurnal.employee);
+        }
+        // Filter status (terisi/kosong)
+        if (this.filters.jurnal.status) {
+            data = data.filter(j => j.status === this.filters.jurnal.status);
+        }
         return data;
     },
+
     getFilteredLeave() {
         return this.leaveData.filter(item => {
             let matchesType = true;
@@ -287,21 +290,42 @@ const adminReports = {
         }
     },
 
+    // ========== PERBAIKAN: Render Jurnal Reports dengan data yang sudah difilter ==========
     renderJurnalReports() {
         const tbody = document.getElementById('jurnal-reports-body');
         if (!tbody) return;
         const data = this.getFilteredJurnal();
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:40px;">Tidak ada data jurnal untuk periode ini</td></tr>`;
+            const mobile = document.getElementById('jurnal-mobile-cards');
+            if (mobile) mobile.innerHTML = '<div class="empty-state">Tidak ada data jurnal</div>';
+            return;
+        }
         tbody.innerHTML = data.map(row => `
             <tr>
-                <td>${row.date}</td>
+                <td>${row.date || '-'}</div></td>
                 <td>${this.escapeHtml(row.name)}</div></td>
                 <td>${this.escapeHtml(row.department)}</div></td>
-                <td>${(row.tasks || '-').substring(0, 30)}${(row.tasks || '').length > 30 ? '...' : ''}</td>
-                <td>${row.photo ? `<img src="${row.photo}" class="jurnal-thumbnail" onclick="adminReports.viewPhoto('${row.photo}')" style="width:40px;height:40px;object-fit:cover;border-radius:6px;cursor:pointer;">` : '-'}</td>
-                <td><span class="status-badge ${row.status}">${row.status === 'filled' ? 'Terisi' : 'Kosong'}</span></td>
-                <td><button class="btn-action view" onclick="adminReports.viewJurnalDetail('${this.escapeHtml(row.name)}', '${row.date}')"><i class="fas fa-eye"></i></button></td>
+                <td>${(row.tasks || '-').substring(0, 40)}${(row.tasks || '').length > 40 ? '...' : ''}</div></td>
+                <td>${row.photo ? `<img src="${row.photo}" class="jurnal-thumbnail" onclick="adminReports.viewPhoto('${row.photo}')" style="width:40px;height:40px;object-fit:cover;border-radius:6px;cursor:pointer;">` : '-'}</div></td>
+                <td><span class="status-badge ${row.status}">${row.status === 'filled' ? 'Terisi' : 'Kosong'}</span></div></td>
+                <td><button class="btn-action view" onclick="adminReports.viewJurnalDetail('${this.escapeHtml(row.name)}', '${row.date}')"><i class="fas fa-eye"></i></button></div></td>
             </tr>
         `).join('');
+
+        // Mobile cards
+        const mobile = document.getElementById('jurnal-mobile-cards');
+        if (mobile) {
+            mobile.innerHTML = data.map(row => `
+                <div class="mobile-card">
+                    <div class="mobile-card-header"><span class="mobile-card-title">${this.escapeHtml(row.name)}</span><span class="status-badge ${row.status}">${row.status === 'filled' ? 'Terisi' : 'Kosong'}</span></div>
+                    <div class="mobile-card-row"><span>Tanggal:</span><span>${row.date}</span></div>
+                    <div class="mobile-card-row"><span>Departemen:</span><span>${row.department}</span></div>
+                    <div class="mobile-card-row"><span>Tugas:</span><span>${(row.tasks || '-').substring(0, 50)}</span></div>
+                    <button class="btn-primary btn-sm" style="margin-top:8px;" onclick="adminReports.viewJurnalDetail('${this.escapeHtml(row.name)}', '${row.date}')">Lihat Detail</button>
+                </div>
+            `).join('');
+        }
     },
 
     renderLeaveReports() {
@@ -394,7 +418,7 @@ const adminReports = {
     viewJurnalDetail(name, date) {
         const jurnal = this.jurnalData.find(j => j.name === name && j.date === date);
         if (!jurnal) { toast.error('Jurnal tidak ditemukan'); return; }
-        const photoHtml = jurnal.photo ? `<div style="margin-top:12px;"><img src="${jurnal.photo}" style="max-width:100%; max-height:200px; border-radius:8px;"></div>` : '';
+        const photoHtml = jurnal.photo ? `<div style="margin-top:12px;"><img src="${jurnal.photo}" style="max-width:100%; max-height:200px; border-radius:8px; cursor:pointer;" onclick="window.open('${jurnal.photo}','_blank')"></div>` : '';
         const content = `
             <div style="max-height:60vh; overflow-y:auto;">
                 <p><strong>Nama:</strong> ${this.escapeHtml(jurnal.name)}</p>
