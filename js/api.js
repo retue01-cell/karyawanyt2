@@ -92,7 +92,7 @@ const api = {
     async saveJournal(data) {
         if (!API_BASE_URL) {
             const all = storage.get('jurnals', []);
-            const idx = all.findIndex(j => j.date === data.date);
+            const idx = all.findIndex(j => j.date === data.date && j.userId === data.userId);
             if (idx >= 0) all[idx] = data;
             else all.unshift(data);
             storage.set('jurnals', all);
@@ -103,6 +103,15 @@ const api = {
     async getAllJournals() {
         if (!API_BASE_URL) return { success: true, data: storage.get('jurnals', []) };
         return this.request('getAllJournals');
+    },
+    async deleteJournal(id) {
+        if (!API_BASE_URL) {
+            let journals = storage.get('jurnals', []);
+            journals = journals.filter(j => j.id != id);
+            storage.set('jurnals', journals);
+            return { success: true };
+        }
+        return this.request('deleteJournal', { id });
     },
 
     // ========== LEAVES (CUTI) ==========
@@ -144,6 +153,15 @@ const api = {
         if (!API_BASE_URL) return { success: true, data: storage.get('leaves', []) };
         return this.request('getAllLeaves');
     },
+    async deleteLeave(id) {
+        if (!API_BASE_URL) {
+            let leaves = storage.get('leaves', []);
+            leaves = leaves.filter(l => l.id != id);
+            storage.set('leaves', leaves);
+            return { success: true };
+        }
+        return this.request('deleteLeave', { id });
+    },
 
     // ========== IZIN / PERMISSION ==========
     async getIzin(userId) {
@@ -183,6 +201,15 @@ const api = {
     async getAllIzin() {
         if (!API_BASE_URL) return { success: true, data: storage.get('izin', []) };
         return this.request('getAllIzin');
+    },
+    async deleteIzin(id) {
+        if (!API_BASE_URL) {
+            let izin = storage.get('izin', []);
+            izin = izin.filter(i => i.id != id);
+            storage.set('izin', izin);
+            return { success: true };
+        }
+        return this.request('deleteIzin', { id });
     },
 
     // ========== EMPLOYEES ==========
@@ -300,31 +327,6 @@ const api = {
     _localFallback(action, data) {
         console.warn(`API Fallback: ${action} - using localStorage`);
         return { success: false, error: 'No fallback for action: ' + action };
-    },
-
-    // ========== DELETE METHODS ==========
-    async deleteLeave(id) {
-        const cleanId = parseInt(String(id).split('.')[0], 10);
-        console.log('Deleting leave with id:', cleanId);
-        if (!API_BASE_URL) {
-            let leaves = storage.get('leaves', []);
-            leaves = leaves.filter(l => parseInt(String(l.id).split('.')[0], 10) !== cleanId);
-            storage.set('leaves', leaves);
-            return { success: true };
-        }
-        return this.request('deleteLeave', { id: cleanId });
-    },
-
-    async deleteIzin(id) {
-        const cleanId = parseInt(String(id).split('.')[0], 10);
-        console.log('Deleting izin with id:', cleanId);
-        if (!API_BASE_URL) {
-            let izin = storage.get('izin', []);
-            izin = izin.filter(i => parseInt(String(i.id).split('.')[0], 10) !== cleanId);
-            storage.set('izin', izin);
-            return { success: true };
-        }
-        return this.request('deleteIzin', { id: cleanId });
     }
 };
 
