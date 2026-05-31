@@ -391,7 +391,7 @@
                             </div>
                             <div class="timeline-card"><div class="card-header"><h3>Timeline Hari Ini</h3></div><div class="timeline" id="attendance-timeline"><div class="timeline-item pending" data-type="clock-in"><div class="timeline-dot"></div><div class="timeline-content"><span class="timeline-title">Clock In</span><span class="timeline-time">--:--</span></div></div><div class="timeline-item pending" data-type="break"><div class="timeline-dot"></div><div class="timeline-content"><span class="timeline-title">Istirahat</span><span class="timeline-time">--:--</span></div></div><div class="timeline-item pending" data-type="after-break"><div class="timeline-dot"></div><div class="timeline-content"><span class="timeline-title">Selesai Istirahat</span><span class="timeline-time">--:--</span></div></div><div class="timeline-item pending" data-type="clock-out"><div class="timeline-dot"></div><div class="timeline-content"><span class="timeline-title">Clock Out</span><span class="timeline-time">--:--</span></div></div></div></div>
                         </div>
-                        <div class="history-card"><div class="card-header"><h3>Riwayat Absensi</h3></div><div class="history-table-wrapper"><table class="history-table"><thead><tr><th>Tanggal</th><th>Shift</th><th>Clock In</th><th>Clock Out</th><th>Durasi</th><th>Status</th></tr></thead><tbody id="attendance-history"><tr><td>06 Mar 2026</td><td>Pagi</td><td>07:55</td><td>17:15</td><td>9j 20m</td><td><span class="badge-status success">Tepat Waktu</span></td></tr><tr><td>05 Mar 2026</td><td>Pagi</td><td>08:10</td><td>17:05</td><td>8j 55m</td><td><span class="badge-status warning">Terlambat</span></td></tr></tbody></table></div></div>
+                        <div class="history-card"><div class="card-header"><h3>Riwayat Absensi</h3></div><div class="history-table-wrapper"><table class="history-table"><thead><tr><th>Tanggal</th><th>Shift</th><th>Clock In</th><th>Clock Out</th><th>Durasi</th><th>Status</th></tr></thead><tbody id="attendance-history"><tr><td>06 Mar 2026</div><td>Pagi</div><td>07:55</div><td>17:15</div><td>9j 20m</div><td><span class="badge-status success">Tepat Waktu</span></div></tr><tr><td>05 Mar 2026</div><td>Pagi</div><td>08:10</div><td>17:05</div><td>8j 55m</div><td><span class="badge-status warning">Terlambat</span></div></tr></tbody></table></div></div>
                     </div>
                 </div>
 
@@ -466,7 +466,7 @@
                     <div class="reports-container">
                         <div class="reports-header"><div class="reports-title"><h2>Rekap Absensi</h2><p>Rekap kehadiran seluruh karyawan</p></div><div class="reports-actions"><button class="btn-secondary" id="btn-export-attendance"><i class="fas fa-download"></i><span>Export Excel</span></button><button class="btn-primary" id="btn-print-attendance"><i class="fas fa-print"></i><span>Cetak</span></button></div></div>
                         <div class="reports-filters-card"><div class="reports-filters"><div class="filter-group"><label>Periode</label><input type="month" id="attendance-month" value="2026-03"></div><div class="filter-group"><label>Departemen</label><select id="report-dept-filter"><option value="">Semua Departemen</option><option value="IT">IT</option><option value="HR">HR</option><option value="Finance">Finance</option><option value="Marketing">Marketing</option></select></div><div class="filter-group"><label>Status</label><select id="report-status-filter"><option value="">Semua</option><option value="present">Hadir</option><option value="absent">Tidak Hadir</option><option value="late">Terlambat</option></select></div></div></div>
-                        <div class="reports-table-card"><div class="table-responsive"><table class="reports-table" id="attendance-reports-table"><thead><tr><th rowspan="2">Nama</th><th rowspan="2">Departemen</th><th colspan="4" class="text-center">Ringkasan</th><th rowspan="2">Aksi</th></tr><tr><th class="success">Hadir</th><th class="warning">Telat</th><th class="danger">Absen</th><th>Total</th></tr></thead><tbody id="attendance-reports-body"></tbody></table></div><div class="mobile-cards" id="attendance-mobile-cards"></div></div>
+                        <div class="reports-table-card"><div class="table-responsive"><table class="reports-table" id="attendance-reports-table"><thead><tr><th rowspan="2">Nama</th><th rowspan="2">Departemen</th><th colspan="4" class="text-center">Ringkasan</th><th rowspan="2">Aksi</th></tr><th class="success">Hadir</th><th class="warning">Telat</th><th class="danger">Absen</th><th>Total</th></tr></thead><tbody id="attendance-reports-body"></tbody><table></div><div class="mobile-cards" id="attendance-mobile-cards"></div></div>
                     </div>
                 </div>
 
@@ -604,19 +604,64 @@
             </div>
             <form id="form-edit-employee" class="modal-form">
                 <div class="form-row two-col">
-                    <div class="form-group"><label for="edit-emp-name">Nama Lengkap</label><input type="text" id="edit-emp-name" placeholder="Nama karyawan" required></div>
-                    <div class="form-group"><label for="edit-emp-email">Email</label><input type="email" id="edit-emp-email" placeholder="email@company.com" required></div>
+                    <div class="form-group">
+                        <label for="edit-emp-name">Nama Lengkap</label>
+                        <input type="text" id="edit-emp-name" placeholder="Nama karyawan" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-emp-email">Email</label>
+                        <input type="email" id="edit-emp-email" placeholder="email@company.com" required>
+                    </div>
                 </div>
                 <div class="form-row two-col">
-                    <div class="form-group"><label for="edit-emp-department">Departemen</label><input type="text" id="edit-emp-department" list="dept-list-edit" placeholder="Pilih atau ketik departemen" required><datalist id="dept-list-edit"><option value="IT"><option value="HR"><option value="Finance"><option value="Marketing"><option value="Operations"><option value="Sales"><option value="Legal"><option value="Customer Service"><option value="Research & Development"><option value="Quality Assurance"></datalist></div>
-                    <div class="form-group"><label for="edit-emp-position">Jabatan</label><input type="text" id="edit-emp-position" placeholder="Jabatan" required></div>
+                    <div class="form-group">
+                        <label for="edit-emp-password">Password (kosongkan jika tidak diubah)</label>
+                        <input type="password" id="edit-emp-password" placeholder="Password baru (min 4 karakter)">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-emp-confirm-password">Konfirmasi Password Baru</label>
+                        <input type="password" id="edit-emp-confirm-password" placeholder="Konfirmasi password baru">
+                    </div>
                 </div>
                 <div class="form-row two-col">
-                    <div class="form-group"><label for="edit-emp-shift">Shift</label><select id="edit-emp-shift" required><option value="Pagi">Pagi (08:00-17:00)</option><option value="Siang">Siang (14:00-23:00)</option><option value="Malam">Malam (23:00-08:00)</option></select></div>
-                    <div class="form-group"><label for="edit-emp-status">Status</label><select id="edit-emp-status" required><option value="active">Aktif</option><option value="on-leave">Cuti</option><option value="inactive">Non-Aktif</option></select></div>
+                    <div class="form-group">
+                        <label for="edit-emp-department">Departemen</label>
+                        <input type="text" id="edit-emp-department" list="dept-list-edit" placeholder="Pilih atau ketik departemen" required>
+                        <datalist id="dept-list-edit">
+                            <option value="IT"><option value="HR"><option value="Finance"><option value="Marketing"><option value="Operations"><option value="Sales"><option value="Legal"><option value="Customer Service"><option value="Research & Development"><option value="Quality Assurance">
+                        </datalist>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-emp-position">Jabatan</label>
+                        <input type="text" id="edit-emp-position" placeholder="Jabatan" required>
+                    </div>
                 </div>
-                <div class="form-group"><label for="edit-emp-join-date">Tanggal Bergabung</label><input type="date" id="edit-emp-join-date" required></div>
-                <div class="modal-actions"><button type="button" class="btn-secondary" id="btn-cancel-edit">Batal</button><button type="submit" class="btn-primary">Simpan Perubahan</button></div>
+                <div class="form-row two-col">
+                    <div class="form-group">
+                        <label for="edit-emp-shift">Shift</label>
+                        <select id="edit-emp-shift" required>
+                            <option value="Pagi">Pagi (08:00-17:00)</option>
+                            <option value="Siang">Siang (14:00-23:00)</option>
+                            <option value="Malam">Malam (23:00-08:00)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-emp-status">Status</label>
+                        <select id="edit-emp-status" required>
+                            <option value="active">Aktif</option>
+                            <option value="on-leave">Cuti</option>
+                            <option value="inactive">Non-Aktif</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="edit-emp-join-date">Tanggal Bergabung</label>
+                    <input type="date" id="edit-emp-join-date" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="btn-cancel-edit">Batal</button>
+                    <button type="submit" class="btn-primary">Simpan Perubahan</button>
+                </div>
             </form>
         </div>
     </div>
