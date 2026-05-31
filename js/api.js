@@ -92,7 +92,7 @@ const api = {
     async saveJournal(data) {
         if (!API_BASE_URL) {
             const all = storage.get('jurnals', []);
-            const idx = all.findIndex(j => j.date === data.date && j.userId === data.userId);
+            const idx = all.findIndex(j => j.date === data.date);
             if (idx >= 0) all[idx] = data;
             else all.unshift(data);
             storage.set('jurnals', all);
