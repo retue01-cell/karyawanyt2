@@ -1,16 +1,19 @@
 /**
  * Portal Karyawan - Admin Reports
  * Reports and exports for admin with FULL DETAIL functionality
+ * 
+ * Perbaikan: Filter periode (bulan) pada Rekap Absensi sekarang berfungsi.
  */
 
 const adminReports = {
-    attendanceData: [],
-    jurnalData: [],
-    leaveData: [],
+    // Data mentah dari API
     rawAttendance: [],
     rawEmployees: [],
     rawLeaves: [],
     rawIzin: [],
+    jurnalData: [],
+    leaveData: [],
+
     filters: {
         attendance: { month: '', dept: '', status: '' },
         jurnal: { month: '', employee: '', status: '' },
@@ -64,25 +67,8 @@ const adminReports = {
             this.rawIzin = storage.get('izin', []);
             this.rawAttendance = storage.get('attendance', []);
         }
-        // Build attendance summary
-        this.attendanceData = this.rawEmployees.map(emp => {
-            const empAtt = this.rawAttendance.filter(a => String(a.userId) === String(emp.id));
-            let present = 0, late = 0;
-            empAtt.forEach(a => {
-                if (a.clockIn) {
-                    present++;
-                    if (a.status && a.status.toLowerCase() === 'terlambat') late++;
-                }
-            });
-            const empLeaves = this.rawLeaves.filter(l => String(l.userId) === String(emp.id) && l.status === 'approved');
-            const empIzin = this.rawIzin.filter(i => String(i.userId) === String(emp.id) && i.status === 'approved');
-            let leaveDays = 0;
-            empLeaves.forEach(l => leaveDays += parseInt(l.duration) || 1);
-            empIzin.forEach(i => leaveDays += parseInt(i.duration) || 1);
-            return { name: emp.name, department: emp.department, present, late, absent: leaveDays, total: present + leaveDays };
-        });
 
-        // Prepare jurnal data for rendering
+        // Prepare jurnal data for rendering (enrich with employee name)
         this.jurnalData = this.jurnalData.map(j => {
             const emp = this.rawEmployees.find(e => String(e.id) === String(j.userId));
             return {
@@ -118,6 +104,7 @@ const adminReports = {
         });
         this.leaveData.sort((a, b) => new Date(b.appliedAt) - new Date(a.appliedAt));
     },
+
     getLeaveTypeLabel(type) {
         const map = { annual: 'Cuti Tahunan', sick: 'Cuti Sakit', important: 'Cuti Penting', maternity: 'Cuti Melahirkan', other: 'Lainnya' };
         return map[type] || type;
@@ -125,6 +112,59 @@ const adminReports = {
     getIzinTypeLabel(type) {
         const map = { sick: 'Sakit', permission: 'Izin Penting', emergency: 'Keadaan Darurat' };
         return map[type] || type;
+    },
+
+    // ========== HELPER: Bangun data absensi berdasarkan bulan ==========
+    buildAttendanceDataForMonth(monthStr) {
+        // monthStr format: YYYY-MM (contoh: "2026-05")
+        if (!monthStr) {
+            const today = new Date();
+            monthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+        }
+        const [year, month] = monthStr.split('-');
+        const daysInMonth = new Date(parseInt(year), parseInt(month), 0).getDate();
+
+        // Filter attendance records yang sesuai bulan
+        const monthAttendance = this.rawAttendance.filter(a => a.date && a.date.startsWith(monthStr));
+
+        // Hitung per karyawan
+        return this.rawEmployees.map(emp => {
+            const empAtt = monthAttendance.filter(a => String(a.userId) === String(emp.id));
+            let present = 0, late = 0;
+            empAtt.forEach(a => {
+                if (a.clockIn) {
+                    present++;
+                    if (a.status && a.status.toLowerCase() === 'terlambat') late++;
+                }
+            });
+            // Hitung cuti/izin yang disetujui dan jatuh pada bulan ini
+            const empLeaves = this.rawLeaves.filter(l => String(l.userId) === String(emp.id) && l.status === 'approved');
+            const empIzin = this.rawIzin.filter(i => String(i.userId) === String(emp.id) && i.status === 'approved');
+            let leaveDays = 0;
+            empLeaves.forEach(l => {
+                // Cek apakah overlap dengan bulan ini
+                const start = new Date(l.startDate);
+                const end = new Date(l.endDate);
+                const monthStart = new Date(year, parseInt(month)-1, 1);
+                const monthEnd = new Date(year, parseInt(month), 0);
+                if (start <= monthEnd && end >= monthStart) {
+                    leaveDays += parseInt(l.duration) || 1;
+                }
+            });
+            empIzin.forEach(i => {
+                const izinDate = new Date(i.date);
+                if (izinDate.getFullYear() == year && izinDate.getMonth() == parseInt(month)-1) {
+                    leaveDays += parseInt(i.duration) || 1;
+                }
+            });
+            return {
+                name: emp.name,
+                department: emp.department,
+                present, late,
+                absent: leaveDays,
+                total: present + leaveDays
+            };
+        });
     },
 
     // ----------------------------------------------
@@ -168,18 +208,32 @@ const adminReports = {
     },
 
     // ----------------------------------------------
-    // FILTERING
+    // FILTERING untuk ATTENDANCE (dengan bulan)
     // ----------------------------------------------
     getFilteredAttendance() {
-        return this.attendanceData.filter(row => {
-            const matchesDept = !this.filters.attendance.dept || row.department === this.filters.attendance.dept;
-            const matchesStatus = !this.filters.attendance.status ||
-                (this.filters.attendance.status === 'present' && row.present > 0) ||
-                (this.filters.attendance.status === 'absent' && row.absent > 0) ||
-                (this.filters.attendance.status === 'late' && row.late > 0);
-            return matchesDept && matchesStatus;
-        });
+        let month = this.filters.attendance.month;
+        if (!month) {
+            const today = new Date();
+            month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+        }
+        // Bangun data berdasarkan bulan
+        let data = this.buildAttendanceDataForMonth(month);
+        // Filter department
+        if (this.filters.attendance.dept) {
+            data = data.filter(row => row.department === this.filters.attendance.dept);
+        }
+        // Filter status
+        if (this.filters.attendance.status) {
+            data = data.filter(row => {
+                if (this.filters.attendance.status === 'present') return row.present > 0;
+                if (this.filters.attendance.status === 'absent') return row.absent > 0;
+                if (this.filters.attendance.status === 'late') return row.late > 0;
+                return true;
+            });
+        }
+        return data;
     },
+
     getFilteredJurnal() {
         let data = this.jurnalData;
         if (this.filters.jurnal.month) data = data.filter(j => j.date && j.date.startsWith(this.filters.jurnal.month));
@@ -296,7 +350,6 @@ const adminReports = {
 
     // ========== DETAIL FUNCTIONS ==========
     viewAttendanceDetail(name) {
-        console.log('viewAttendanceDetail dipanggil untuk:', name);
         const emp = this.rawEmployees.find(e => e.name === name);
         if (!emp) { toast.error('Karyawan tidak ditemukan'); return; }
         
@@ -322,10 +375,9 @@ const adminReports = {
             } else if (rec && rec.status === 'libur') {
                 statusHtml = '<span class="badge-status secondary">Libur</span>';
             }
-            tableRows += `<tr><td>${d}</div><td>${dateStr}</div><td>${rec ? rec.clockIn || '-' : '-'}</div><td>${rec ? rec.clockOut || '-' : '-'}</div><td>${statusHtml}</div></tr>`;
+            tableRows += `<tr><td>${d}</td><td>${dateStr}</td><td>${rec ? rec.clockIn || '-' : '-'}</td><td>${rec ? rec.clockOut || '-' : '-'}</td><td>${statusHtml}</td></tr>`;
         }
         
-        // === PERBAIKAN: Format bulan menjadi MM-YYYY ===
         const formattedMonth = `${month}-${year}`;
         const modalContent = `
             <div style="max-height: 60vh; overflow-y: auto;">
@@ -386,7 +438,7 @@ const adminReports = {
         }
     },
     
-    // Helper untuk menampilkan modal dengan fallback
+    // Helper modal
     _showModal(title, content) {
         if (window.modal && typeof window.modal.show === 'function') {
             window.modal.show(title, content, [{ label: 'Tutup', class: 'btn-secondary', onClick: () => window.modal.close() }]);
