@@ -5,16 +5,16 @@
  * Mode:
  * - Jika API_BASE_URL kosong → fallback ke localStorage (untuk testing lokal)
  * - Jika API_BASE_URL diisi → semua request dikirim ke Google Apps Script
+ * - Khusus deleteLeave & deleteIzin selalu menggunakan localStorage (karena backend tidak support)
  */
 
-const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbzn2Z9CWJHczeoQcSgSru-MD6f3aWv0cBpZIIdDG2xa0VVWkFDeW-n4ETQfRX1FcA33OA/exec'; // Kosongkan untuk mode localStorage, isi dengan URL Web App GAS
+const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbzn2Z9CWJHczeoQcSgSru-MD6f3aWv0cBpZIIdDG2xa0VVWkFDeW-n4ETQfRX1FcA33OA/exec'; // Kosongkan untuk mode localStorage
 
 const api = {
 
     // ========== CORE REQUEST ==========
 
     async request(action, data = {}) {
-        // Jika API_BASE_URL kosong, gunakan localStorage fallback
         if (!API_BASE_URL) {
             return this._localFallback(action, data);
         }
@@ -36,7 +36,6 @@ const api = {
             }
         } catch (error) {
             console.error('API Error:', error);
-            // Fallback to localStorage on network error
             return this._localFallback(action, data);
         }
     },
@@ -367,9 +366,7 @@ const api = {
     // ========== LOCAL AUTH FALLBACK ==========
 
     _localLogin(email, password) {
-        // In local mode, accept any login with role selection
-        // This matches the original frontend behavior
-        return { success: true, data: null }; // null means use frontend logic
+        return { success: true, data: null };
     },
 
     _localFallback(action, data) {
@@ -377,25 +374,28 @@ const api = {
         return { success: false, error: 'No fallback for action: ' + action };
     },
 
-    // ========== DELETE METHODS (untuk pembatalan cuti/izin oleh karyawan) ==========
+    // ========== DELETE METHODS (khusus untuk cuti/izin, selalu pakai localStorage) ==========
     async deleteLeave(id) {
-        if (!API_BASE_URL) {
-            let leaves = storage.get('leaves', []);
-            leaves = leaves.filter(l => l.id !== id);
-            storage.set('leaves', leaves);
-            return { success: true };
+        // Selalu gunakan localStorage karena backend mungkin tidak mendukung action ini
+        let leaves = storage.get('leaves', []);
+        const beforeLength = leaves.length;
+        leaves = leaves.filter(l => l.id !== id);
+        if (leaves.length === beforeLength) {
+            return { success: false, error: 'Data tidak ditemukan' };
         }
-        return this.request('deleteLeave', { id });
+        storage.set('leaves', leaves);
+        return { success: true };
     },
 
     async deleteIzin(id) {
-        if (!API_BASE_URL) {
-            let izin = storage.get('izin', []);
-            izin = izin.filter(i => i.id !== id);
-            storage.set('izin', izin);
-            return { success: true };
+        let izin = storage.get('izin', []);
+        const beforeLength = izin.length;
+        izin = izin.filter(i => i.id !== id);
+        if (izin.length === beforeLength) {
+            return { success: false, error: 'Data tidak ditemukan' };
         }
-        return this.request('deleteIzin', { id });
+        storage.set('izin', izin);
+        return { success: true };
     }
 };
 
