@@ -302,36 +302,29 @@ const api = {
         return { success: false, error: 'No fallback for action: ' + action };
     },
 
-    // ========== DELETE METHODS (langsung ke localStorage) ==========
+    // ========== DELETE METHODS ==========
     async deleteLeave(id) {
-        try {
+        const cleanId = parseInt(String(id).split('.')[0], 10);
+        console.log('Deleting leave with id:', cleanId);
+        if (!API_BASE_URL) {
             let leaves = storage.get('leaves', []);
-            const before = leaves.length;
-            leaves = leaves.filter(l => l.id != id);
-            if (leaves.length === before) {
-                return { success: false, error: 'Data tidak ditemukan' };
-            }
+            leaves = leaves.filter(l => parseInt(String(l.id).split('.')[0], 10) !== cleanId);
             storage.set('leaves', leaves);
             return { success: true };
-        } catch (error) {
-            console.error('Delete leave error:', error);
-            return { success: false, error: error.message };
         }
+        return this.request('deleteLeave', { id: cleanId });
     },
+
     async deleteIzin(id) {
-        try {
+        const cleanId = parseInt(String(id).split('.')[0], 10);
+        console.log('Deleting izin with id:', cleanId);
+        if (!API_BASE_URL) {
             let izin = storage.get('izin', []);
-            const before = izin.length;
-            izin = izin.filter(i => i.id != id);
-            if (izin.length === before) {
-                return { success: false, error: 'Data tidak ditemukan' };
-            }
+            izin = izin.filter(i => parseInt(String(i.id).split('.')[0], 10) !== cleanId);
             storage.set('izin', izin);
             return { success: true };
-        } catch (error) {
-            console.error('Delete izin error:', error);
-            return { success: false, error: error.message };
         }
+        return this.request('deleteIzin', { id: cleanId });
     }
 };
 
