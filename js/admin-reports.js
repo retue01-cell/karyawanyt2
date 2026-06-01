@@ -1,8 +1,6 @@
 /**
  * Portal Karyawan - Admin Reports
- * Reports and exports for admin with FULL DETAIL functionality
- * 
- * Versi final: Rekap Cuti & Izin berfungsi, filter periode dan jenis berfungsi.
+ * Versi debugging untuk Rekap Cuti & Izin
  */
 
 const adminReports = {
@@ -79,11 +77,11 @@ const adminReports = {
             this.rawAttendance = attResult.data || [];
 
             console.log('=== DATA DARI API ===');
-            console.log('Employees:', this.rawEmployees.length);
-            console.log('Leaves:', this.rawLeaves.length, this.rawLeaves);
-            console.log('Izin:', this.rawIzin.length, this.rawIzin);
+            console.log('📋 Employees:', this.rawEmployees.length, this.rawEmployees);
+            console.log('📋 Leaves (raw):', this.rawLeaves.length, this.rawLeaves);
+            console.log('📋 Izin (raw):', this.rawIzin.length, this.rawIzin);
         } catch (error) {
-            console.error('Load error:', error);
+            console.error('❌ Load error:', error);
             this.rawEmployees = storage.get('admin_employees', []);
             this.rawJournals = storage.get('jurnals', []);
             this.rawLeaves = storage.get('leaves', []);
@@ -91,9 +89,9 @@ const adminReports = {
             this.rawAttendance = storage.get('attendance', []);
         }
 
-        // Jika data masih kosong dan ada karyawan, buat data dummy untuk debugging (hapus nanti jika sudah berhasil)
+        // Jika data dari API kosong, buat data dummy untuk testing (hapus nanti jika sudah berhasil)
         if (this.rawLeaves.length === 0 && this.rawIzin.length === 0 && this.rawEmployees.length > 0) {
-            console.warn('⚠️ Tidak ada data cuti/izin dari API, membuat data dummy untuk testing');
+            console.warn('⚠️ Tidak ada data cuti/izin dari API, membuat data dummy untuk debugging');
             const today = new Date().toISOString().split('T')[0];
             this.rawLeaves = [
                 { id: 999, userId: this.rawEmployees[0]?.id, typeLabel: 'Cuti Tahunan', startDate: today, endDate: today, duration: 1, reason: 'Liburan keluarga', status: 'pending', appliedAt: new Date().toISOString() },
@@ -104,13 +102,13 @@ const adminReports = {
             ];
         }
 
-        // Build employee map
+        // Map employee names
         const empMap = new Map();
         this.rawEmployees.forEach(emp => {
             empMap.set(String(emp.id), { name: emp.name, department: emp.department });
         });
 
-        // Jurnal data
+        // Jurnal data (tidak diubah)
         this.jurnalData = this.rawJournals.map(j => {
             const emp = empMap.get(String(j.userId)) || { name: 'Unknown', department: '-' };
             let journalDate = j.date;
@@ -118,15 +116,10 @@ const adminReports = {
             if (!journalDate && j.createdAt) journalDate = j.createdAt.split('T')[0];
             if (!journalDate) journalDate = '';
             return {
-                id: j.id,
-                userId: j.userId,
-                date: journalDate,
-                name: emp.name,
-                department: emp.department,
-                tasks: j.tasks || '-',
-                achievements: j.achievements || '-',
-                obstacles: j.obstacles || '-',
-                plan: j.plan || '-',
+                id: j.id, userId: j.userId, date: journalDate,
+                name: emp.name, department: emp.department,
+                tasks: j.tasks || '-', achievements: j.achievements || '-',
+                obstacles: j.obstacles || '-', plan: j.plan || '-',
                 photo: j.photo || null,
                 status: (j.tasks && j.tasks !== '-') ? 'filled' : 'empty',
                 updatedAt: j.updatedAt
@@ -134,7 +127,7 @@ const adminReports = {
         });
         this.jurnalData.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
-        // Build leaveData (cuti + izin) dengan monthYear untuk filter bulan
+        // Build leaveData (cuti + izin) dengan monthYear
         this.leaveData = [];
         this.rawLeaves.forEach(l => {
             const emp = empMap.get(String(l.userId));
@@ -155,6 +148,8 @@ const adminReports = {
                     monthYear: monthYear,
                     appliedAt: l.appliedAt
                 });
+            } else {
+                console.warn(`⚠️ Leave dengan userId ${l.userId} tidak ditemukan di Employees`);
             }
         });
         this.rawIzin.forEach(i => {
@@ -176,6 +171,8 @@ const adminReports = {
                     monthYear: monthYear,
                     appliedAt: i.appliedAt
                 });
+            } else {
+                console.warn(`⚠️ Izin dengan userId ${i.userId} tidak ditemukan di Employees`);
             }
         });
         this.leaveData.sort((a, b) => new Date(b.appliedAt) - new Date(a.appliedAt));
@@ -231,20 +228,11 @@ const adminReports = {
         const btnPrint = document.getElementById('btn-print-attendance');
         if (btnPrint) btnPrint.onclick = () => this.printReport('attendance');
         const month = document.getElementById('attendance-month');
-        if (month) month.onchange = (e) => {
-            this.filters.attendance.month = e.target.value;
-            this.renderAttendanceReports();
-        };
+        if (month) month.onchange = (e) => { this.filters.attendance.month = e.target.value; this.renderAttendanceReports(); };
         const dept = document.getElementById('report-dept-filter');
-        if (dept) dept.onchange = (e) => {
-            this.filters.attendance.dept = e.target.value;
-            this.renderAttendanceReports();
-        };
+        if (dept) dept.onchange = (e) => { this.filters.attendance.dept = e.target.value; this.renderAttendanceReports(); };
         const status = document.getElementById('report-status-filter');
-        if (status) status.onchange = (e) => {
-            this.filters.attendance.status = e.target.value;
-            this.renderAttendanceReports();
-        };
+        if (status) status.onchange = (e) => { this.filters.attendance.status = e.target.value; this.renderAttendanceReports(); };
     },
     bindJurnalEvents() {
         const btnExport = document.getElementById('btn-export-jurnal');
@@ -252,24 +240,15 @@ const adminReports = {
         const btnPrint = document.getElementById('btn-print-jurnal');
         if (btnPrint) btnPrint.onclick = () => this.printReport('jurnal');
         const month = document.getElementById('jurnal-month');
-        if (month) month.onchange = (e) => {
-            this.filters.jurnal.month = e.target.value;
-            this.renderJurnalReports();
-        };
+        if (month) month.onchange = (e) => { this.filters.jurnal.month = e.target.value; this.renderJurnalReports(); };
         const emp = document.getElementById('jurnal-employee-filter');
         if (emp) {
             const employees = this.rawEmployees.map(e => `<option value="${e.name}">${e.name}</option>`).join('');
             emp.innerHTML = '<option value="">Semua Karyawan</option>' + employees;
-            emp.onchange = (e) => {
-                this.filters.jurnal.employee = e.target.value;
-                this.renderJurnalReports();
-            };
+            emp.onchange = (e) => { this.filters.jurnal.employee = e.target.value; this.renderJurnalReports(); };
         }
         const status = document.getElementById('jurnal-status-filter');
-        if (status) status.onchange = (e) => {
-            this.filters.jurnal.status = e.target.value;
-            this.renderJurnalReports();
-        };
+        if (status) status.onchange = (e) => { this.filters.jurnal.status = e.target.value; this.renderJurnalReports(); };
     },
     bindLeaveEvents() {
         const btnExport = document.getElementById('btn-export-leave');
@@ -428,6 +407,7 @@ const adminReports = {
         }
         const data = this.getFilteredLeave();
         const statusLabels = { pending: 'Menunggu', approved: 'Disetujui', rejected: 'Ditolak' };
+        console.log('📊 Data untuk renderLeaveReports (setelah filter):', data);
         if (data.length === 0) {
             tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:40px;">Tidak ada data cuti/izin untuk filter yang dipilih</div></tr>';
             const mobile = document.getElementById('leave-mobile-cards');
@@ -454,6 +434,7 @@ const adminReports = {
                 </tr>
             `;
         }).join('');
+
         const mobile = document.getElementById('leave-mobile-cards');
         if (mobile) {
             mobile.innerHTML = data.map(item => {
@@ -483,10 +464,7 @@ const adminReports = {
 
     viewAttendanceDetail(name) {
         const emp = this.rawEmployees.find(e => e.name === name);
-        if (!emp) {
-            toast.error('Karyawan tidak ditemukan');
-            return;
-        }
+        if (!emp) { toast.error('Karyawan tidak ditemukan'); return; }
         let selectedMonth = this.filters.attendance.month;
         if (!selectedMonth) {
             const today = new Date();
@@ -496,9 +474,7 @@ const adminReports = {
         const daysInMonth = new Date(parseInt(year), parseInt(month), 0).getDate();
         const attendanceRecords = this.rawAttendance.filter(a => String(a.userId) === String(emp.id) && a.date && a.date.startsWith(selectedMonth));
         const recordsMap = {};
-        attendanceRecords.forEach(rec => {
-            recordsMap[rec.date] = rec;
-        });
+        attendanceRecords.forEach(rec => { recordsMap[rec.date] = rec; });
         let tableRows = '';
         for (let d = 1; d <= daysInMonth; d++) {
             const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -527,10 +503,7 @@ const adminReports = {
 
     viewJurnalDetail(name, date) {
         const jurnal = this.jurnalData.find(j => j.name === name && j.date === date);
-        if (!jurnal) {
-            toast.error('Jurnal tidak ditemukan');
-            return;
-        }
+        if (!jurnal) { toast.error('Jurnal tidak ditemukan'); return; }
         const photoHtml = jurnal.photo ? `
             <div style="margin-top:12px;">
                 <img src="${jurnal.photo}" style="max-width:100%; max-height:200px; border-radius:8px; cursor:pointer;" onclick="window.open('${jurnal.photo}','_blank')">
@@ -554,15 +527,9 @@ const adminReports = {
 
     viewLeaveDetail(name, type, id) {
         let item;
-        if (type === 'cuti') {
-            item = this.rawLeaves.find(l => l.id == id);
-        } else {
-            item = this.rawIzin.find(i => i.id == id);
-        }
-        if (!item) {
-            toast.error('Data tidak ditemukan');
-            return;
-        }
+        if (type === 'cuti') item = this.rawLeaves.find(l => l.id == id);
+        else item = this.rawIzin.find(i => i.id == id);
+        if (!item) { toast.error('Data tidak ditemukan'); return; }
         const content = `
             <div style="max-height:60vh; overflow-y:auto;">
                 <p><strong>Karyawan:</strong> ${this.escapeHtml(name)}</p>
@@ -604,50 +571,32 @@ const adminReports = {
         if (!auth.isAdmin()) return;
         try {
             let result;
-            if (type === 'cuti') {
-                result = await api.approveLeave(id);
-            } else {
-                result = await api.approveIzin(id);
-            }
+            if (type === 'cuti') result = await api.approveLeave(id);
+            else result = await api.approveIzin(id);
             if (result.success) {
                 toast.success('Pengajuan disetujui!');
                 await this.loadData();
                 this.renderLeaveReports();
-            } else {
-                toast.error(result.error || 'Gagal menyetujui');
-            }
-        } catch (error) {
-            toast.error('Terjadi kesalahan');
-        }
+            } else toast.error(result.error || 'Gagal menyetujui');
+        } catch (error) { toast.error('Terjadi kesalahan'); }
     },
-
     async rejectLeaveItem(type, id) {
         if (!auth.isAdmin()) return;
         if (!confirm('Tolak pengajuan ini?')) return;
         try {
             let result;
-            if (type === 'cuti') {
-                result = await api.rejectLeave(id);
-            } else {
-                result = await api.rejectIzin(id);
-            }
+            if (type === 'cuti') result = await api.rejectLeave(id);
+            else result = await api.rejectIzin(id);
             if (result.success) {
                 toast.info('Pengajuan ditolak');
                 await this.loadData();
                 this.renderLeaveReports();
-            } else {
-                toast.error(result.error || 'Gagal menolak');
-            }
-        } catch (error) {
-            toast.error('Terjadi kesalahan');
-        }
+            } else toast.error(result.error || 'Gagal menolak');
+        } catch (error) { toast.error('Terjadi kesalahan'); }
     },
 
     async deleteJournalItem(journalId) {
-        if (!auth.isAdmin()) {
-            toast.error('Akses ditolak');
-            return;
-        }
+        if (!auth.isAdmin()) { toast.error('Akses ditolak'); return; }
         if (!confirm('Yakin ingin menghapus jurnal ini? Tindakan ini tidak dapat dibatalkan.')) return;
         try {
             const result = await api.deleteJournal(journalId);
@@ -655,84 +604,51 @@ const adminReports = {
                 toast.success('Jurnal berhasil dihapus');
                 await this.loadData();
                 this.renderJurnalReports();
-            } else {
-                toast.error(result?.error || 'Gagal menghapus jurnal');
-            }
-        } catch (error) {
-            console.error('Delete journal error:', error);
-            toast.error('Terjadi kesalahan saat menghapus');
-        }
+            } else toast.error(result?.error || 'Gagal menghapus jurnal');
+        } catch (error) { toast.error('Terjadi kesalahan saat menghapus'); }
     },
 
     async deleteLeaveItem(type, id) {
-        if (!auth.isAdmin()) {
-            toast.error('Akses ditolak');
-            return;
-        }
+        if (!auth.isAdmin()) { toast.error('Akses ditolak'); return; }
         if (!confirm(`Yakin ingin menghapus pengajuan ${type === 'cuti' ? 'cuti' : 'izin'} ini?`)) return;
         try {
             let result;
-            if (type === 'cuti') {
-                result = await api.deleteLeave(id);
-            } else {
-                result = await api.deleteIzin(id);
-            }
+            if (type === 'cuti') result = await api.deleteLeave(id);
+            else result = await api.deleteIzin(id);
             if (result && result.success) {
                 toast.success('Pengajuan berhasil dihapus');
                 await this.loadData();
                 this.renderLeaveReports();
-            } else {
-                toast.error(result?.error || 'Gagal menghapus pengajuan');
-            }
-        } catch (error) {
-            console.error('Delete leave/izin error:', error);
-            toast.error('Terjadi kesalahan saat menghapus');
-        }
+            } else toast.error(result?.error || 'Gagal menghapus pengajuan');
+        } catch (error) { toast.error('Terjadi kesalahan saat menghapus'); }
     },
 
     exportToExcel(type) {
         let data = [], filename = '';
         switch (type) {
-            case 'attendance':
-                data = this.getFilteredAttendance();
-                filename = 'Rekap_Absensi.csv';
-                break;
-            case 'jurnal':
-                data = this.getFilteredJurnal();
-                filename = 'Rekap_Jurnal.csv';
-                break;
-            case 'leave':
-                data = this.getFilteredLeave();
-                filename = 'Rekap_Cuti_Izin.csv';
-                break;
+            case 'attendance': data = this.getFilteredAttendance(); filename = 'Rekap_Absensi.csv'; break;
+            case 'jurnal': data = this.getFilteredJurnal(); filename = 'Rekap_Jurnal.csv'; break;
+            case 'leave': data = this.getFilteredLeave(); filename = 'Rekap_Cuti_Izin.csv'; break;
         }
         const csv = this.convertToCSV(data);
         this.downloadFile(csv, filename, 'text/csv');
         toast.success(`Data berhasil diexport ke ${filename}`);
     },
-
     convertToCSV(data) {
         if (!data.length) return '';
         const headers = Object.keys(data[0]);
         const rows = data.map(row => headers.map(h => `"${(row[h] || '').toString().replace(/"/g, '""')}"`).join(','));
         return [headers.join(','), ...rows].join('\n');
     },
-
     downloadFile(content, filename, contentType) {
         const blob = new Blob([content], { type: contentType });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
         URL.revokeObjectURL(url);
     },
-
-    printReport(type) {
-        window.print();
-    },
+    printReport(type) { window.print(); },
 
     escapeHtml(str) {
         if (!str) return '';
