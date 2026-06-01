@@ -48,16 +48,32 @@ const settings = {
 
     normalizeTime(val) {
         if (!val || val === '' || val === null || val === undefined) return '';
+        
+        // Handle decimal time from Sheets (e.g., 8.57 for 08:34 or 8.34 for 08:20)
+        if (typeof val === 'number') {
+            const hours = Math.floor(val);
+            const minutes = Math.round((val - hours) * 60);
+            return String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0');
+        }
+        
+        const str = String(val).trim();
+        
         // Already a proper string in HH:mm format
-        if (typeof val === 'string' && /^\d{2}:\d{2}$/.test(val)) return val;
+        if (/^\d{2}:\d{2}$/.test(str)) return str;
+        
+        // Handle H:mm format (single digit hour, e.g., "8:34")
+        if (/^\d:\d{2}$/.test(str)) {
+            return '0' + str;
+        }
+        
         // If it is a Date object from Sheets
         if (val instanceof Date) {
             const h = String(val.getHours()).padStart(2, '0');
             const m = String(val.getMinutes()).padStart(2, '0');
             return h + ':' + m;
         }
-        // ISO string or other formats
-        const str = String(val);
+        
+        // ISO string or other formats with T
         if (str.includes('T')) {
             try {
                 const d = new Date(str);
@@ -66,12 +82,17 @@ const settings = {
                 return h + ':' + m;
             } catch(e) { return ''; }
         }
-        // Handle decimal time from Sheets (e.g., 8.57 for 08:34)
-        if (typeof val === 'number') {
-            const hours = Math.floor(val);
-            const minutes = Math.round((val - hours) * 60);
-            return String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0');
+        
+        // Try to parse as decimal string (e.g., "8.34")
+        if (str.includes('.') && !str.includes(':')) {
+            const numVal = parseFloat(str);
+            if (!isNaN(numVal)) {
+                const hours = Math.floor(numVal);
+                const minutes = Math.round((numVal - hours) * 60);
+                return String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0');
+            }
         }
+        
         return str;
     },
 
