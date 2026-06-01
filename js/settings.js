@@ -5,6 +5,7 @@
 
 const settings = {
     shifts: [],
+    formsInitialized: false,
 
     async init() {
         if (!auth.isAdmin()) { toast.error('Akses ditolak'); router.navigate('dashboard'); return; }
@@ -61,28 +62,22 @@ const settings = {
     },
 
     initForms() {
+        if (this.formsInitialized) return;
+        this.formsInitialized = true;
+        
         const companyForm = document.getElementById('company-form');
         if (companyForm) companyForm.addEventListener('submit', (e) => this.saveCompany(e));
         const addShiftBtn = document.getElementById('btn-add-shift');
         if (addShiftBtn) {
-            // Remove existing listener to prevent duplicates
-            const newBtn = addShiftBtn.cloneNode(true);
-            addShiftBtn.parentNode.replaceChild(newBtn, addShiftBtn);
-            newBtn.addEventListener('click', () => this.addShift());
+            addShiftBtn.addEventListener('click', () => this.addShift());
         }
         const saveWorkdaysBtn = document.getElementById('btn-save-workdays');
         if (saveWorkdaysBtn) {
-            // Remove existing listener to prevent duplicates
-            const newWorkdaysBtn = saveWorkdaysBtn.cloneNode(true);
-            saveWorkdaysBtn.parentNode.replaceChild(newWorkdaysBtn, saveWorkdaysBtn);
-            newWorkdaysBtn.addEventListener('click', () => this.saveWorkdays());
+            saveWorkdaysBtn.addEventListener('click', () => this.saveWorkdays());
         }
         const saveSystemBtn = document.getElementById('btn-save-system');
         if (saveSystemBtn) {
-            // Remove existing listener to prevent duplicates
-            const newSystemBtn = saveSystemBtn.cloneNode(true);
-            saveSystemBtn.parentNode.replaceChild(newSystemBtn, saveSystemBtn);
-            newSystemBtn.addEventListener('click', () => this.saveSystemSettings());
+            saveSystemBtn.addEventListener('click', () => this.saveSystemSettings());
         }
     },
 
