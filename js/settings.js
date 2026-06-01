@@ -1,6 +1,6 @@
 /**
  * Portal Karyawan - Settings
- * Admin settings functionality - fully sync with database
+ * Admin settings functionality - fully sync with database (Excel)
  */
 
 const settings = {
@@ -31,7 +31,7 @@ const settings = {
                 throw new Error(shiftsResult.error || 'Gagal memuat shift');
             }
             
-            // Proses shifts - pastikan waktu dalam format HH:MM
+            // Proses shifts - konversi format waktu "HH:MM:SS" ke "HH:MM"
             this.shifts = (shiftsResult.data || []).map(shift => ({
                 id: shift.id,
                 name: shift.name,
@@ -39,7 +39,7 @@ const settings = {
                 endTime: this.normalizeTime(shift.endTime)
             }));
             
-            // Simpan shifts ke storage agar dipakai modul lain (absensi, dashboard)
+            // Simpan shifts ke storage untuk modul lain (absensi, dashboard)
             if (this.shifts.length) {
                 storage.set('shifts', this.shifts);
             }
@@ -52,7 +52,7 @@ const settings = {
             if (companyNameInput) companyNameInput.value = allSettings.company_name || '';
             if (companyLogoInput) companyLogoInput.value = allSettings.company_logo || '';
             
-            // ========== WORKING DAYS ==========
+            // ========== WORKING DAYS (HARI KERJA) ==========
             let workdays = null;
             if (allSettings.working_days) {
                 try {
@@ -72,7 +72,7 @@ const settings = {
                 });
                 console.log('Working days loaded from DB:', workdays);
             } else {
-                // Default: semua hari kerja aktif (sesuai dengan data di Excel)
+                // Default: semua hari kerja aktif (sesuai Excel)
                 const defaultWorkdays = {
                     senin: true, selasa: true, rabu: true, kamis: true,
                     jumat: true, sabtu: true, minggu: true
@@ -81,7 +81,7 @@ const settings = {
                     const el = document.getElementById(`day-${day}`);
                     if (el) el.checked = defaultWorkdays[day];
                 });
-                // Simpan ke database
+                // Simpan default ke database
                 await api.saveSetting('working_days', JSON.stringify(defaultWorkdays));
                 console.log('Default working days saved to DB');
                 toast.info('Pengaturan hari kerja default ditambahkan ke database');
@@ -149,26 +149,25 @@ const settings = {
         window.location.reload();
     },
 
-    // Normalisasi waktu: konversi "08:30:00" atau Date object menjadi "HH:MM"
+    // Normalisasi waktu: "08:30:00" -> "08:30", Date object -> "HH:MM", dll.
     normalizeTime(val) {
         if (!val) return '09:00';
-        // Jika sudah dalam format HH:MM
+        // Sudah dalam format HH:MM
         if (/^\d{2}:\d{2}$/.test(val)) return val;
-        // Jika dalam format HH:MM:SS (dari database Excel)
+        // Format HH:MM:SS (dari database Excel)
         if (/^\d{2}:\d{2}:\d{2}$/.test(val)) {
             return val.substring(0, 5);
         }
-        // Jika berupa Date object
+        // Date object
         if (val instanceof Date) {
             const h = String(val.getHours()).padStart(2, '0');
             const m = String(val.getMinutes()).padStart(2, '0');
             return h + ':' + m;
         }
-        // Jika string mengandung T (ISO)
+        // String ISO
         if (typeof val === 'string' && val.includes('T')) {
             try {
                 const d = new Date(val);
-                // Gunakan UTC hours karena spreadsheet menyimpan waktu dalam UTC
                 const h = String(d.getUTCHours()).padStart(2, '0');
                 const m = String(d.getUTCMinutes()).padStart(2, '0');
                 return h + ':' + m;
@@ -176,7 +175,7 @@ const settings = {
                 return '09:00';
             }
         }
-        // Fallback: ambil 5 karakter pertama
+        // Fallback
         return String(val).substring(0, 5);
     },
 
@@ -188,10 +187,19 @@ const settings = {
         if (addShiftBtn) addShiftBtn.addEventListener('click', () => this.addShift());
         
         const saveWorkdaysBtn = document.getElementById('btn-save-workdays');
-        if (saveWorkdaysBtn) saveWorkdaysBtn.addEventListener('click', () => this.saveWorkdays());
+        if (saveWorkdaysBtn) {
+            // Hapus listener lama untuk mencegah duplikasi
+            const newBtn = saveWorkdaysBtn.cloneNode(true);
+            saveWorkdaysBtn.parentNode.replaceChild(newBtn, saveWorkdaysBtn);
+            newBtn.addEventListener('click', () => this.saveWorkdays());
+        }
         
         const saveSystemBtn = document.getElementById('btn-save-system');
-        if (saveSystemBtn) saveSystemBtn.addEventListener('click', () => this.saveSystemSettings());
+        if (saveSystemBtn) {
+            const newBtn = saveSystemBtn.cloneNode(true);
+            saveSystemBtn.parentNode.replaceChild(newBtn, saveSystemBtn);
+            newBtn.addEventListener('click', () => this.saveSystemSettings());
+        }
     },
 
     async saveCompany(e) {
@@ -221,12 +229,33 @@ const settings = {
             const el = document.getElementById(`day-${day}`);
             workdays[day] = el ? el.checked : false;
         });
+        
+        console.log('Saving workdays:', workdays);
+        
         try {
-            const result = await api.saveSetting('working_days', JSON.stringify(workdays));
+            const jsonString = JSON.stringify(workdays);
+            console.log('JSON to save:', jsonString);
+            
+            const result = await api.saveSetting('working_days', jsonString);
+            console.log('Save result:', result);
+            
             if (!result || !result.success) {
                 throw new Error(result?.error || 'Gagal menyimpan hari kerja');
             }
+            
             toast.success('Hari kerja disimpan ke database');
+            
+            // Verifikasi dengan reload data dari database
+            const verifyResult = await api.getSettings();
+            if (verifyResult.success && verifyResult.data.working_days) {
+                const saved = JSON.parse(verifyResult.data.working_days);
+                console.log('Verifikasi dari database:', saved);
+                if (JSON.stringify(saved) === jsonString) {
+                    toast.success('Verifikasi berhasil: data tersimpan');
+                } else {
+                    toast.warning('Data tersimpan tidak sesuai, coba lagi');
+                }
+            }
         } catch (error) {
             console.error('Save workdays error:', error);
             toast.error(error.message || 'Gagal menyimpan ke database');
@@ -313,7 +342,7 @@ const settings = {
             storage.set('shifts', this.shifts);
             toast.success('Shift diperbarui di database');
         } catch (error) {
-            // Kembalikan nilai lama
+            // Kembalikan nilai lama jika gagal
             this.shifts[index][field] = oldValue;
             this.renderShifts();
             toast.error(error.message || 'Gagal update shift');
