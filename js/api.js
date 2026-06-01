@@ -1,8 +1,9 @@
 /**
  * Portal Karyawan - API Layer
+ * Final version with getAllLeaves & getAllIzin
  */
 
-const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbzn2Z9CWJHczeoQcSgSru-MD6f3aWv0cBpZIIdDG2xa0VVWkFDeW-n4ETQfRX1FcA33OA/exec'; // Ganti dengan URL Web App Anda
+const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbzn2Z9CWJHczeoQcSgSru-MD6f3aWv0cBpZIIdDG2xa0VVWkFDeW-n4ETQfRX1FcA33OA/exec';
 
 const api = {
 
@@ -110,7 +111,7 @@ const api = {
         return this.request('deleteJournal', { id });
     },
 
-    // ========== LEAVES ==========
+    // ========== LEAVES (CUTI) ==========
     async getLeaves(userId) {
         if (!API_BASE_URL) return { success: true, data: storage.get('leaves', []) };
         return this.request('getLeaves', { userId });
@@ -147,9 +148,9 @@ const api = {
     },
     async getAllLeaves() {
         if (!API_BASE_URL) return { success: true, data: storage.get('leaves', []) };
-        console.log('📡 Memanggil API getAllLeaves...');
+        console.log('📡 Fetching getAllLeaves...');
         const result = await this.request('getAllLeaves');
-        console.log('📥 Response getAllLeaves:', result);
+        console.log('✅ getAllLeaves response:', result);
         return result;
     },
     async deleteLeave(id) {
@@ -162,7 +163,7 @@ const api = {
         return this.request('deleteLeave', { id });
     },
 
-    // ========== IZIN ==========
+    // ========== IZIN / PERMISSION ==========
     async getIzin(userId) {
         if (!API_BASE_URL) return { success: true, data: storage.get('izin', []) };
         return this.request('getIzin', { userId });
@@ -199,9 +200,9 @@ const api = {
     },
     async getAllIzin() {
         if (!API_BASE_URL) return { success: true, data: storage.get('izin', []) };
-        console.log('📡 Memanggil API getAllIzin...');
+        console.log('📡 Fetching getAllIzin...');
         const result = await this.request('getAllIzin');
-        console.log('📥 Response getAllIzin:', result);
+        console.log('✅ getAllIzin response:', result);
         return result;
     },
     async deleteIzin(id) {
