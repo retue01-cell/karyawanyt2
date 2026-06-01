@@ -1,6 +1,7 @@
 /**
  * Portal Karyawan - Settings
  * Admin settings functionality - fully sync with database (Excel)
+ * No localStorage interference for working_days
  */
 
 const settings = {
@@ -31,7 +32,7 @@ const settings = {
                 throw new Error(shiftsResult.error || 'Gagal memuat shift');
             }
             
-            // Proses shifts - konversi format waktu "HH:MM:SS" ke "HH:MM"
+            // Proses shifts
             this.shifts = (shiftsResult.data || []).map(shift => ({
                 id: shift.id,
                 name: shift.name,
@@ -39,11 +40,13 @@ const settings = {
                 endTime: this.normalizeTime(shift.endTime)
             }));
             
+            // Simpan shifts ke storage untuk modul lain (absensi, dashboard)
             if (this.shifts.length) {
                 storage.set('shifts', this.shifts);
             }
             
             const allSettings = settingsResult.data || {};
+            console.log('All settings from API:', allSettings);
             
             // Company info
             const companyNameInput = document.getElementById('company-name');
@@ -51,61 +54,67 @@ const settings = {
             if (companyNameInput) companyNameInput.value = allSettings.company_name || '';
             if (companyLogoInput) companyLogoInput.value = allSettings.company_logo || '';
             
-            // ========== WORKING DAYS (HARI KERJA) ==========
+            // ========== WORKING DAYS ==========
             const days = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'];
+            let workdays = null;
             const workdaysRaw = allSettings.working_days;
             
-            console.log('Raw working_days dari database:', workdaysRaw);
+            console.log('Raw working_days from API (type:', typeof workdaysRaw, '):', workdaysRaw);
             
-            let workdays = null;
-            if (workdaysRaw && typeof workdaysRaw === 'string') {
-                // Coba parse JSON, mungkin ada spasi atau newline
-                let jsonStr = workdaysRaw.trim();
-                // Hapus karakter BOM jika ada
-                if (jsonStr.charCodeAt(0) === 0xFEFF) jsonStr = jsonStr.slice(1);
-                try {
-                    workdays = JSON.parse(jsonStr);
-                    console.log('Parsing berhasil:', workdays);
-                } catch (e) {
-                    console.error('Parse error:', e);
-                    // Coba perbaiki: ganti kutip tidak standar
+            if (workdaysRaw) {
+                // Jika sudah berupa object (mungkin API sudah parse)
+                if (typeof workdaysRaw === 'object') {
+                    workdays = workdaysRaw;
+                    console.log('working_days already object:', workdays);
+                } 
+                // Jika string, coba parse JSON
+                else if (typeof workdaysRaw === 'string') {
+                    let jsonStr = workdaysRaw.trim();
+                    // Hapus BOM jika ada
+                    if (jsonStr.charCodeAt(0) === 0xFEFF) jsonStr = jsonStr.slice(1);
                     try {
-                        const fixed = jsonStr.replace(/'/g, '"');
-                        workdays = JSON.parse(fixed);
-                        console.log('Parsing dengan perbaikan kutip berhasil:', workdays);
-                    } catch (e2) {
-                        console.error('Gagal juga:', e2);
-                        workdays = null;
+                        workdays = JSON.parse(jsonStr);
+                        console.log('working_days parsed from string:', workdays);
+                    } catch (e) {
+                        console.error('JSON parse error:', e);
+                        // Coba perbaiki kutip
+                        try {
+                            const fixed = jsonStr.replace(/'/g, '"');
+                            workdays = JSON.parse(fixed);
+                            console.log('Parsing with fixed quotes:', workdays);
+                        } catch (e2) {
+                            console.error('Still failed:', e2);
+                            workdays = null;
+                        }
                     }
                 }
-            } else if (workdaysRaw && typeof workdaysRaw === 'object') {
-                workdays = workdaysRaw;
-                console.log('Langsung object:', workdays);
             }
             
             if (workdays && typeof workdays === 'object') {
-                // Data valid -> terapkan ke checkbox
+                // Terapkan ke checkbox
                 days.forEach(day => {
                     const el = document.getElementById(`day-${day}`);
                     if (el) {
                         const val = workdays[day];
-                        el.checked = (val === true || val === 'true' || val === 1);
+                        // Normalisasi boolean: true, 'true', 1, '1'
+                        const isChecked = (val === true || val === 'true' || val === 1 || val === '1');
+                        el.checked = isChecked;
                     }
                 });
-                console.log('Hari kerja berhasil dimuat dari database:', workdays);
+                console.log('Working days applied from database:', workdays);
                 // Hapus pesan error jika ada
                 const errorDiv = document.querySelector('.workdays-error');
                 if (errorDiv) errorDiv.remove();
                 toast.success('Hari kerja dimuat dari database');
             } else {
                 // Data tidak valid, tampilkan error permanen
-                console.error('Working days tidak valid:', workdaysRaw);
+                console.error('Working days data is invalid or missing');
                 const workdaysContainer = document.querySelector('.working-days');
                 if (workdaysContainer && !document.querySelector('.workdays-error')) {
                     const errorDiv = document.createElement('div');
                     errorDiv.className = 'workdays-error';
                     errorDiv.style.cssText = 'background:rgba(239,68,68,0.1); color:#EF4444; padding:8px; border-radius:8px; margin-bottom:16px; font-size:13px;';
-                    errorDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Data hari kerja di database rusak atau tidak valid. Silakan perbaiki format JSON di sheet Settings.';
+                    errorDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Data hari kerja di database rusak atau tidak ada. Silakan perbaiki di sheet Settings.';
                     workdaysContainer.prepend(errorDiv);
                 }
                 toast.error('Data hari kerja tidak valid, periksa database');
@@ -239,7 +248,7 @@ const settings = {
             workdays[day] = el ? el.checked : false;
         });
         
-        console.log('Menyimpan working days:', workdays);
+        console.log('Saving workdays:', workdays);
         
         try {
             const jsonString = JSON.stringify(workdays);
@@ -255,10 +264,12 @@ const settings = {
             const verifyResult = await api.getSettings();
             if (verifyResult.success && verifyResult.data.working_days) {
                 let saved = null;
-                try {
-                    saved = JSON.parse(verifyResult.data.working_days);
-                } catch(e) {
-                    console.error('Verifikasi parse error:', e);
+                if (typeof verifyResult.data.working_days === 'object') {
+                    saved = verifyResult.data.working_days;
+                } else if (typeof verifyResult.data.working_days === 'string') {
+                    try {
+                        saved = JSON.parse(verifyResult.data.working_days);
+                    } catch(e) {}
                 }
                 if (saved && JSON.stringify(saved) === jsonString) {
                     toast.success('Verifikasi berhasil: data tersimpan permanen');
