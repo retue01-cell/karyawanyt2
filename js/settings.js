@@ -25,21 +25,41 @@ const settings = {
             const allSettings = settingsResult.data || {};
             document.getElementById('company-name').value = allSettings.company_name || '';
             document.getElementById('company-logo').value = allSettings.company_logo || '';
+            
+            // Load working days from database - always fresh from Sheets
             const workdays = allSettings.working_days ? JSON.parse(allSettings.working_days) : null;
+            console.log('Working days from database:', workdays);
+            
             if (workdays) {
                 const days = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'];
-                days.forEach(day => { const el = document.getElementById(`day-${day}`); if (el) el.checked = workdays[day] !== false; });
+                days.forEach(day => { 
+                    const el = document.getElementById(`day-${day}`); 
+                    if (el) {
+                        const isChecked = workdays[day] !== false;
+                        el.checked = isChecked;
+                        console.log(`Day ${day}: ${isChecked}`);
+                    }
+                });
+            } else {
+                // Default working days if not set in database
+                const days = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'];
+                const defaultWorkdays = { senin: true, selasa: true, rabu: true, kamis: true, jumat: true, sabtu: false, minggu: false };
+                days.forEach(day => { 
+                    const el = document.getElementById(`day-${day}`); 
+                    if (el) el.checked = defaultWorkdays[day]; 
+                });
             }
+            
             if (allSettings.late_tolerance !== undefined) document.getElementById('setting-late-tolerance').value = allSettings.late_tolerance;
             if (allSettings.face_recognition !== undefined) document.getElementById('setting-face-recognition').checked = allSettings.face_recognition === 'true' || allSettings.face_recognition === true;
             if (allSettings.location_tracking !== undefined) document.getElementById('setting-location-tracking').checked = allSettings.location_tracking === 'true' || allSettings.location_tracking === true;
         } catch (error) {
-            console.error(error);
+            console.error('Error loading settings:', error);
             this.shifts = storage.get('shifts', []);
             const company = storage.get('company', { name: '', logo: '' });
             document.getElementById('company-name').value = company.name;
             document.getElementById('company-logo').value = company.logo;
-            // Load working days from local storage as fallback
+            // Load working days from local storage as fallback only on error
             const workdays = storage.get('working_days', { senin: true, selasa: true, rabu: true, kamis: true, jumat: true, sabtu: false, minggu: false });
             const days = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'];
             days.forEach(day => { const el = document.getElementById(`day-${day}`); if (el) el.checked = workdays[day] !== false; });
