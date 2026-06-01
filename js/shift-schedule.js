@@ -45,17 +45,14 @@ const shiftSchedule = {
             this.scheduleData = storage.get('shift_schedule', {});
         }
         // Set filter to current month/year by default when page loads
-        const monthSelect = document.getElementById('schedule-month');
-        const yearSelect = document.getElementById('schedule-year');
+        const periodInput = document.getElementById('schedule-period');
         const currentMonth = new Date().getMonth();
         const currentYear = new Date().getFullYear();
         
-        if (monthSelect) {
-            monthSelect.value = currentMonth;
+        if (periodInput) {
+            const periodValue = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+            periodInput.value = periodValue;
             this.currentMonth = currentMonth;
-        }
-        if (yearSelect) {
-            yearSelect.value = currentYear;
             this.currentYear = currentYear;
         }
         this.generateSampleData();
@@ -206,10 +203,14 @@ const shiftSchedule = {
     },
 
     bindEvents() {
-        const monthSelect = document.getElementById('schedule-month');
-        if (monthSelect) monthSelect.addEventListener('change', (e) => { this.currentMonth = parseInt(e.target.value); this.renderTable(); this.updateSummary(); });
-        const yearSelect = document.getElementById('schedule-year');
-        if (yearSelect) yearSelect.addEventListener('change', (e) => { this.currentYear = parseInt(e.target.value); this.renderTable(); this.updateSummary(); });
+        const periodInput = document.getElementById('schedule-period');
+        if (periodInput) periodInput.addEventListener('change', (e) => { 
+            const [year, month] = e.target.value.split('-').map(Number);
+            this.currentYear = year;
+            this.currentMonth = month - 1;
+            this.renderTable(); 
+            this.updateSummary(); 
+        });
         const deptFilter = document.getElementById('schedule-dept-filter');
         if (deptFilter) deptFilter.addEventListener('change', (e) => { this.filters.department = e.target.value; this.renderTable(); this.updateSummary(); });
         const searchInput = document.getElementById('schedule-employee-search');
