@@ -1,6 +1,6 @@
 /**
  * Portal Karyawan - Settings
- * Admin settings - pure sync with database, fix time format
+ * Admin settings - pure sync with database, no auto-save
  */
 
 const settings = {
@@ -27,7 +27,7 @@ const settings = {
             if (!settingsResult.success) throw new Error('Gagal memuat pengaturan');
             if (!shiftsResult.success) throw new Error('Gagal memuat shift');
 
-            // Proses shifts - pastikan format waktu HH:MM
+            // Proses shifts
             this.shifts = (shiftsResult.data || []).map(shift => ({
                 id: shift.id,
                 name: shift.name,
@@ -39,12 +39,14 @@ const settings = {
             const allSettings = settingsResult.data || {};
 
             // Company info
-            document.getElementById('company-name').value = allSettings.company_name || '';
-            document.getElementById('company-logo').value = allSettings.company_logo || '';
+            const companyNameInput = document.getElementById('company-name');
+            const companyLogoInput = document.getElementById('company-logo');
+            if (companyNameInput) companyNameInput.value = allSettings.company_name || '';
+            if (companyLogoInput) companyLogoInput.value = allSettings.company_logo || '';
 
             // ========== WORKING DAYS ==========
             const days = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'];
-            const rawWorkingDays = allSettings.working_days;
+            let rawWorkingDays = allSettings.working_days;
             console.log('[Settings] Raw working_days from API:', rawWorkingDays);
 
             let workdays = null;
@@ -68,7 +70,9 @@ const settings = {
                 // Terapkan ke checkbox
                 days.forEach(day => {
                     const chk = document.getElementById(`day-${day}`);
-                    if (chk) chk.checked = workdays[day] === true;
+                    if (chk) {
+                        chk.checked = workdays[day] === true;
+                    }
                 });
                 console.log('[Settings] Applied workdays from DB:', workdays);
                 toast.success('Hari kerja dimuat dari database');
@@ -93,13 +97,16 @@ const settings = {
 
             // ========== SETTING LAINNYA ==========
             const lateTolerance = (allSettings.late_tolerance !== undefined && allSettings.late_tolerance !== null) ? allSettings.late_tolerance : 15;
-            document.getElementById('setting-late-tolerance').value = lateTolerance;
+            const toleranceInput = document.getElementById('setting-late-tolerance');
+            if (toleranceInput) toleranceInput.value = lateTolerance;
 
             const faceRecognition = (allSettings.face_recognition === 'true' || allSettings.face_recognition === true || allSettings.face_recognition === 'TRUE');
-            document.getElementById('setting-face-recognition').checked = faceRecognition;
+            const faceCheckbox = document.getElementById('setting-face-recognition');
+            if (faceCheckbox) faceCheckbox.checked = faceRecognition;
 
             const locationTracking = (allSettings.location_tracking === 'true' || allSettings.location_tracking === true || allSettings.location_tracking === 'TRUE');
-            document.getElementById('setting-location-tracking').checked = locationTracking;
+            const locationCheckbox = document.getElementById('setting-location-tracking');
+            if (locationCheckbox) locationCheckbox.checked = locationTracking;
 
             toast.success('Pengaturan berhasil dimuat');
         } catch (error) {
@@ -123,25 +130,28 @@ const settings = {
         toast.error(message);
     },
 
-    // Perbaikan: format waktu selalu HH:MM (dua digit jam)
     normalizeTime(val) {
         if (!val) return '09:00';
-        let hour = 9, minute = 0;
+        let timeStr = '';
         if (typeof val === 'string') {
-            // Coba ekstrak jam dan menit
-            const match = val.match(/(\d{1,2}):(\d{2})/);
-            if (match) {
-                hour = parseInt(match[1], 10);
-                minute = parseInt(match[2], 10);
+            if (val.includes(':')) {
+                let parts = val.split(':');
+                let hour = parseInt(parts[0], 10);
+                let minute = parseInt(parts[1], 10);
                 if (isNaN(hour)) hour = 9;
                 if (isNaN(minute)) minute = 0;
+                timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+            } else {
+                timeStr = '09:00';
             }
         } else if (val instanceof Date) {
-            hour = val.getHours();
-            minute = val.getMinutes();
+            const hour = val.getHours();
+            const minute = val.getMinutes();
+            timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        } else {
+            timeStr = '09:00';
         }
-        // Pastikan dua digit
-        return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        return timeStr;
     },
 
     initForms() {
