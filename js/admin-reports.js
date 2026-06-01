@@ -26,6 +26,11 @@ const adminReports = {
         }
         await this.loadData();
         this.bindAttendanceEvents();
+        // Default filter ke bulan terkini
+        const today = new Date();
+        this.filters.attendance.month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+        const monthInput = document.getElementById('attendance-month');
+        if (monthInput) monthInput.value = this.filters.attendance.month;
         this.renderAttendanceReports();
     },
     async initJurnalReports() {
