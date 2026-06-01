@@ -1,17 +1,16 @@
 /**
  * Portal Karyawan - Settings
- * Admin settings functionality - fully sync with database (Excel)
- * No localStorage interference for working_days
+ * Admin settings - pure sync with database, no auto-save, no local storage interference
  */
 
 const settings = {
     shifts: [],
 
     async init() {
-        if (!auth.isAdmin()) { 
-            toast.error('Akses ditolak'); 
-            router.navigate('dashboard'); 
-            return; 
+        if (!auth.isAdmin()) {
+            toast.error('Akses ditolak');
+            router.navigate('dashboard');
+            return;
         }
         await this.loadSettings();
         this.initForms();
@@ -24,14 +23,10 @@ const settings = {
                 api.getSettings(),
                 api.getShifts()
             ]);
-            
-            if (!settingsResult.success) {
-                throw new Error(settingsResult.error || 'Gagal memuat pengaturan');
-            }
-            if (!shiftsResult.success) {
-                throw new Error(shiftsResult.error || 'Gagal memuat shift');
-            }
-            
+
+            if (!settingsResult.success) throw new Error('Gagal memuat pengaturan');
+            if (!shiftsResult.success) throw new Error('Gagal memuat shift');
+
             // Proses shifts
             this.shifts = (shiftsResult.data || []).map(shift => ({
                 id: shift.id,
@@ -39,147 +34,96 @@ const settings = {
                 startTime: this.normalizeTime(shift.startTime),
                 endTime: this.normalizeTime(shift.endTime)
             }));
-            
-            // Simpan shifts ke storage untuk modul lain (absensi, dashboard)
-            if (this.shifts.length) {
-                storage.set('shifts', this.shifts);
-            }
-            
+            storage.set('shifts', this.shifts);
+
             const allSettings = settingsResult.data || {};
-            console.log('All settings from API:', allSettings);
-            
+
             // Company info
-            const companyNameInput = document.getElementById('company-name');
-            const companyLogoInput = document.getElementById('company-logo');
-            if (companyNameInput) companyNameInput.value = allSettings.company_name || '';
-            if (companyLogoInput) companyLogoInput.value = allSettings.company_logo || '';
-            
+            document.getElementById('company-name').value = allSettings.company_name || '';
+            document.getElementById('company-logo').value = allSettings.company_logo || '';
+
             // ========== WORKING DAYS ==========
             const days = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'];
+            const rawWorkingDays = allSettings.working_days;
+            console.log('[Settings] Raw working_days from API:', rawWorkingDays);
+
             let workdays = null;
-            const workdaysRaw = allSettings.working_days;
-            
-            console.log('Raw working_days from API (type:', typeof workdaysRaw, '):', workdaysRaw);
-            
-            if (workdaysRaw) {
-                // Jika sudah berupa object (mungkin API sudah parse)
-                if (typeof workdaysRaw === 'object') {
-                    workdays = workdaysRaw;
-                    console.log('working_days already object:', workdays);
-                } 
-                // Jika string, coba parse JSON
-                else if (typeof workdaysRaw === 'string') {
-                    let jsonStr = workdaysRaw.trim();
-                    // Hapus BOM jika ada
-                    if (jsonStr.charCodeAt(0) === 0xFEFF) jsonStr = jsonStr.slice(1);
-                    try {
-                        workdays = JSON.parse(jsonStr);
-                        console.log('working_days parsed from string:', workdays);
-                    } catch (e) {
-                        console.error('JSON parse error:', e);
-                        // Coba perbaiki kutip
-                        try {
-                            const fixed = jsonStr.replace(/'/g, '"');
-                            workdays = JSON.parse(fixed);
-                            console.log('Parsing with fixed quotes:', workdays);
-                        } catch (e2) {
-                            console.error('Still failed:', e2);
-                            workdays = null;
-                        }
-                    }
+            if (rawWorkingDays && typeof rawWorkingDays === 'string') {
+                try {
+                    workdays = JSON.parse(rawWorkingDays);
+                } catch (e) {
+                    console.error('[Settings] Parse error:', e);
                 }
+            } else if (rawWorkingDays && typeof rawWorkingDays === 'object') {
+                workdays = rawWorkingDays;
             }
-            
+
             if (workdays && typeof workdays === 'object') {
                 // Terapkan ke checkbox
                 days.forEach(day => {
-                    const el = document.getElementById(`day-${day}`);
-                    if (el) {
-                        const val = workdays[day];
-                        // Normalisasi boolean: true, 'true', 1, '1'
-                        const isChecked = (val === true || val === 'true' || val === 1 || val === '1');
-                        el.checked = isChecked;
-                    }
+                    const chk = document.getElementById(`day-${day}`);
+                    if (chk) chk.checked = workdays[day] === true;
                 });
-                console.log('Working days applied from database:', workdays);
+                console.log('[Settings] Applied workdays from DB:', workdays);
                 // Hapus pesan error jika ada
-                const errorDiv = document.querySelector('.workdays-error');
-                if (errorDiv) errorDiv.remove();
+                const errDiv = document.querySelector('.workdays-error');
+                if (errDiv) errDiv.remove();
                 toast.success('Hari kerja dimuat dari database');
             } else {
-                // Data tidak valid, tampilkan error permanen
-                console.error('Working days data is invalid or missing');
-                const workdaysContainer = document.querySelector('.working-days');
-                if (workdaysContainer && !document.querySelector('.workdays-error')) {
-                    const errorDiv = document.createElement('div');
-                    errorDiv.className = 'workdays-error';
-                    errorDiv.style.cssText = 'background:rgba(239,68,68,0.1); color:#EF4444; padding:8px; border-radius:8px; margin-bottom:16px; font-size:13px;';
-                    errorDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Data hari kerja di database rusak atau tidak ada. Silakan perbaiki di sheet Settings.';
-                    workdaysContainer.prepend(errorDiv);
+                // Data tidak valid atau belum ada -> tampilkan peringatan, JANGAN simpan otomatis
+                console.warn('[Settings] Working days tidak valid atau kosong');
+                const container = document.querySelector('.working-days');
+                if (container && !document.querySelector('.workdays-error')) {
+                    const errDiv = document.createElement('div');
+                    errDiv.className = 'workdays-error';
+                    errDiv.style.cssText = 'background:#FEF2F2; color:#DC2626; padding:8px; border-radius:8px; margin-bottom:16px; font-size:13px;';
+                    errDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Data hari kerja belum ada di database. Silakan atur checkbox di bawah lalu klik "Simpan Hari Kerja".';
+                    container.prepend(errDiv);
                 }
-                toast.error('Data hari kerja tidak valid, periksa database');
+                // Kosongkan semua checkbox sebagai placeholder (opsional)
+                days.forEach(day => {
+                    const chk = document.getElementById(`day-${day}`);
+                    if (chk) chk.checked = false;
+                });
+                toast.warning('Data hari kerja belum tersedia, silakan simpan terlebih dahulu');
             }
-            
+
             // ========== SETTING LAINNYA ==========
-            let lateTolerance = allSettings.late_tolerance;
-            if (lateTolerance === undefined || lateTolerance === null) {
-                lateTolerance = 15;
-            }
-            const toleranceInput = document.getElementById('setting-late-tolerance');
-            if (toleranceInput) toleranceInput.value = lateTolerance;
-            
-            let faceRecognition = allSettings.face_recognition;
-            if (faceRecognition === undefined || faceRecognition === null) {
-                faceRecognition = true;
-            } else {
-                faceRecognition = (faceRecognition === 'true' || faceRecognition === true || faceRecognition === 'TRUE');
-            }
-            const faceCheckbox = document.getElementById('setting-face-recognition');
-            if (faceCheckbox) faceCheckbox.checked = faceRecognition;
-            
-            let locationTracking = allSettings.location_tracking;
-            if (locationTracking === undefined || locationTracking === null) {
-                locationTracking = true;
-            } else {
-                locationTracking = (locationTracking === 'true' || locationTracking === true || locationTracking === 'TRUE');
-            }
-            const locationCheckbox = document.getElementById('setting-location-tracking');
-            if (locationCheckbox) locationCheckbox.checked = locationTracking;
-            
+            const lateTolerance = (allSettings.late_tolerance !== undefined) ? allSettings.late_tolerance : 15;
+            document.getElementById('setting-late-tolerance').value = lateTolerance;
+
+            const faceRecognition = (allSettings.face_recognition === 'true' || allSettings.face_recognition === true || allSettings.face_recognition === 'TRUE');
+            document.getElementById('setting-face-recognition').checked = faceRecognition;
+
+            const locationTracking = (allSettings.location_tracking === 'true' || allSettings.location_tracking === true || allSettings.location_tracking === 'TRUE');
+            document.getElementById('setting-location-tracking').checked = locationTracking;
+
+            toast.success('Pengaturan berhasil dimuat');
         } catch (error) {
-            console.error('Load settings error:', error);
-            this.showDatabaseError(error.message);
+            console.error('[Settings] Load error:', error);
+            this.showError(error.message);
         }
     },
-    
-    showDatabaseError(message) {
+
+    showError(message) {
         const container = document.querySelector('.settings-container');
         if (container) {
             container.innerHTML = `
-                <div class="error-state" style="text-align:center; padding:var(--spacing-xl); background:rgba(239,68,68,0.1); border-radius:var(--border-radius); margin:var(--spacing);">
-                    <i class="fas fa-database" style="font-size:3rem; color:var(--color-danger); margin-bottom:var(--spacing);"></i>
-                    <h3 style="color:var(--color-danger);">Gagal Sinkronisasi Database</h3>
+                <div class="error-state" style="padding:40px; text-align:center;">
+                    <i class="fas fa-database fa-3x" style="color:#EF4444;"></i>
+                    <h3>Gagal Sinkronisasi Database</h3>
                     <p>${message}</p>
-                    <p style="font-size:var(--font-size-sm); margin-top:var(--spacing);">Pastikan koneksi internet stabil dan database tersedia.</p>
-                    <button class="btn-primary" onclick="settings.retryLoad()" style="margin-top:var(--spacing);">
-                        <i class="fas fa-sync-alt"></i> Coba Lagi
-                    </button>
+                    <button class="btn-primary" onclick="location.reload()">Coba Lagi</button>
                 </div>
             `;
         }
         toast.error(message);
     },
-    
-    retryLoad() {
-        window.location.reload();
-    },
 
     normalizeTime(val) {
         if (!val) return '09:00';
         if (/^\d{2}:\d{2}$/.test(val)) return val;
-        if (/^\d{2}:\d{2}:\d{2}$/.test(val)) {
-            return val.substring(0, 5);
-        }
+        if (/^\d{2}:\d{2}:\d{2}$/.test(val)) return val.substring(0, 5);
         if (val instanceof Date) {
             const h = String(val.getHours()).padStart(2, '0');
             const m = String(val.getMinutes()).padStart(2, '0');
@@ -191,7 +135,7 @@ const settings = {
                 const h = String(d.getUTCHours()).padStart(2, '0');
                 const m = String(d.getUTCMinutes()).padStart(2, '0');
                 return h + ':' + m;
-            } catch(e) {
+            } catch (e) {
                 return '09:00';
             }
         }
@@ -201,17 +145,17 @@ const settings = {
     initForms() {
         const companyForm = document.getElementById('company-form');
         if (companyForm) companyForm.addEventListener('submit', (e) => this.saveCompany(e));
-        
+
         const addShiftBtn = document.getElementById('btn-add-shift');
         if (addShiftBtn) addShiftBtn.addEventListener('click', () => this.addShift());
-        
+
         const saveWorkdaysBtn = document.getElementById('btn-save-workdays');
         if (saveWorkdaysBtn) {
             const newBtn = saveWorkdaysBtn.cloneNode(true);
             saveWorkdaysBtn.parentNode.replaceChild(newBtn, saveWorkdaysBtn);
             newBtn.addEventListener('click', () => this.saveWorkdays());
         }
-        
+
         const saveSystemBtn = document.getElementById('btn-save-system');
         if (saveSystemBtn) {
             const newBtn = saveSystemBtn.cloneNode(true);
@@ -229,14 +173,12 @@ const settings = {
                 api.saveSetting('company_name', name),
                 api.saveSetting('company_logo', logo)
             ]);
-            if (results.some(r => !r || !r.success)) {
-                throw new Error('Gagal menyimpan data perusahaan');
-            }
+            if (results.some(r => !r || !r.success)) throw new Error('Gagal menyimpan');
             updateCompanyUI();
             toast.success('Informasi perusahaan disimpan ke database');
         } catch (error) {
-            console.error('Save company error:', error);
-            toast.error(error.message || 'Gagal menyimpan ke database');
+            console.error(error);
+            toast.error(error.message || 'Gagal menyimpan');
         }
     },
 
@@ -244,41 +186,31 @@ const settings = {
         const days = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'];
         const workdays = {};
         days.forEach(day => {
-            const el = document.getElementById(`day-${day}`);
-            workdays[day] = el ? el.checked : false;
+            const chk = document.getElementById(`day-${day}`);
+            workdays[day] = chk ? chk.checked : false;
         });
-        
-        console.log('Saving workdays:', workdays);
-        
+        const jsonString = JSON.stringify(workdays);
+        console.log('[Settings] Saving workdays:', workdays, jsonString);
+
         try {
-            const jsonString = JSON.stringify(workdays);
             const result = await api.saveSetting('working_days', jsonString);
-            
-            if (!result || !result.success) {
-                throw new Error(result?.error || 'Gagal menyimpan hari kerja');
-            }
-            
+            if (!result || !result.success) throw new Error(result?.error || 'Gagal menyimpan');
+
             toast.success('Hari kerja disimpan ke database');
-            
-            // Verifikasi dengan membaca ulang
-            const verifyResult = await api.getSettings();
-            if (verifyResult.success && verifyResult.data.working_days) {
-                let saved = null;
-                if (typeof verifyResult.data.working_days === 'object') {
-                    saved = verifyResult.data.working_days;
-                } else if (typeof verifyResult.data.working_days === 'string') {
-                    try {
-                        saved = JSON.parse(verifyResult.data.working_days);
-                    } catch(e) {}
-                }
-                if (saved && JSON.stringify(saved) === jsonString) {
+
+            // Verifikasi dengan membaca ulang dari database
+            const verify = await api.getSettings();
+            if (verify.success && verify.data.working_days) {
+                let saved = verify.data.working_days;
+                if (typeof saved === 'string') saved = JSON.parse(saved);
+                if (JSON.stringify(saved) === jsonString) {
                     toast.success('Verifikasi berhasil: data tersimpan permanen');
                 } else {
                     toast.warning('Data tersimpan tidak sesuai, coba refresh halaman');
                 }
             }
         } catch (error) {
-            console.error('Save workdays error:', error);
+            console.error('[Settings] Save workdays error:', error);
             toast.error(error.message || 'Gagal menyimpan ke database');
         }
     },
@@ -293,13 +225,11 @@ const settings = {
                 api.saveSetting('face_recognition', String(faceRecognition)),
                 api.saveSetting('location_tracking', String(locationTracking))
             ]);
-            if (results.some(r => !r || !r.success)) {
-                throw new Error('Gagal menyimpan pengaturan sistem');
-            }
+            if (results.some(r => !r || !r.success)) throw new Error('Gagal menyimpan');
             toast.success('Pengaturan sistem disimpan ke database');
         } catch (error) {
-            console.error('Save system settings error:', error);
-            toast.error(error.message || 'Gagal menyimpan ke database');
+            console.error(error);
+            toast.error(error.message || 'Gagal menyimpan');
         }
     },
 
@@ -338,16 +268,14 @@ const settings = {
         const newShift = { name: 'Shift Baru', startTime: '09:00', endTime: '18:00' };
         try {
             const result = await api.addShift(newShift);
-            if (!result || !result.success) {
-                throw new Error(result?.error || 'Gagal menambah shift');
-            }
+            if (!result || !result.success) throw new Error(result?.error || 'Gagal menambah shift');
             this.shifts.push(result.data);
             this.renderShifts();
             storage.set('shifts', this.shifts);
             toast.success('Shift ditambahkan ke database');
         } catch (error) {
-            console.error('Add shift error:', error);
-            toast.error(error.message || 'Gagal menambah shift');
+            console.error(error);
+            toast.error(error.message);
         }
     },
 
@@ -357,15 +285,13 @@ const settings = {
         this.shifts[index][field] = value;
         try {
             const result = await api.updateShift(this.shifts[index].id, { [field]: value });
-            if (!result || !result.success) {
-                throw new Error(result?.error || 'Gagal update shift');
-            }
+            if (!result || !result.success) throw new Error(result?.error || 'Gagal update shift');
             storage.set('shifts', this.shifts);
             toast.success('Shift diperbarui di database');
         } catch (error) {
             this.shifts[index][field] = oldValue;
             this.renderShifts();
-            toast.error(error.message || 'Gagal update shift');
+            toast.error(error.message);
         }
     },
 
@@ -373,16 +299,14 @@ const settings = {
         if (!confirm('Hapus shift ini? Tindakan ini tidak dapat dibatalkan.')) return;
         try {
             const result = await api.deleteShift(this.shifts[index].id);
-            if (!result || !result.success) {
-                throw new Error(result?.error || 'Gagal hapus shift');
-            }
+            if (!result || !result.success) throw new Error(result?.error || 'Gagal hapus shift');
             this.shifts.splice(index, 1);
             this.renderShifts();
             storage.set('shifts', this.shifts);
             toast.info('Shift dihapus dari database');
         } catch (error) {
-            console.error('Delete shift error:', error);
-            toast.error(error.message || 'Gagal hapus shift');
+            console.error(error);
+            toast.error(error.message);
         }
     },
 
