@@ -1,9 +1,8 @@
 /**
  * Portal Karyawan - API Layer
- * Abstraction layer for backend communication
  */
 
-const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbzn2Z9CWJHczeoQcSgSru-MD6f3aWv0cBpZIIdDG2xa0VVWkFDeW-n4ETQfRX1FcA33OA/exec';
+const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbzn2Z9CWJHczeoQcSgSru-MD6f3aWv0cBpZIIdDG2xa0VVWkFDeW-n4ETQfRX1FcA33OA/exec'; // Ganti dengan URL Web App Anda
 
 const api = {
 
@@ -47,10 +46,7 @@ const api = {
 
     // ========== ATTENDANCE ==========
     async getAttendance(userId) {
-        if (!API_BASE_URL) {
-            const all = storage.get('attendance', []);
-            return { success: true, data: all };
-        }
+        if (!API_BASE_URL) return { success: true, data: storage.get('attendance', []) };
         return this.request('getAttendance', { userId });
     },
     async getTodayAttendance(userId) {
@@ -102,10 +98,7 @@ const api = {
     },
     async getAllJournals() {
         if (!API_BASE_URL) return { success: true, data: storage.get('jurnals', []) };
-        console.log('Calling getAllJournals API');
-        const result = await this.request('getAllJournals');
-        console.log('getAllJournals response:', result);
-        return result;
+        return this.request('getAllJournals');
     },
     async deleteJournal(id) {
         if (!API_BASE_URL) {
@@ -117,7 +110,7 @@ const api = {
         return this.request('deleteJournal', { id });
     },
 
-    // ========== LEAVES (CUTI) ==========
+    // ========== LEAVES ==========
     async getLeaves(userId) {
         if (!API_BASE_URL) return { success: true, data: storage.get('leaves', []) };
         return this.request('getLeaves', { userId });
@@ -154,7 +147,10 @@ const api = {
     },
     async getAllLeaves() {
         if (!API_BASE_URL) return { success: true, data: storage.get('leaves', []) };
-        return this.request('getAllLeaves');
+        console.log('📡 Memanggil API getAllLeaves...');
+        const result = await this.request('getAllLeaves');
+        console.log('📥 Response getAllLeaves:', result);
+        return result;
     },
     async deleteLeave(id) {
         if (!API_BASE_URL) {
@@ -166,7 +162,7 @@ const api = {
         return this.request('deleteLeave', { id });
     },
 
-    // ========== IZIN / PERMISSION ==========
+    // ========== IZIN ==========
     async getIzin(userId) {
         if (!API_BASE_URL) return { success: true, data: storage.get('izin', []) };
         return this.request('getIzin', { userId });
@@ -203,7 +199,10 @@ const api = {
     },
     async getAllIzin() {
         if (!API_BASE_URL) return { success: true, data: storage.get('izin', []) };
-        return this.request('getAllIzin');
+        console.log('📡 Memanggil API getAllIzin...');
+        const result = await this.request('getAllIzin');
+        console.log('📥 Response getAllIzin:', result);
+        return result;
     },
     async deleteIzin(id) {
         if (!API_BASE_URL) {
