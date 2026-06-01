@@ -190,15 +190,25 @@ const settings = {
         toast.success('Pengaturan sistem disimpan');
     },
 
+    formatTimeForSheet(timeStr) {
+        // Ensure time is always in HH:mm format for database
+        if (!timeStr || timeStr === '' || timeStr === null || timeStr === undefined) return '';
+        // If already in HH:mm format, return as is
+        if (/^\d{2}:\d{2}$/.test(timeStr)) return timeStr;
+        // If in H:mm format (single digit hour), pad it
+        if (/^\d:\d{2}$/.test(timeStr)) return '0' + timeStr;
+        return timeStr;
+    },
+
     renderShifts() {
         const container = document.getElementById('shifts-list');
         if (!container) return;
         if (this.shifts.length === 0) { container.innerHTML = '<p class="empty-state">Belum ada shift</p>'; return; }
         container.innerHTML = this.shifts.map((shift, index) => {
-            const startTime = shift.startTime ? shift.startTime : '';
-            const endTime = shift.endTime ? shift.endTime : '';
-            const startTimeError = !shift.startTime;
-            const endTimeError = !shift.endTime;
+            const startTime = this.normalizeTime(shift.startTime);
+            const endTime = this.normalizeTime(shift.endTime);
+            const startTimeError = !startTime;
+            const endTimeError = !endTime;
             return `
             <div class="shift-item" data-index="${index}">
                 <div class="shift-input-group"><label>Nama Shift</label><input type="text" value="${shift.name || 'Shift Baru'}" placeholder="Nama Shift" onchange="settings.updateShift(${index}, 'name', this.value)"></div>
@@ -218,6 +228,10 @@ const settings = {
 
     async updateShift(index, field, value) {
         if (this.shifts[index]) {
+            // Format time values to HH:mm before saving to database
+            if (field === 'startTime' || field === 'endTime') {
+                value = this.formatTimeForSheet(value);
+            }
             this.shifts[index][field] = value;
             await api.updateShift(this.shifts[index].id, { [field]: value });
             toast.success('Shift diperbarui');
