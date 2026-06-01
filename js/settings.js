@@ -47,16 +47,30 @@ const settings = {
     },
 
     normalizeTime(val) {
-        if (!val || val === '' || val === null || val === undefined) return null;
-        if (/^\d{2}:\d{2}$/.test(val)) return val;
+        if (!val || val === '' || val === null || val === undefined) return '';
+        // Already a proper string in HH:mm format
+        if (typeof val === 'string' && /^\d{2}:\d{2}$/.test(val)) return val;
+        // If it is a Date object from Sheets
         if (val instanceof Date) {
             const h = String(val.getHours()).padStart(2, '0');
             const m = String(val.getMinutes()).padStart(2, '0');
             return h + ':' + m;
         }
+        // ISO string or other formats
         const str = String(val);
         if (str.includes('T')) {
-            try { const d = new Date(str); const h = String(d.getUTCHours()+7).padStart(2,'0'); const m = String(d.getUTCMinutes()).padStart(2,'0'); return h+':'+m; } catch(e) { return null; }
+            try {
+                const d = new Date(str);
+                const h = String(d.getHours()).padStart(2, '0');
+                const m = String(d.getMinutes()).padStart(2, '0');
+                return h + ':' + m;
+            } catch(e) { return ''; }
+        }
+        // Handle decimal time from Sheets (e.g., 8.57 for 08:34)
+        if (typeof val === 'number') {
+            const hours = Math.floor(val);
+            const minutes = Math.round((val - hours) * 60);
+            return String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0');
         }
         return str;
     },
