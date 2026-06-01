@@ -330,7 +330,7 @@ const adminReports = {
             } else if (this.filters.leave.type === 'izin') {
                 data = data.filter(item => item.type === 'izin');
             } else if (this.filters.leave.type === 'sakit') {
-                data = data.filter(item => item.type === 'izin' && item.typeLabel.toLowerCase().includes('sakit'));
+                data = data.filter(item => item.type === 'izin' && item.typeLabel && typeof item.typeLabel === 'string' && item.typeLabel.toLowerCase().includes('sakit'));
             }
         }
         if (this.filters.leave.status && this.filters.leave.status !== '') {
@@ -390,7 +390,7 @@ const adminReports = {
                 <td>${row.date || '-'}</div>
                 <td>${this.escapeHtml(row.name)}</div>
                 <td>${this.escapeHtml(row.department)}</div>
-                <td>${(row.tasks || '-').substring(0, 40)}${(row.tasks || '').length > 40 ? '...' : ''}</div>
+                <td>${row.tasks && typeof row.tasks === 'string' ? (row.tasks.length > 40 ? row.tasks.substring(0, 40) + '...' : row.tasks) : '-'}</td>
                 <td>${row.photo ? `<img src="${row.photo}" class="jurnal-thumbnail" onclick="adminReports.viewPhoto('${row.photo}')" style="width:40px;height:40px;object-fit:cover;border-radius:6px;cursor:pointer;">` : '-'}</div>
                 <td><span class="status-badge ${row.status}">${row.status === 'filled' ? 'Terisi' : 'Kosong'}</span></div>
                 <td>
@@ -406,7 +406,7 @@ const adminReports = {
                     <div class="mobile-card-header"><span class="mobile-card-title">${this.escapeHtml(row.name)}</span><span class="status-badge ${row.status}">${row.status === 'filled' ? 'Terisi' : 'Kosong'}</span></div>
                     <div class="mobile-card-row"><span>Tanggal:</span> ${row.date}</div>
                     <div class="mobile-card-row"><span>Departemen:</span> ${row.department}</div>
-                    <div class="mobile-card-row"><span>Tugas:</span> ${(row.tasks || '-').substring(0, 50)}</div>
+                    <div class="mobile-card-row"><span>Tugas:</span> ${row.tasks && typeof row.tasks === 'string' ? (row.tasks.length > 50 ? row.tasks.substring(0, 50) + '...' : row.tasks) : '-'}</div>
                     <div style="display:flex; gap:8px; margin-top:8px;">
                         <button class="btn-primary btn-sm" onclick="adminReports.viewJurnalDetail('${this.escapeHtml(row.name)}', '${row.date}')">Lihat</button>
                         <button class="btn-sm" style="background:#EF4444;color:white;" onclick="adminReports.deleteJournalItem('${row.id}')">Hapus</button>
@@ -448,7 +448,7 @@ const adminReports = {
                     <td>${item.typeLabel}</div>
                     <td>${item.dates}</div>
                     <td>${item.duration} hari</div>
-                    <td>${item.reason.substring(0, 40)}${item.reason.length > 40 ? '...' : ''}</div>
+                    <td>${item.reason && typeof item.reason === 'string' ? (item.reason.length > 40 ? item.reason.substring(0, 40) + '...' : item.reason) : '-'}</td>
                     <td><span class="status-badge ${item.status}">${statusLabels[item.status]}</span></div>
                     <td>${approveReject}${deleteBtn}${viewBtn}</div>
                 </tr>
@@ -470,7 +470,7 @@ const adminReports = {
                         <div class="mobile-card-row"><span>Jenis:</span> ${item.typeLabel}</div>
                         <div class="mobile-card-row"><span>Tanggal:</span> ${item.dates}</div>
                         <div class="mobile-card-row"><span>Durasi:</span> ${item.duration} hari</div>
-                        <div class="mobile-card-row"><span>Alasan:</span> ${item.reason.substring(0, 50)}</div>
+                        <div class="mobile-card-row"><span>Alasan:</span> ${item.reason && typeof item.reason === 'string' ? (item.reason.length > 50 ? item.reason.substring(0, 50) + '...' : item.reason) : '-'}</div>
                         <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
                             ${approveReject}
                             ${deleteBtn}
@@ -556,7 +556,7 @@ const adminReports = {
                 <p><strong>Jenis:</strong> ${type === 'cuti' ? 'Cuti' : 'Izin'}</p>
                 <p><strong>Tanggal:</strong> ${item.startDate ? `${item.startDate} - ${item.endDate}` : item.date}</p>
                 <p><strong>Durasi:</strong> ${item.duration} hari</p>
-                <p><strong>Alasan:</strong><br>${item.reason}</p>
+                <p><strong>Alasan:</strong><br>${item.reason || '-'}</p>
                 ${item.verificationPhoto ? `<p><strong>Foto Verifikasi:</strong><br><img src="${item.verificationPhoto}" style="max-width:100%; max-height:200px; border-radius:8px;"></p>` : ''}
                 <p><strong>Status:</strong> ${item.status === 'pending' ? 'Menunggu' : (item.status === 'approved' ? 'Disetujui' : 'Ditolak')}</p>
             </div>
