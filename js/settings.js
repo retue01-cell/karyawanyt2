@@ -10,8 +10,8 @@ const settings = {
     async init() {
         if (!auth.isAdmin()) { toast.error('Akses ditolak'); router.navigate('dashboard'); return; }
         await this.loadSettings();
-        this.initForms();
         this.renderShifts();
+        this.initForms();
     },
 
     async loadSettings() {
@@ -66,18 +66,31 @@ const settings = {
         this.formsInitialized = true;
         
         const companyForm = document.getElementById('company-form');
-        if (companyForm) companyForm.addEventListener('submit', (e) => this.saveCompany(e));
+        if (companyForm) {
+            companyForm.removeEventListener('submit', this._saveCompanyHandler);
+            this._saveCompanyHandler = (e) => this.saveCompany(e);
+            companyForm.addEventListener('submit', this._saveCompanyHandler);
+        }
+        
         const addShiftBtn = document.getElementById('btn-add-shift');
         if (addShiftBtn) {
-            addShiftBtn.addEventListener('click', () => this.addShift());
+            addShiftBtn.removeEventListener('click', this._addShiftHandler);
+            this._addShiftHandler = () => this.addShift();
+            addShiftBtn.addEventListener('click', this._addShiftHandler);
         }
+        
         const saveWorkdaysBtn = document.getElementById('btn-save-workdays');
         if (saveWorkdaysBtn) {
-            saveWorkdaysBtn.addEventListener('click', () => this.saveWorkdays());
+            saveWorkdaysBtn.removeEventListener('click', this._saveWorkdaysHandler);
+            this._saveWorkdaysHandler = () => this.saveWorkdays();
+            saveWorkdaysBtn.addEventListener('click', this._saveWorkdaysHandler);
         }
+        
         const saveSystemBtn = document.getElementById('btn-save-system');
         if (saveSystemBtn) {
-            saveSystemBtn.addEventListener('click', () => this.saveSystemSettings());
+            saveSystemBtn.removeEventListener('click', this._saveSystemHandler);
+            this._saveSystemHandler = () => this.saveSystemSettings();
+            saveSystemBtn.addEventListener('click', this._saveSystemHandler);
         }
     },
 
