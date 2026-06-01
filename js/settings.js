@@ -1,6 +1,6 @@
 /**
  * Portal Karyawan - Settings
- * Admin settings - pure sync with database, no auto-save
+ * Admin settings - pure sync with database
  */
 
 const settings = {
@@ -27,6 +27,9 @@ const settings = {
             if (!settingsResult.success) throw new Error('Gagal memuat pengaturan');
             if (!shiftsResult.success) throw new Error('Gagal memuat shift');
 
+            // Log full response untuk debugging
+            console.log('[Settings] Full settings response:', settingsResult.data);
+            
             // Proses shifts
             this.shifts = (shiftsResult.data || []).map(shift => ({
                 id: shift.id,
@@ -80,13 +83,19 @@ const settings = {
                     const errDiv = document.createElement('div');
                     errDiv.className = 'workdays-error';
                     errDiv.style.cssText = 'background:#FEF2F2; color:#DC2626; padding:8px; border-radius:8px; margin-bottom:16px; font-size:13px;';
-                    errDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Data hari kerja belum ada di database. Silakan atur checkbox di bawah lalu klik "Simpan Hari Kerja".';
+                    errDiv.innerHTML = `
+                        <i class="fas fa-exclamation-triangle"></i> Data hari kerja belum ada di database. 
+                        Silakan atur checkbox di bawah lalu klik "Simpan Hari Kerja". 
+                        <button type="button" class="btn-secondary btn-sm" style="margin-left:8px;" onclick="settings.initDefaultWorkdays()">Buat Default (Senin-Jumat)</button>
+                    `;
                     container.prepend(errDiv);
                 }
-                // Kosongkan semua checkbox (biar user mengisi)
+                // Jangan kosongkan checkbox, biarkan user atur (atau kita set default sementara)
+                // Tapi jangan simpan otomatis
                 days.forEach(day => {
                     const chk = document.getElementById(`day-${day}`);
-                    if (chk) chk.checked = false;
+                    // Set default visual saja (tidak disimpan)
+                    if (chk) chk.checked = (day !== 'sabtu' && day !== 'minggu'); // senin-jumat true
                 });
                 toast.warning('Data hari kerja belum ada, silakan simpan terlebih dahulu');
             }
@@ -106,6 +115,16 @@ const settings = {
             console.error('[Settings] Load error:', error);
             this.showError(error.message);
         }
+    },
+
+    // Inisialisasi default untuk checkbox (hanya UI, tidak simpan otomatis)
+    initDefaultWorkdays() {
+        const days = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'];
+        days.forEach(day => {
+            const chk = document.getElementById(`day-${day}`);
+            if (chk) chk.checked = (day !== 'sabtu' && day !== 'minggu');
+        });
+        toast.info('Default diisi Senin-Jumat, silakan klik Simpan Hari Kerja');
     },
 
     showError(message) {
