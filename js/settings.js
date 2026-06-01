@@ -1,6 +1,6 @@
 /**
  * Portal Karyawan - Settings
- * Admin settings functionality - always sync with database, show error on failure
+ * Admin settings functionality - fully sync with database, create defaults if missing
  */
 
 const settings = {
@@ -55,37 +55,79 @@ const settings = {
                     workdays = JSON.parse(allSettings.working_days);
                 } catch (e) {
                     console.error('Gagal parsing working_days:', e);
-                    this.showDatabaseError('Format data working_days tidak valid di database');
-                    return;
+                    workdays = null;
                 }
-            } else {
-                this.showDatabaseError('Data working_days tidak ditemukan di database');
-                return;
             }
             
             const days = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'];
             
-            // Terapkan data dari database ke checkbox
-            days.forEach(day => {
-                const el = document.getElementById(`day-${day}`);
-                if (el) el.checked = workdays[day] === true;
-            });
-            console.log('Hari kerja dimuat dari database:', workdays);
-            
-            // ========== SETTING LAINNYA ==========
-            if (allSettings.late_tolerance !== undefined) {
-                const toleranceInput = document.getElementById('setting-late-tolerance');
-                if (toleranceInput) toleranceInput.value = allSettings.late_tolerance;
+            if (workdays) {
+                // Data dari database ada -> terapkan ke checkbox
+                days.forEach(day => {
+                    const el = document.getElementById(`day-${day}`);
+                    if (el) el.checked = workdays[day] === true;
+                });
+                console.log('Hari kerja dimuat dari database:', workdays);
             } else {
-                this.showDatabaseError('Data late_tolerance tidak ditemukan di database');
-                return;
+                // Tidak ada data di database -> buat default (Senin-Jumat true, Sabtu-Minggu false)
+                console.warn('Data working_days tidak ada di database, membuat default');
+                const defaultWorkdays = {
+                    senin: true,
+                    selasa: true,
+                    rabu: true,
+                    kamis: true,
+                    jumat: true,
+                    sabtu: false,
+                    minggu: false
+                };
+                // Terapkan ke checkbox UI
+                days.forEach(day => {
+                    const el = document.getElementById(`day-${day}`);
+                    if (el) el.checked = defaultWorkdays[day];
+                });
+                // Simpan ke database
+                const saveResult = await api.saveSetting('working_days', JSON.stringify(defaultWorkdays));
+                if (saveResult && saveResult.success) {
+                    console.log('Default working days disimpan ke database');
+                    toast.info('Pengaturan hari kerja default telah ditambahkan ke database');
+                } else {
+                    console.error('Gagal menyimpan default working days');
+                    toast.warning('Gagal menyimpan default hari kerja ke database, coba lagi nanti');
+                }
             }
             
-            const faceRecognition = (allSettings.face_recognition === 'true' || allSettings.face_recognition === true);
+            // ========== SETTING LAINNYA ==========
+            // Late tolerance
+            let lateTolerance = allSettings.late_tolerance;
+            if (lateTolerance === undefined || lateTolerance === null) {
+                lateTolerance = 15;
+                await api.saveSetting('late_tolerance', lateTolerance);
+                console.log('Default late_tolerance disimpan ke database');
+            }
+            const toleranceInput = document.getElementById('setting-late-tolerance');
+            if (toleranceInput) toleranceInput.value = lateTolerance;
+            
+            // Face recognition
+            let faceRecognition = allSettings.face_recognition;
+            if (faceRecognition === undefined || faceRecognition === null) {
+                faceRecognition = true;
+                await api.saveSetting('face_recognition', String(faceRecognition));
+                console.log('Default face_recognition disimpan ke database');
+            } else {
+                faceRecognition = (faceRecognition === 'true' || faceRecognition === true);
+            }
             const faceCheckbox = document.getElementById('setting-face-recognition');
             if (faceCheckbox) faceCheckbox.checked = faceRecognition;
             
-            const locationTracking = (allSettings.location_tracking === 'true' || allSettings.location_tracking === true);
+            // Location tracking
+            let locationTracking = allSettings.location_tracking;
+            if (locationTracking === undefined || locationTracking === null) {
+                locationTracking = true;
+                await api.saveSetting('location_tracking', String(locationTracking));
+                console.log('Default location_tracking disimpan ke database');
+            } else {
+                locationTracking = (locationTracking === 'true' || locationTracking === true);
+            }
             const locationCheckbox = document.getElementById('setting-location-tracking');
             if (locationCheckbox) locationCheckbox.checked = locationTracking;
             
@@ -172,6 +214,7 @@ const settings = {
             if (results.some(r => !r || !r.success)) {
                 throw new Error('Gagal menyimpan data perusahaan');
             }
+            // Update UI company name
             updateCompanyUI();
             toast.success('Informasi perusahaan disimpan ke database');
         } catch (error) {
