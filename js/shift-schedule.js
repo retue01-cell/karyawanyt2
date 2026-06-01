@@ -55,7 +55,11 @@ const shiftSchedule = {
             this.currentMonth = currentMonth;
             this.currentYear = currentYear;
         }
-        this.generateSampleData();
+        // Only generate sample data if no existing data for this month
+        const key = `${this.currentYear}-${this.currentMonth}`;
+        if (!this.scheduleData[key]) {
+            this.generateSampleData();
+        }
     },
 
     generateSampleData() {
