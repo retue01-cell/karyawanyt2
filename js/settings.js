@@ -1,6 +1,6 @@
 /**
  * Portal Karyawan - Settings
- * Admin settings - pure sync with database, no auto-save, no local storage interference
+ * Admin settings - pure sync with database, no auto-save
  */
 
 const settings = {
@@ -48,15 +48,21 @@ const settings = {
             console.log('[Settings] Raw working_days from API:', rawWorkingDays);
 
             let workdays = null;
-            if (rawWorkingDays && typeof rawWorkingDays === 'string') {
-                try {
-                    workdays = JSON.parse(rawWorkingDays);
-                } catch (e) {
-                    console.error('[Settings] Parse error:', e);
+            if (rawWorkingDays) {
+                if (typeof rawWorkingDays === 'string') {
+                    try {
+                        workdays = JSON.parse(rawWorkingDays);
+                    } catch (e) {
+                        console.error('[Settings] Parse error:', e);
+                    }
+                } else if (typeof rawWorkingDays === 'object') {
+                    workdays = rawWorkingDays;
                 }
-            } else if (rawWorkingDays && typeof rawWorkingDays === 'object') {
-                workdays = rawWorkingDays;
             }
+
+            // Hapus error div sebelumnya
+            const existingErr = document.querySelector('.workdays-error');
+            if (existingErr) existingErr.remove();
 
             if (workdays && typeof workdays === 'object') {
                 // Terapkan ke checkbox
@@ -65,31 +71,28 @@ const settings = {
                     if (chk) chk.checked = workdays[day] === true;
                 });
                 console.log('[Settings] Applied workdays from DB:', workdays);
-                // Hapus pesan error jika ada
-                const errDiv = document.querySelector('.workdays-error');
-                if (errDiv) errDiv.remove();
                 toast.success('Hari kerja dimuat dari database');
             } else {
-                // Data tidak valid atau belum ada -> tampilkan peringatan, JANGAN simpan otomatis
+                // Data tidak ada atau invalid -> tampilkan error, jangan simpan otomatis
                 console.warn('[Settings] Working days tidak valid atau kosong');
                 const container = document.querySelector('.working-days');
-                if (container && !document.querySelector('.workdays-error')) {
+                if (container) {
                     const errDiv = document.createElement('div');
                     errDiv.className = 'workdays-error';
                     errDiv.style.cssText = 'background:#FEF2F2; color:#DC2626; padding:8px; border-radius:8px; margin-bottom:16px; font-size:13px;';
                     errDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Data hari kerja belum ada di database. Silakan atur checkbox di bawah lalu klik "Simpan Hari Kerja".';
                     container.prepend(errDiv);
                 }
-                // Kosongkan semua checkbox sebagai placeholder (opsional)
+                // Kosongkan semua checkbox (biar user mengisi)
                 days.forEach(day => {
                     const chk = document.getElementById(`day-${day}`);
                     if (chk) chk.checked = false;
                 });
-                toast.warning('Data hari kerja belum tersedia, silakan simpan terlebih dahulu');
+                toast.warning('Data hari kerja belum ada, silakan simpan terlebih dahulu');
             }
 
             // ========== SETTING LAINNYA ==========
-            const lateTolerance = (allSettings.late_tolerance !== undefined) ? allSettings.late_tolerance : 15;
+            const lateTolerance = (allSettings.late_tolerance !== undefined && allSettings.late_tolerance !== null) ? allSettings.late_tolerance : 15;
             document.getElementById('setting-late-tolerance').value = lateTolerance;
 
             const faceRecognition = (allSettings.face_recognition === 'true' || allSettings.face_recognition === true || allSettings.face_recognition === 'TRUE');
@@ -120,26 +123,30 @@ const settings = {
         toast.error(message);
     },
 
+    // Perbaikan: format waktu selalu HH:MM (dua digit jam)
     normalizeTime(val) {
         if (!val) return '09:00';
-        if (/^\d{2}:\d{2}$/.test(val)) return val;
-        if (/^\d{2}:\d{2}:\d{2}$/.test(val)) return val.substring(0, 5);
-        if (val instanceof Date) {
-            const h = String(val.getHours()).padStart(2, '0');
-            const m = String(val.getMinutes()).padStart(2, '0');
-            return h + ':' + m;
-        }
-        if (typeof val === 'string' && val.includes('T')) {
-            try {
-                const d = new Date(val);
-                const h = String(d.getUTCHours()).padStart(2, '0');
-                const m = String(d.getUTCMinutes()).padStart(2, '0');
-                return h + ':' + m;
-            } catch (e) {
-                return '09:00';
+        let timeStr = '';
+        if (typeof val === 'string') {
+            // Coba ekstrak HH:MM dari berbagai format
+            if (val.includes(':')) {
+                let parts = val.split(':');
+                let hour = parseInt(parts[0], 10);
+                let minute = parseInt(parts[1], 10);
+                if (isNaN(hour)) hour = 9;
+                if (isNaN(minute)) minute = 0;
+                timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+            } else {
+                timeStr = '09:00';
             }
+        } else if (val instanceof Date) {
+            const hour = val.getHours();
+            const minute = val.getMinutes();
+            timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        } else {
+            timeStr = '09:00';
         }
-        return String(val).substring(0, 5);
+        return timeStr;
     },
 
     initForms() {
@@ -198,17 +205,20 @@ const settings = {
 
             toast.success('Hari kerja disimpan ke database');
 
-            // Verifikasi dengan membaca ulang dari database
+            // Verifikasi
             const verify = await api.getSettings();
             if (verify.success && verify.data.working_days) {
                 let saved = verify.data.working_days;
                 if (typeof saved === 'string') saved = JSON.parse(saved);
                 if (JSON.stringify(saved) === jsonString) {
-                    toast.success('Verifikasi berhasil: data tersimpan permanen');
+                    toast.success('Verifikasi berhasil');
                 } else {
-                    toast.warning('Data tersimpan tidak sesuai, coba refresh halaman');
+                    toast.warning('Data tersimpan tidak sesuai, coba refresh');
                 }
             }
+            // Hapus pesan error jika ada
+            const errDiv = document.querySelector('.workdays-error');
+            if (errDiv) errDiv.remove();
         } catch (error) {
             console.error('[Settings] Save workdays error:', error);
             toast.error(error.message || 'Gagal menyimpan ke database');
@@ -321,6 +331,5 @@ const settings = {
     }
 };
 
-// Global init function
 window.initSettings = () => { settings.init(); };
 window.settings = settings;
