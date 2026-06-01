@@ -44,10 +44,20 @@ const shiftSchedule = {
             this.shifts = storage.get('shifts', []);
             this.scheduleData = storage.get('shift_schedule', {});
         }
+        // Set filter to current month/year by default when page loads
         const monthSelect = document.getElementById('schedule-month');
         const yearSelect = document.getElementById('schedule-year');
-        if (monthSelect) this.currentMonth = parseInt(monthSelect.value);
-        if (yearSelect) this.currentYear = parseInt(yearSelect.value);
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+        
+        if (monthSelect) {
+            monthSelect.value = currentMonth;
+            this.currentMonth = currentMonth;
+        }
+        if (yearSelect) {
+            yearSelect.value = currentYear;
+            this.currentYear = currentYear;
+        }
         this.generateSampleData();
     },
 
