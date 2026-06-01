@@ -39,7 +39,6 @@ const settings = {
                 endTime: this.normalizeTime(shift.endTime)
             }));
             
-            // Simpan shifts ke storage untuk modul lain
             if (this.shifts.length) {
                 storage.set('shifts', this.shifts);
             }
@@ -54,82 +53,86 @@ const settings = {
             
             // ========== WORKING DAYS (HARI KERJA) ==========
             const days = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'];
+            const workdaysRaw = allSettings.working_days;
+            
+            console.log('Raw working_days dari database:', workdaysRaw);
+            
             let workdays = null;
-            const workdaysString = allSettings.working_days;
-            
-            console.log('Raw working_days dari database:', workdaysString);
-            
-            if (workdaysString) {
+            if (workdaysRaw && typeof workdaysRaw === 'string') {
+                // Coba parse JSON, mungkin ada spasi atau newline
+                let jsonStr = workdaysRaw.trim();
+                // Hapus karakter BOM jika ada
+                if (jsonStr.charCodeAt(0) === 0xFEFF) jsonStr = jsonStr.slice(1);
                 try {
-                    workdays = JSON.parse(workdaysString);
-                    console.log('Hasil parsing working_days:', workdays);
+                    workdays = JSON.parse(jsonStr);
+                    console.log('Parsing berhasil:', workdays);
                 } catch (e) {
-                    console.error('Gagal parsing working_days:', e);
-                    // Coba bersihkan dari spasi atau karakter tak terlihat
+                    console.error('Parse error:', e);
+                    // Coba perbaiki: ganti kutip tidak standar
                     try {
-                        const cleaned = workdaysString.replace(/\s/g, '');
-                        workdays = JSON.parse(cleaned);
-                        console.log('Berhasil parsing setelah dibersihkan:', workdays);
+                        const fixed = jsonStr.replace(/'/g, '"');
+                        workdays = JSON.parse(fixed);
+                        console.log('Parsing dengan perbaikan kutip berhasil:', workdays);
                     } catch (e2) {
-                        console.error('Tetap gagal parsing:', e2);
+                        console.error('Gagal juga:', e2);
                         workdays = null;
                     }
                 }
+            } else if (workdaysRaw && typeof workdaysRaw === 'object') {
+                workdays = workdaysRaw;
+                console.log('Langsung object:', workdays);
             }
             
             if (workdays && typeof workdays === 'object') {
                 // Data valid -> terapkan ke checkbox
                 days.forEach(day => {
                     const el = document.getElementById(`day-${day}`);
-                    if (el) el.checked = workdays[day] === true;
+                    if (el) {
+                        const val = workdays[day];
+                        el.checked = (val === true || val === 'true' || val === 1);
+                    }
                 });
                 console.log('Hari kerja berhasil dimuat dari database:', workdays);
+                // Hapus pesan error jika ada
+                const errorDiv = document.querySelector('.workdays-error');
+                if (errorDiv) errorDiv.remove();
                 toast.success('Hari kerja dimuat dari database');
             } else {
-                // Data tidak ada atau rusak -> jangan simpan otomatis, hanya tampilkan peringatan
-                console.warn('Data working_days tidak valid atau tidak ada di database');
+                // Data tidak valid, tampilkan error permanen
+                console.error('Working days tidak valid:', workdaysRaw);
                 const workdaysContainer = document.querySelector('.working-days');
                 if (workdaysContainer && !document.querySelector('.workdays-error')) {
                     const errorDiv = document.createElement('div');
                     errorDiv.className = 'workdays-error';
                     errorDiv.style.cssText = 'background:rgba(239,68,68,0.1); color:#EF4444; padding:8px; border-radius:8px; margin-bottom:16px; font-size:13px;';
-                    errorDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Data hari kerja tidak ditemukan di database. Silakan atur checkbox di bawah lalu klik "Simpan Hari Kerja".';
+                    errorDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Data hari kerja di database rusak atau tidak valid. Silakan perbaiki format JSON di sheet Settings.';
                     workdaysContainer.prepend(errorDiv);
                 }
-                // Set checkbox ke default (semua true) sebagai tampilan awal, TAPI TIDAK DISIMPAN OTOMATIS
-                days.forEach(day => {
-                    const el = document.getElementById(`day-${day}`);
-                    if (el) el.checked = true;
-                });
-                toast.warning('Data hari kerja tidak ada, silakan atur dan simpan');
+                toast.error('Data hari kerja tidak valid, periksa database');
             }
             
             // ========== SETTING LAINNYA ==========
-            // Late tolerance
             let lateTolerance = allSettings.late_tolerance;
             if (lateTolerance === undefined || lateTolerance === null) {
                 lateTolerance = 15;
-                // Tidak menyimpan otomatis, biarkan user yang menyimpan
             }
             const toleranceInput = document.getElementById('setting-late-tolerance');
             if (toleranceInput) toleranceInput.value = lateTolerance;
             
-            // Face recognition
             let faceRecognition = allSettings.face_recognition;
             if (faceRecognition === undefined || faceRecognition === null) {
                 faceRecognition = true;
             } else {
-                faceRecognition = (faceRecognition === 'true' || faceRecognition === true);
+                faceRecognition = (faceRecognition === 'true' || faceRecognition === true || faceRecognition === 'TRUE');
             }
             const faceCheckbox = document.getElementById('setting-face-recognition');
             if (faceCheckbox) faceCheckbox.checked = faceRecognition;
             
-            // Location tracking
             let locationTracking = allSettings.location_tracking;
             if (locationTracking === undefined || locationTracking === null) {
                 locationTracking = true;
             } else {
-                locationTracking = (locationTracking === 'true' || locationTracking === true);
+                locationTracking = (locationTracking === 'true' || locationTracking === true || locationTracking === 'TRUE');
             }
             const locationCheckbox = document.getElementById('setting-location-tracking');
             if (locationCheckbox) locationCheckbox.checked = locationTracking;
@@ -162,7 +165,6 @@ const settings = {
         window.location.reload();
     },
 
-    // Normalisasi waktu: "08:30:00" -> "08:30", Date object -> "HH:MM", dll.
     normalizeTime(val) {
         if (!val) return '09:00';
         if (/^\d{2}:\d{2}$/.test(val)) return val;
@@ -249,18 +251,20 @@ const settings = {
             
             toast.success('Hari kerja disimpan ke database');
             
-            // Verifikasi dengan membaca ulang dari database
+            // Verifikasi dengan membaca ulang
             const verifyResult = await api.getSettings();
             if (verifyResult.success && verifyResult.data.working_days) {
-                const saved = JSON.parse(verifyResult.data.working_days);
-                console.log('Verifikasi dari database:', saved);
-                if (JSON.stringify(saved) === jsonString) {
+                let saved = null;
+                try {
+                    saved = JSON.parse(verifyResult.data.working_days);
+                } catch(e) {
+                    console.error('Verifikasi parse error:', e);
+                }
+                if (saved && JSON.stringify(saved) === jsonString) {
                     toast.success('Verifikasi berhasil: data tersimpan permanen');
                 } else {
-                    toast.warning('Data tersimpan tidak sesuai, kemungkinan ada proses lain yang mengubah');
+                    toast.warning('Data tersimpan tidak sesuai, coba refresh halaman');
                 }
-            } else {
-                toast.warning('Tidak dapat memverifikasi, periksa kembali database');
             }
         } catch (error) {
             console.error('Save workdays error:', error);
