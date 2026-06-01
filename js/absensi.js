@@ -177,9 +177,9 @@ const absensi = {
 
             // Status Badge
             let statusBadge = '<span class="badge-status">Waiting</span>';
-            if (record.status.toLowerCase() === 'ontime') {
+            if (record.status && record.status.toLowerCase() === 'ontime') {
                 statusBadge = '<span class="badge-status success">Tepat Waktu</span>';
-            } else if (record.status.toLowerCase() === 'terlambat' || record.status.toLowerCase() === 'late') {
+            } else if (record.status && (record.status.toLowerCase() === 'terlambat' || record.status.toLowerCase() === 'late')) {
                 statusBadge = '<span class="badge-status warning">Terlambat</span>';
             }
 
