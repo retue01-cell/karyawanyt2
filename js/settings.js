@@ -27,26 +27,41 @@ const settings = {
             document.getElementById('company-logo').value = allSettings.company_logo || '';
             
             // Load working days from database - always fresh from Sheets
-            const workdays = allSettings.working_days ? JSON.parse(allSettings.working_days) : null;
+            let workdays = null;
+            if (allSettings.working_days) {
+                try {
+                    // Handle both string and object cases
+                    workdays = typeof allSettings.working_days === 'string' 
+                        ? JSON.parse(allSettings.working_days) 
+                        : allSettings.working_days;
+                } catch (e) {
+                    console.error('Error parsing working_days:', e);
+                    workdays = null;
+                }
+            }
             console.log('Working days from database:', workdays);
             
-            if (workdays) {
-                const days = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'];
+            const days = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'];
+            
+            if (workdays && typeof workdays === 'object') {
+                // Use data from database
                 days.forEach(day => { 
                     const el = document.getElementById(`day-${day}`); 
                     if (el) {
-                        const isChecked = workdays[day] !== false;
+                        const isChecked = workdays[day] !== false && workdays[day] !== 'false';
                         el.checked = isChecked;
-                        console.log(`Day ${day}: ${isChecked}`);
+                        console.log(`Day ${day}: ${isChecked} (value: ${workdays[day]})`);
                     }
                 });
             } else {
                 // Default working days if not set in database
-                const days = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'];
                 const defaultWorkdays = { senin: true, selasa: true, rabu: true, kamis: true, jumat: true, sabtu: false, minggu: false };
                 days.forEach(day => { 
                     const el = document.getElementById(`day-${day}`); 
-                    if (el) el.checked = defaultWorkdays[day]; 
+                    if (el) {
+                        el.checked = defaultWorkdays[day];
+                        console.log(`Day ${day}: ${defaultWorkdays[day]} (default)`);
+                    }
                 });
             }
             
