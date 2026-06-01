@@ -1,6 +1,6 @@
 /**
  * Portal Karyawan - Settings
- * Admin settings - pure sync with database, no auto-save, fix time format
+ * Admin settings - pure sync with database, fix time format
  */
 
 const settings = {
@@ -27,7 +27,7 @@ const settings = {
             if (!settingsResult.success) throw new Error('Gagal memuat pengaturan');
             if (!shiftsResult.success) throw new Error('Gagal memuat shift');
 
-            // Proses shifts
+            // Proses shifts - pastikan format waktu HH:MM
             this.shifts = (shiftsResult.data || []).map(shift => ({
                 id: shift.id,
                 name: shift.name,
@@ -76,7 +76,7 @@ const settings = {
                 // Data tidak ada atau invalid -> tampilkan error, jangan simpan otomatis
                 console.warn('[Settings] Working days tidak valid atau kosong');
                 const container = document.querySelector('.working-days');
-                if (container) {
+                if (container && !document.querySelector('.workdays-error')) {
                     const errDiv = document.createElement('div');
                     errDiv.className = 'workdays-error';
                     errDiv.style.cssText = 'background:#FEF2F2; color:#DC2626; padding:8px; border-radius:8px; margin-bottom:16px; font-size:13px;';
@@ -126,26 +126,22 @@ const settings = {
     // Perbaikan: format waktu selalu HH:MM (dua digit jam)
     normalizeTime(val) {
         if (!val) return '09:00';
-        let timeStr = '';
+        let hour = 9, minute = 0;
         if (typeof val === 'string') {
-            if (val.includes(':')) {
-                let parts = val.split(':');
-                let hour = parseInt(parts[0], 10);
-                let minute = parseInt(parts[1], 10);
+            // Coba ekstrak jam dan menit
+            const match = val.match(/(\d{1,2}):(\d{2})/);
+            if (match) {
+                hour = parseInt(match[1], 10);
+                minute = parseInt(match[2], 10);
                 if (isNaN(hour)) hour = 9;
                 if (isNaN(minute)) minute = 0;
-                timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-            } else {
-                timeStr = '09:00';
             }
         } else if (val instanceof Date) {
-            const hour = val.getHours();
-            const minute = val.getMinutes();
-            timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        } else {
-            timeStr = '09:00';
+            hour = val.getHours();
+            minute = val.getMinutes();
         }
-        return timeStr;
+        // Pastikan dua digit
+        return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
     },
 
     initForms() {
