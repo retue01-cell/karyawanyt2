@@ -115,7 +115,8 @@ const dateTime = {
         if (format === 'full') {
             return `${dayName}, ${day} ${month} ${year}`;
         } else if (format === 'short') {
-            return `${day} ${months[d.getMonth()].substring(0, 3)} ${year}`;
+            const monthShort = months[d.getMonth()] ? months[d.getMonth()].substring(0, 3) : '';
+            return `${day} ${monthShort} ${year}`;
         } else if (format === 'day') {
             return dayName;
         }
@@ -345,7 +346,7 @@ function updateCompanyUI() {
     const elements = {
         'login-company-name': company.name,
         'footer-company': company.name,
-        'sidebar-brand': company.name.substring(0, 10)
+        'sidebar-brand': company.name && typeof company.name === 'string' ? company.name.substring(0, 10) : 'Portal'
     };
 
     Object.entries(elements).forEach(([id, value]) => {
