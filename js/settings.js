@@ -64,11 +64,26 @@ const settings = {
         const companyForm = document.getElementById('company-form');
         if (companyForm) companyForm.addEventListener('submit', (e) => this.saveCompany(e));
         const addShiftBtn = document.getElementById('btn-add-shift');
-        if (addShiftBtn) addShiftBtn.addEventListener('click', () => this.addShift());
+        if (addShiftBtn) {
+            // Remove existing listener to prevent duplicates
+            const newBtn = addShiftBtn.cloneNode(true);
+            addShiftBtn.parentNode.replaceChild(newBtn, addShiftBtn);
+            newBtn.addEventListener('click', () => this.addShift());
+        }
         const saveWorkdaysBtn = document.getElementById('btn-save-workdays');
-        if (saveWorkdaysBtn) saveWorkdaysBtn.addEventListener('click', () => this.saveWorkdays());
+        if (saveWorkdaysBtn) {
+            // Remove existing listener to prevent duplicates
+            const newWorkdaysBtn = saveWorkdaysBtn.cloneNode(true);
+            saveWorkdaysBtn.parentNode.replaceChild(newWorkdaysBtn, saveWorkdaysBtn);
+            newWorkdaysBtn.addEventListener('click', () => this.saveWorkdays());
+        }
         const saveSystemBtn = document.getElementById('btn-save-system');
-        if (saveSystemBtn) saveSystemBtn.addEventListener('click', () => this.saveSystemSettings());
+        if (saveSystemBtn) {
+            // Remove existing listener to prevent duplicates
+            const newSystemBtn = saveSystemBtn.cloneNode(true);
+            saveSystemBtn.parentNode.replaceChild(newSystemBtn, saveSystemBtn);
+            newSystemBtn.addEventListener('click', () => this.saveSystemSettings());
+        }
     },
 
     async saveCompany(e) {
@@ -84,7 +99,15 @@ const settings = {
     async saveWorkdays() {
         const days = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'];
         const workdays = {};
-        days.forEach(day => { workdays[day] = document.getElementById(`day-${day}`).checked; });
+        let hasUncheckedDays = false;
+        
+        days.forEach(day => { 
+            const el = document.getElementById(`day-${day}`);
+            const isChecked = el ? el.checked : true;
+            workdays[day] = isChecked;
+            if (!isChecked) hasUncheckedDays = true;
+        });
+        
         await api.saveSetting('working_days', JSON.stringify(workdays));
         storage.set('working_days', workdays);
         
