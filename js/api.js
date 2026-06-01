@@ -22,7 +22,7 @@ const api = {
             try {
                 return JSON.parse(text);
             } catch (e) {
-                console.error('Failed to parse response:', text.substring(0, 200));
+                console.error('Failed to parse response:', text && typeof text === 'string' ? text.substring(0, 200) : text);
                 return { success: false, error: 'Invalid response from server' };
             }
         } catch (error) {
