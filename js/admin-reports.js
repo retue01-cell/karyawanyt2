@@ -52,12 +52,13 @@ const adminReports = {
         }
         await this.loadData();
         this.bindLeaveEvents();
-        // Default filter kosong agar menampilkan semua data
-        this.filters.leave.month = '';
+        // Default filter ke bulan terkini
+        const today = new Date();
+        this.filters.leave.month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
         this.filters.leave.type = '';
         this.filters.leave.status = '';
         const monthInput = document.getElementById('leave-month');
-        if (monthInput) monthInput.value = '';
+        if (monthInput) monthInput.value = this.filters.leave.month;
         const typeInput = document.getElementById('leave-type-filter');
         if (typeInput) typeInput.value = '';
         const statusInput = document.getElementById('leave-status-filter');
