@@ -28,7 +28,8 @@ const shiftSchedule = {
             this.shifts = shiftResult.data || [];
             
             // Ambil jadwal dari database (sheet ShiftSchedule) - sinkron dengan Portal Karyawan.xlsx
-            const yearMonth = `${this.currentYear}-${String(this.currentMonth+1).padStart(2,'0')}`;
+            // Gunakan format YYYY-M (tanpa leading zero) agar konsisten dengan backend
+            const yearMonth = `${this.currentYear}-${this.currentMonth+1}`;
             const scheduleResult = await api.getShiftScheduleForMonth(yearMonth);
             if (scheduleResult.success && scheduleResult.data) {
                 this.scheduleData[yearMonth] = scheduleResult.data;
@@ -42,7 +43,7 @@ const shiftSchedule = {
             console.error('Error loading schedule:', error);
             this.employees = storage.get('admin_employees', []);
             this.shifts = storage.get('shifts', []);
-            const yearMonth = `${this.currentYear}-${String(this.currentMonth+1).padStart(2,'0')}`;
+            const yearMonth = `${this.currentYear}-${this.currentMonth+1}`;
             this.scheduleData = storage.get('shift_schedule', {});
             if (!this.scheduleData[yearMonth]) {
                 this.scheduleData[yearMonth] = {};
@@ -82,9 +83,14 @@ const shiftSchedule = {
         const headerRow = document.querySelector('#shift-schedule-table thead tr');
         const tbody = document.getElementById('shift-schedule-body');
         if (!headerRow || !tbody) return;
+        
+        // Clear existing date headers
         const existingDateHeaders = headerRow.querySelectorAll('.date-header-col');
         existingDateHeaders.forEach(th => th.remove());
+        
         const daysInMonth = this.getDaysInMonth(this.currentMonth, this.currentYear);
+        
+        // Create date headers
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(this.currentYear, this.currentMonth, day);
             const dayOfWeek = date.getDay();
@@ -94,14 +100,20 @@ const shiftSchedule = {
             th.innerHTML = `<div class="date-header ${isWeekend ? 'weekend' : ''}"><span class="date-day">${this.getDayName(dayOfWeek)}</span><span class="date-number">${day}</span></div>`;
             headerRow.appendChild(th);
         }
+        
         tbody.innerHTML = '';
         const filteredEmployees = this.getFilteredEmployees();
+        
         if (filteredEmployees.length === 0) {
             tbody.innerHTML = `<tr><td colspan="${daysInMonth+1}" class="shift-schedule-empty"><i class="fas fa-users-slash"></i><p>Tidak ada karyawan</p></td></tr>`;
             return;
         }
+        
+        // Use consistent key format: YYYY-MM (without leading zero for month to match backend)
         const key = `${this.currentYear}-${this.currentMonth+1}`;
         const monthData = this.scheduleData[key] || {};
+        
+        console.log('renderTable:', key, 'monthData:', monthData);
         
         filteredEmployees.forEach(emp => {
             const tr = document.createElement('tr');
@@ -110,14 +122,14 @@ const shiftSchedule = {
             empCell.className = 'sticky-col';
             empCell.innerHTML = `<div class="employee-cell"><img src="${getAvatarUrl(emp)}" alt="${emp.name}" class="employee-avatar"><div class="employee-info"><span class="employee-name">${emp.name}</span><span class="employee-dept">${emp.department}</span></div></div>`;
             tr.appendChild(empCell);
+            
             for (let day = 1; day <= daysInMonth; day++) {
                 const date = new Date(this.currentYear, this.currentMonth, day);
                 const dayOfWeek = date.getDay();
                 const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-                const currentShift = (monthData[emp.id] && monthData[emp.id][day]) ? monthData[emp.id][day] : '';
                 
-                const dateStr = `${this.currentYear}-${String(this.currentMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-                const validShifts = this.getShiftsForDate(dateStr);
+                // Get current shift from loaded data
+                const currentShift = (monthData[emp.id] && monthData[emp.id][day]) ? monthData[emp.id][day] : '';
                 
                 const td = document.createElement('td');
                 td.className = `shift-select-cell ${isWeekend ? 'weekend' : ''}`;
@@ -126,16 +138,17 @@ const shiftSchedule = {
                 select.setAttribute('data-employee-id', emp.id);
                 select.setAttribute('data-day', day);
                 
-                // Bangun options tanpa duplikat
-                const seenShifts = new Set();
-                let options = '<option value="">-</option>';
+                // Build options with base shifts only (no duplicates)
+                const baseShifts = [
+                    { name: 'Libur' },
+                    { name: 'Pagi' },
+                    { name: 'Siang' },
+                    { name: 'Malam' }
+                ];
                 
-                // Tambahkan shift dari database untuk tanggal ini (prioritas)
-                validShifts.forEach(shift => {
-                    if (!seenShifts.has(shift.name)) {
-                        seenShifts.add(shift.name);
-                        options += `<option value="${shift.name}" ${currentShift === shift.name ? 'selected' : ''}>${shift.name}</option>`;
-                    }
+                let options = '<option value="">-</option>';
+                baseShifts.forEach(shift => {
+                    options += `<option value="${shift.name}" ${currentShift === shift.name ? 'selected' : ''}>${shift.name}</option>`;
                 });
                 
                 select.innerHTML = options;
@@ -170,6 +183,8 @@ const shiftSchedule = {
                 const selectElement = document.querySelector(`select[data-employee-id="${employeeId}"][data-day="${day}"]`);
                 if (selectElement) {
                     selectElement.value = shiftValue || '';
+                    selectElement.className = `shift-select ${shiftValue ? 'shift-' + shiftValue.toLowerCase() : ''}`;
+                }
             } else {
                 toast.error(result?.error || 'Gagal menyimpan ke database');
             }
