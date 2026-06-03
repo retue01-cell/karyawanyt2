@@ -28,8 +28,8 @@ const shiftSchedule = {
             this.shifts = shiftResult.data || [];
             
             // Ambil jadwal dari database (sheet ShiftSchedule) - sinkron dengan Portal Karyawan.xlsx
-            // Gunakan format YYYY-M (tanpa leading zero) agar konsisten dengan backend
-            const yearMonth = `${this.currentYear}-${this.currentMonth+1}`;
+            // Gunakan format YYYY-MM (dengan leading zero) agar konsisten dengan backend
+            const yearMonth = `${this.currentYear}-${String(this.currentMonth+1).padStart(2,'0')}`;
             const scheduleResult = await api.getShiftScheduleForMonth(yearMonth);
             if (scheduleResult.success && scheduleResult.data) {
                 this.scheduleData[yearMonth] = scheduleResult.data;
@@ -43,7 +43,7 @@ const shiftSchedule = {
             console.error('Error loading schedule:', error);
             this.employees = storage.get('admin_employees', []);
             this.shifts = storage.get('shifts', []);
-            const yearMonth = `${this.currentYear}-${this.currentMonth+1}`;
+            const yearMonth = `${this.currentYear}-${String(this.currentMonth+1).padStart(2,'0')}`;
             this.scheduleData = storage.get('shift_schedule', {});
             if (!this.scheduleData[yearMonth]) {
                 this.scheduleData[yearMonth] = {};
@@ -109,8 +109,8 @@ const shiftSchedule = {
             return;
         }
         
-        // Use consistent key format: YYYY-MM (without leading zero for month to match backend)
-        const key = `${this.currentYear}-${this.currentMonth+1}`;
+        // Use consistent key format: YYYY-MM (with leading zero for month to match backend)
+        const key = `${this.currentYear}-${String(this.currentMonth+1).padStart(2,'0')}`;
         const monthData = this.scheduleData[key] || {};
         
         console.log('renderTable:', key, 'monthData:', monthData);
@@ -167,7 +167,7 @@ const shiftSchedule = {
 
     // Fungsi baru: update lokal + simpan ke database langsung (sinkron dengan Portal Karyawan.xlsx)
     async updateShiftAndSave(employeeId, day, shiftValue) {
-        const key = `${this.currentYear}-${this.currentMonth+1}`;
+        const key = `${this.currentYear}-${String(this.currentMonth+1).padStart(2,'0')}`;
         if (!this.scheduleData[key]) this.scheduleData[key] = {};
         if (!this.scheduleData[key][employeeId]) this.scheduleData[key][employeeId] = {};
         this.scheduleData[key][employeeId][day] = shiftValue || "";
@@ -179,8 +179,13 @@ const shiftSchedule = {
             const result = await api.saveShiftScheduleItem(employeeId, date, shiftValue || "");
             if (result && result.success) {
                 toast.success(`Shift untuk tanggal ${date} telah disimpan ke database`);
-                // Reload data dari server untuk memastikan tampilan sesuai dengan database
-                await this.loadData();
+                // Update data lokal dari server untuk memastikan tampilan sesuai dengan database
+                const fresh = await api.getShiftScheduleForMonth(key);
+                if (fresh.success && fresh.data) {
+                    this.scheduleData[key] = fresh.data;
+                    storage.set('shift_schedule', this.scheduleData);
+                }
+                // Render ulang tabel tanpa reload penuh
                 this.renderTable();
                 this.updateSummary();
             } else {
@@ -259,7 +264,7 @@ const shiftSchedule = {
     },
 
     updateSummary() {
-        const key = `${this.currentYear}-${this.currentMonth+1}`;
+        const key = `${this.currentYear}-${String(this.currentMonth+1).padStart(2,'0')}`;
         const monthData = this.scheduleData[key] || {};
         const filteredEmployees = this.getFilteredEmployees();
         let pagi = 0, siang = 0, malam = 0, libur = 0;
@@ -286,7 +291,7 @@ const shiftSchedule = {
             this.currentYear = year;
             this.currentMonth = month - 1;
             // Reset scheduleData untuk bulan ini agar dipaksa load ulang dari server
-            const key = `${this.currentYear}-${this.currentMonth+1}`;
+            const key = `${this.currentYear}-${String(this.currentMonth+1).padStart(2,'0')}`;
             delete this.scheduleData[key];
             await this.loadData();
             this.renderTable(); 
