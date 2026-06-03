@@ -497,6 +497,12 @@ const departmentManager = {
         console.log('[_fillSelects] Memulai pengisian elemen:', selects);
         console.log('[_fillSelects] Cache departemen:', this.cache);
         
+        const departmentsToUse = (!this.cache || this.cache.length === 0) 
+            ? ['IT', 'HR', 'Finance', 'Marketing', 'Operations'] 
+            : this.cache;
+        
+        console.log('[_fillSelects] Departemen yang akan digunakan:', departmentsToUse);
+        
         selects.forEach(selectorId => {
             const selectEl = document.getElementById(selectorId);
             if (!selectEl) {
@@ -509,29 +515,20 @@ const departmentManager = {
             // Cek apakah ini datalist atau select
             if (selectEl.tagName.toLowerCase() === 'datalist') {
                 // Handle datalist
-                console.log('[_fillSelects] Mengisi datalist dengan', this.cache.length, 'departemen');
+                console.log('[_fillSelects] Mengisi datalist dengan', departmentsToUse.length, 'departemen');
                 selectEl.innerHTML = '';
                 
-                // Jika cache kosong, tambahkan beberapa departemen default sebagai fallback
-                if (!this.cache || this.cache.length === 0) {
-                    console.log('[_fillSelects] Cache kosong, menggunakan departemen default');
-                    const defaultDepts = ['IT', 'HR', 'Finance', 'Marketing', 'Operations'];
-                    defaultDepts.forEach(dept => {
-                        const opt = document.createElement('option');
-                        opt.value = dept;
-                        selectEl.add(opt);
-                    });
-                } else {
-                    this.cache.forEach(dept => {
-                        const opt = document.createElement('option');
-                        opt.value = dept;
-                        selectEl.add(opt);
-                    });
-                }
+                departmentsToUse.forEach(dept => {
+                    const opt = document.createElement('option');
+                    opt.value = dept;
+                    selectEl.add(opt);
+                });
+                
                 console.log('[_fillSelects] Datalist selesai diisi, total options:', selectEl.options.length);
+                console.log('[_fillSelects] Isi datalist:', Array.from(selectEl.options).map(o => o.value));
             } else if (selectEl.tagName.toLowerCase() === 'select') {
                 // Handle select dropdown
-                console.log('[_fillSelects] Mengisi select dropdown dengan', this.cache.length, 'departemen');
+                console.log('[_fillSelects] Mengisi select dropdown dengan', departmentsToUse.length, 'departemen');
                 let firstOption = selectEl.options[0];
                 const isDefaultEmpty = firstOption && firstOption.value === '';
                 
@@ -548,11 +545,6 @@ const departmentManager = {
                     selectEl.add(defaultOpt);
                 }
                 
-                // Jika cache kosong, gunakan departemen default
-                const departmentsToUse = (!this.cache || this.cache.length === 0) 
-                    ? ['IT', 'HR', 'Finance', 'Marketing', 'Operations'] 
-                    : this.cache;
-                
                 // Isi dengan data departemen
                 departmentsToUse.forEach(dept => {
                     const opt = document.createElement('option');
@@ -567,6 +559,7 @@ const departmentManager = {
                 }
                 
                 console.log('[_fillSelects] Select selesai diisi, total options:', selectEl.options.length);
+                console.log('[_fillSelects] Isi select:', Array.from(selectEl.options).map(o => o.value));
             }
         });
     },
