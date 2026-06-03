@@ -64,11 +64,45 @@ const shiftSchedule = {
     },
 
     getShiftsForDate(dateStr) {
-        // Selalu tampilkan semua shift global (tanpa date spesifik) + shift untuk tanggal tertentu
+        // Selalu tampilkan shift dasar: Libur, Pagi, Siang, Malam untuk setiap hari
+        const baseShifts = [
+            { name: 'Libur', startTime: '', endTime: '', date: '' },
+            { name: 'Pagi', startTime: '07:00', endTime: '15:00', date: '' },
+            { name: 'Siang', startTime: '15:00', endTime: '23:00', date: '' },
+            { name: 'Malam', startTime: '23:00', endTime: '07:00', date: '' }
+        ];
+        
+        // Ambil shift global (tanpa date spesifik) dari database
         const globalShifts = this.shifts.filter(shift => !shift.date || shift.date === '');
+        
+        // Ambil shift spesifik untuk tanggal ini dari database
         const dateShifts = this.shifts.filter(shift => shift.date && shift.date === dateStr);
-        // Gabungkan shift global dan shift spesifik untuk tanggal ini
-        return [...globalShifts, ...dateShifts];
+        
+        // Gabungkan semua shift, prioritaskan shift dari database
+        // Jika ada shift dengan nama sama dari database, gunakan yang dari database
+        const mergedShifts = [...baseShifts];
+        
+        // Update shift base dengan data dari database jika ada
+        globalShifts.forEach(dbShift => {
+            const existingIndex = mergedShifts.findIndex(s => s.name === dbShift.name);
+            if (existingIndex >= 0) {
+                // Update dengan data dari database
+                mergedShifts[existingIndex] = { ...mergedShifts[existingIndex], ...dbShift };
+            } else {
+                // Tambahkan shift baru dari database
+                mergedShifts.push(dbShift);
+            }
+        });
+        
+        // Tambahkan shift spesifik tanggal yang tidak ada di base
+        dateShifts.forEach(dbShift => {
+            const exists = mergedShifts.some(s => s.name === dbShift.name);
+            if (!exists) {
+                mergedShifts.push(dbShift);
+            }
+        });
+        
+        return mergedShifts;
     },
 
     renderTable() {
@@ -122,15 +156,18 @@ const shiftSchedule = {
                 select.className = `shift-select ${currentShift ? 'shift-' + currentShift.toLowerCase() : ''}`;
                 select.setAttribute('data-employee-id', emp.id);
                 select.setAttribute('data-day', day);
+                
+                // Bangun options tanpa duplikat
+                const seenShifts = new Set();
                 let options = '<option value="">-</option>';
                 
-                // Tambahkan shift dari database untuk tanggal ini
+                // Tambahkan shift dari database untuk tanggal ini (prioritas)
                 validShifts.forEach(shift => {
-                    options += `<option value="${shift.name}" ${currentShift === shift.name ? 'selected' : ''}>${shift.name}</option>`;
+                    if (!seenShifts.has(shift.name)) {
+                        seenShifts.add(shift.name);
+                        options += `<option value="${shift.name}" ${currentShift === shift.name ? 'selected' : ''}>${shift.name}</option>`;
+                    }
                 });
-                
-                // Selalu tambahkan opsi Libur
-                options += `<option value="Libur" ${currentShift === 'Libur' ? 'selected' : ''}>Libur</option>`;
                 
                 select.innerHTML = options;
                 select.addEventListener('change', async (e) => { 
@@ -165,6 +202,12 @@ const shiftSchedule = {
                 if (selectElement) {
                     selectElement.value = shiftValue || '';
                     selectElement.className = `shift-select ${shiftValue ? 'shift-' + shiftValue.toLowerCase() : ''}`;
+                    // Pastikan value tetap terpilih setelah update
+                    setTimeout(() => {
+                        if (selectElement) {
+                            selectElement.value = shiftValue || '';
+                        }
+                    }, 100);
                 }
             } else {
                 toast.error(result?.error || 'Gagal menyimpan ke database');
