@@ -10,15 +10,15 @@ const shiftSchedule = {
     currentYear: new Date().getFullYear(),
     filters: { department: '', search: '' },
 
-    // Fungsi untuk menampilkan/menyembunyikan loading overlay
+    // Fungsi untuk menampilkan/menyembunyikan loading indicator di pojok kanan atas
     showLoading() {
-        const overlay = document.getElementById('loading-overlay');
-        if (overlay) overlay.classList.add('active');
+        const indicator = document.getElementById('loading-indicator');
+        if (indicator) indicator.classList.add('active');
     },
 
     hideLoading() {
-        const overlay = document.getElementById('loading-overlay');
-        if (overlay) overlay.classList.remove('active');
+        const indicator = document.getElementById('loading-indicator');
+        if (indicator) indicator.classList.remove('active');
     },
 
     async init() {
