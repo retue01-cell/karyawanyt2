@@ -1,6 +1,6 @@
 /**
  * Portal Karyawan - API Layer
- * Final version with getAllLeaves & getAllIzin
+ * Final version with getAllLeaves & getAllIzin & schedule methods
  */
 
 const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbzn2Z9CWJHczeoQcSgSru-MD6f3aWv0cBpZIIdDG2xa0VVWkFDeW-n4ETQfRX1FcA33OA/exec';
@@ -306,19 +306,32 @@ const api = {
         return this.request('deleteShift', { id });
     },
 
-    // ========== SCHEDULE ==========
+    // ========== SCHEDULE (Shift Schedule) ==========
+    /**
+     * Mendapatkan jadwal shift untuk bulan dan tahun tertentu
+     * @param {number} month - 1-12
+     * @param {number} year - tahun 4 digit
+     * @returns {Promise<Object>}
+     */
     async getSchedule(month, year) {
         if (!API_BASE_URL) {
-            const key = `schedule_${year}_${month}`;
+            // Fallback ke storage lokal
+            const key = `shift_schedule_${year}_${month}`;
             return { success: true, data: storage.get(key, {}) };
         }
         return this.request('getSchedule', { month, year });
     },
+
+    /**
+     * Menyimpan jadwal shift untuk bulan dan tahun tertentu
+     * @param {Object} data - { month, year, schedule }
+     * @returns {Promise<Object>}
+     */
     async saveSchedule(data) {
         if (!API_BASE_URL) {
-            const key = `schedule_${data.year}_${data.month}`;
+            const key = `shift_schedule_${data.year}_${data.month}`;
             storage.set(key, data.schedule || {});
-            return { success: true };
+            return { success: true, message: 'Disimpan ke storage lokal' };
         }
         return this.request('saveSchedule', data);
     },
@@ -333,8 +346,14 @@ const api = {
     }
 };
 
+// Expose globally
 window.api = api;
 
+/**
+ * Helper function untuk mendapatkan URL avatar dari data karyawan
+ * @param {Object} emp - object karyawan dengan properti name dan avatar
+ * @returns {string} URL avatar
+ */
 window.getAvatarUrl = function (emp) {
     if (emp && emp.avatar && emp.avatar.startsWith('http')) return emp.avatar;
     const name = (emp && emp.name) ? emp.name : 'User';
