@@ -471,19 +471,18 @@ const departmentManager = {
         const selects = Array.isArray(selectors) ? selectors : [selectors];
         
         console.log('[populateSelects] Memulai populate untuk:', selectors);
-        console.log('[populateSelects] Cache saat ini:', this.cache);
         
         // Pastikan elemen DOM sudah ada sebelum melanjutkan
         for (const selectorId of selects) {
             let attempts = 0;
-            while (!document.getElementById(selectorId) && attempts < 10) {
+            while (!document.getElementById(selectorId) && attempts < 20) {
                 console.log('[populateSelects] Menunggu elemen', selectorId, 'ada di DOM...');
-                await new Promise(resolve => setTimeout(resolve, 100));
+                await new Promise(resolve => setTimeout(resolve, 150));
                 attempts++;
             }
             
             if (!document.getElementById(selectorId)) {
-                console.error('[populateSelects] Elemen', selectorId, 'tidak ditemukan setelah 1 detik');
+                console.error('[populateSelects] Elemen', selectorId, 'tidak ditemukan setelah 3 detik');
                 continue;
             }
         }
@@ -494,10 +493,11 @@ const departmentManager = {
             console.log('[populateSelects] Data departemen diterima:', departments);
             
             if (!departments || departments.length === 0) {
-                console.warn('[populateSelects] Departemen kosong, menggunakan fallback');
+                console.warn('[populateSelects] Departemen kosong dari server');
             }
             
             this._fillSelects(selects, currentValue);
+            console.log('[populateSelects] Selesai mengisi semua elemen');
             return departments;
         } catch (err) {
             console.error('[populateSelects] Error fetching departments:', err);
