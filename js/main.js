@@ -419,3 +419,117 @@ const loadingIndicator = {
 };
 
 window.loadingIndicator = loadingIndicator;
+
+// Department Manager (Global)
+const departmentManager = {
+    cache: [],
+    
+    /**
+     * Mengambil daftar departemen dari server dan menyimpannya di cache
+     * @returns {Promise<Array>} Array of department names
+     */
+    fetchDepartments() {
+        return new Promise((resolve, reject) => {
+            google.script.run
+                .withSuccessHandler((departments) => {
+                    this.cache = departments;
+                    resolve(departments);
+                })
+                .withFailureHandler((error) => {
+                    console.error('Failed to fetch departments:', error);
+                    reject(error);
+                })
+                .getUniqueDepartments();
+        });
+    },
+    
+    /**
+     * Mengisi dropdown select atau datalist dengan daftar departemen
+     * @param {string|Array} selectors - ID elemen select/datalist atau array of IDs
+     * @param {string} currentValue - Nilai yang sedang dipilih (untuk edit mode)
+     */
+    populateSelects(selectors, currentValue = '') {
+        const selects = Array.isArray(selectors) ? selectors : [selectors];
+        
+        // Gunakan cache jika sudah ada, atau fetch baru
+        if (this.cache.length > 0) {
+            this._fillSelects(selects, currentValue);
+        } else {
+            this.fetchDepartments()
+                .then(() => this._fillSelects(selects, currentValue))
+                .catch(err => {
+                    console.error('Error populating departments:', err);
+                    toast.error('Gagal memuat daftar departemen', 'Error');
+                });
+        }
+    },
+    
+    /**
+     * Internal function untuk mengisi dropdown atau datalist
+     * @private
+     */
+    _fillSelects(selects, currentValue) {
+        selects.forEach(selectorId => {
+            const selectEl = document.getElementById(selectorId);
+            if (!selectEl) return;
+            
+            // Cek apakah ini datalist atau select
+            if (selectEl.tagName.toLowerCase() === 'datalist') {
+                // Handle datalist
+                selectEl.innerHTML = '';
+                this.cache.forEach(dept => {
+                    const opt = document.createElement('option');
+                    opt.value = dept;
+                    selectEl.add(opt);
+                });
+            } else if (selectEl.tagName.toLowerCase() === 'select') {
+                // Handle select dropdown
+                let firstOption = selectEl.options[0];
+                const isDefaultEmpty = firstOption && firstOption.value === '';
+                
+                // Reset opsi
+                selectEl.innerHTML = '';
+                
+                // Tambahkan kembali opsi default
+                if (isDefaultEmpty) {
+                    selectEl.add(firstOption);
+                } else {
+                    const defaultOpt = document.createElement('option');
+                    defaultOpt.value = '';
+                    defaultOpt.text = '-- Pilih Departemen --';
+                    selectEl.add(defaultOpt);
+                }
+                
+                // Isi dengan data departemen
+                this.cache.forEach(dept => {
+                    const opt = document.createElement('option');
+                    opt.value = dept;
+                    opt.text = dept;
+                    selectEl.add(opt);
+                });
+                
+                // Kembalikan nilai sebelumnya jika valid
+                if (currentValue && this.cache.includes(currentValue)) {
+                    selectEl.value = currentValue;
+                }
+            }
+        });
+    },
+    
+    /**
+     * Mendapatkan daftar departemen dari cache
+     * @returns {Array} Array of department names
+     */
+    getDepartments() {
+        return [...this.cache];
+    },
+    
+    /**
+     * Membersihkan cache (untuk refresh manual)
+     */
+    clearCache() {
+        this.cache = [];
+    }
+};
+
+window.departmentManager = departmentManager;
