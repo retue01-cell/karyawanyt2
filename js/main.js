@@ -473,13 +473,30 @@ const departmentManager = {
         console.log('[populateSelects] Memulai populate untuk:', selectors);
         console.log('[populateSelects] Cache saat ini:', this.cache);
         
-        // Tunggu sebentar untuk memastikan DOM siap
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Pastikan elemen DOM sudah ada sebelum melanjutkan
+        for (const selectorId of selects) {
+            let attempts = 0;
+            while (!document.getElementById(selectorId) && attempts < 10) {
+                console.log('[populateSelects] Menunggu elemen', selectorId, 'ada di DOM...');
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            if (!document.getElementById(selectorId)) {
+                console.error('[populateSelects] Elemen', selectorId, 'tidak ditemukan setelah 1 detik');
+                continue;
+            }
+        }
         
         // Selalu fetch data terbaru dari server untuk memastikan data sinkron
         try {
             const departments = await this.fetchDepartments();
             console.log('[populateSelects] Data departemen diterima:', departments);
+            
+            if (!departments || departments.length === 0) {
+                console.warn('[populateSelects] Departemen kosong, menggunakan fallback');
+            }
+            
             this._fillSelects(selects, currentValue);
             return departments;
         } catch (err) {
