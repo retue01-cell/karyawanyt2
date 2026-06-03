@@ -278,9 +278,14 @@ const adminEmployees = {
         return labels[status] || status;
     },
 
-    showAddModal() {
+    async showAddModal() {
         const modal = document.getElementById('modal-add-employee');
         if (modal) {
+            // Populate department datalist dynamically BEFORE showing modal
+            console.log('[showAddModal] Memulai populate dept-list');
+            await departmentManager.populateSelects('dept-list');
+            console.log('[showAddModal] Selesai populate dept-list, cache:', departmentManager.cache);
+            
             modal.style.display = 'flex';
             document.body.style.overflow = 'hidden';
             this.isSubmitting = false;
@@ -290,9 +295,6 @@ const adminEmployees = {
             const confirmField = document.getElementById('emp-confirm-password');
             if (pwdField) pwdField.value = '';
             if (confirmField) confirmField.value = '';
-            
-            // Populate department datalist dynamically
-            departmentManager.populateSelects('dept-list');
         }
     },
 
@@ -412,7 +414,7 @@ const adminEmployees = {
         }
     },
 
-    editEmployee(id) {
+    async editEmployee(id) {
         const emp = this.employees.find(e => e.id == id);
         if (!emp) {
             toast.error('Data karyawan tidak ditemukan');
@@ -429,9 +431,17 @@ const adminEmployees = {
         document.getElementById('edit-emp-password').value = '';
         document.getElementById('edit-emp-confirm-password').value = '';
         
-        // Populate department datalist dynamically and set current value
-        departmentManager.populateSelects('dept-list-edit');
-        document.getElementById('edit-emp-department').value = emp.department;
+        // Populate department datalist dynamically and set current value AFTER populating
+        console.log('[editEmployee] Memulai populate dept-list-edit untuk:', emp.department);
+        await departmentManager.populateSelects('dept-list-edit', emp.department);
+        console.log('[editEmployee] Selesai populate, cache:', departmentManager.cache);
+        
+        // Set nilai departemen setelah datalist terisi
+        const deptInput = document.getElementById('edit-emp-department');
+        if (deptInput && emp.department) {
+            deptInput.value = emp.department;
+            console.log('[editEmployee] Nilai departemen diset ke:', emp.department);
+        }
         
         const modal = document.getElementById('modal-edit-employee');
         if (modal) {
