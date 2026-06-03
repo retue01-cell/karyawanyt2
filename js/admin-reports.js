@@ -253,8 +253,14 @@ const adminReports = {
         if (btnPrint) btnPrint.onclick = () => this.printReport('attendance');
         const month = document.getElementById('attendance-month');
         if (month) month.onchange = (e) => { this.filters.attendance.month = e.target.value; this.renderAttendanceReports(); };
+        
+        // Populate department filter dynamically
         const dept = document.getElementById('report-dept-filter');
-        if (dept) dept.onchange = (e) => { this.filters.attendance.dept = e.target.value; this.renderAttendanceReports(); };
+        if (dept) {
+            departmentManager.populateSelects('report-dept-filter');
+            dept.onchange = (e) => { this.filters.attendance.dept = e.target.value; this.renderAttendanceReports(); };
+        }
+        
         const status = document.getElementById('report-status-filter');
         if (status) status.onchange = (e) => { this.filters.attendance.status = e.target.value; this.renderAttendanceReports(); };
     },
