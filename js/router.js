@@ -43,6 +43,11 @@ const router = {
     },
     
     showPage(page, pushState = true) {
+        // Show loading indicator when switching pages
+        if (window.loadingIndicator) {
+            window.loadingIndicator.show('Memuat halaman...');
+        }
+        
         this.currentPage = page;
         
         // Update page title
@@ -92,6 +97,13 @@ const router = {
         
         // Scroll to top
         document.querySelector('.page-content').scrollTop = 0;
+        
+        // Hide loading indicator after page is loaded
+        setTimeout(() => {
+            if (window.loadingIndicator) {
+                window.loadingIndicator.hide();
+            }
+        }, 300);
     },
     
     triggerPageInit(page) {
