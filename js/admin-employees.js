@@ -288,6 +288,9 @@ const adminEmployees = {
             const confirmField = document.getElementById('emp-confirm-password');
             if (pwdField) pwdField.value = '';
             if (confirmField) confirmField.value = '';
+            
+            // Populate department datalist dynamically
+            departmentManager.populateSelects('dept-list');
         }
     },
 
@@ -416,7 +419,6 @@ const adminEmployees = {
         this.currentEditId = id;
         document.getElementById('edit-emp-name').value = emp.name;
         document.getElementById('edit-emp-email').value = emp.email;
-        document.getElementById('edit-emp-department').value = emp.department;
         document.getElementById('edit-emp-position').value = emp.position;
         document.getElementById('edit-emp-shift').value = emp.shift;
         document.getElementById('edit-emp-status').value = emp.status;
@@ -424,6 +426,11 @@ const adminEmployees = {
         // Kosongkan field password
         document.getElementById('edit-emp-password').value = '';
         document.getElementById('edit-emp-confirm-password').value = '';
+        
+        // Populate department datalist dynamically and set current value
+        departmentManager.populateSelects('dept-list-edit');
+        document.getElementById('edit-emp-department').value = emp.department;
+        
         const modal = document.getElementById('modal-edit-employee');
         if (modal) {
             modal.style.display = 'flex';
