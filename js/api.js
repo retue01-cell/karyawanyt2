@@ -306,7 +306,7 @@ const api = {
         return this.request('deleteShift', { id });
     },
 
-    // ========== SCHEDULE (old) ==========
+    // ========== SCHEDULE (old JSON based) ==========
     async getSchedule(month, year) {
         if (!API_BASE_URL) {
             const key = `schedule_${year}_${month}`;
