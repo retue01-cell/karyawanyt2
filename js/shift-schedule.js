@@ -179,12 +179,10 @@ const shiftSchedule = {
             const result = await api.saveShiftScheduleItem(employeeId, date, shiftValue || "");
             if (result && result.success) {
                 toast.success(`Shift untuk tanggal ${date} telah disimpan ke database`);
-                // Update tampilan select tanpa reload penuh agar tidak kosong
-                const selectElement = document.querySelector(`select[data-employee-id="${employeeId}"][data-day="${day}"]`);
-                if (selectElement) {
-                    selectElement.value = shiftValue || '';
-                    selectElement.className = `shift-select ${shiftValue ? 'shift-' + shiftValue.toLowerCase() : ''}`;
-                }
+                // Reload data dari server untuk memastikan tampilan sesuai dengan database
+                await this.loadData();
+                this.renderTable();
+                this.updateSummary();
             } else {
                 toast.error(result?.error || 'Gagal menyimpan ke database');
             }
@@ -287,6 +285,9 @@ const shiftSchedule = {
             const [year, month] = e.target.value.split('-').map(Number);
             this.currentYear = year;
             this.currentMonth = month - 1;
+            // Reset scheduleData untuk bulan ini agar dipaksa load ulang dari server
+            const key = `${this.currentYear}-${this.currentMonth+1}`;
+            delete this.scheduleData[key];
             await this.loadData();
             this.renderTable(); 
             this.updateSummary();
