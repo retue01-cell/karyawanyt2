@@ -30,20 +30,23 @@ const shiftSchedule = {
             // Ambil jadwal dari database (sheet ShiftSchedule) - sinkron dengan Portal Karyawan.xlsx
             const yearMonth = `${this.currentYear}-${String(this.currentMonth+1).padStart(2,'0')}`;
             const scheduleResult = await api.getShiftScheduleForMonth(yearMonth);
-            if (scheduleResult.success) {
-                this.scheduleData = scheduleResult.data || {};
+            if (scheduleResult.success && scheduleResult.data) {
+                this.scheduleData[yearMonth] = scheduleResult.data;
             } else {
-                this.scheduleData = {};
+                this.scheduleData[yearMonth] = {};
             }
             storage.set('shift_schedule', this.scheduleData);
             
-            // Refresh shifts setelah load untuk memastikan data date terbaru dari database
-            console.log('Shift Schedule: Data loaded successfully for', yearMonth);
+            console.log('Shift Schedule: Data loaded successfully for', yearMonth, this.scheduleData[yearMonth]);
         } catch (error) {
             console.error('Error loading schedule:', error);
             this.employees = storage.get('admin_employees', []);
             this.shifts = storage.get('shifts', []);
+            const yearMonth = `${this.currentYear}-${String(this.currentMonth+1).padStart(2,'0')}`;
             this.scheduleData = storage.get('shift_schedule', {});
+            if (!this.scheduleData[yearMonth]) {
+                this.scheduleData[yearMonth] = {};
+            }
         }
         
         const periodInput = document.getElementById('schedule-period');
@@ -72,37 +75,7 @@ const shiftSchedule = {
             { name: 'Malam', startTime: '23:00', endTime: '07:00', date: '' }
         ];
         
-        // Ambil shift global (tanpa date spesifik) dari database
-        const globalShifts = this.shifts.filter(shift => !shift.date || shift.date === '');
-        
-        // Ambil shift spesifik untuk tanggal ini dari database
-        const dateShifts = this.shifts.filter(shift => shift.date && shift.date === dateStr);
-        
-        // Gabungkan semua shift, prioritaskan shift dari database
-        // Jika ada shift dengan nama sama dari database, gunakan yang dari database
-        const mergedShifts = [...baseShifts];
-        
-        // Update shift base dengan data dari database jika ada
-        globalShifts.forEach(dbShift => {
-            const existingIndex = mergedShifts.findIndex(s => s.name === dbShift.name);
-            if (existingIndex >= 0) {
-                // Update dengan data dari database
-                mergedShifts[existingIndex] = { ...mergedShifts[existingIndex], ...dbShift };
-            } else {
-                // Tambahkan shift baru dari database
-                mergedShifts.push(dbShift);
-            }
-        });
-        
-        // Tambahkan shift spesifik tanggal yang tidak ada di base
-        dateShifts.forEach(dbShift => {
-            const exists = mergedShifts.some(s => s.name === dbShift.name);
-            if (!exists) {
-                mergedShifts.push(dbShift);
-            }
-        });
-        
-        return mergedShifts;
+        return baseShifts;
     },
 
     renderTable() {
@@ -130,10 +103,6 @@ const shiftSchedule = {
         const key = `${this.currentYear}-${this.currentMonth+1}`;
         const monthData = this.scheduleData[key] || {};
         
-        // Pastikan shifts global tersedia (Pagi, Siang, Malam)
-        const globalShifts = this.shifts.filter(s => !s.date || s.date === '');
-        console.log('Global shifts available:', globalShifts);
-        
         filteredEmployees.forEach(emp => {
             const tr = document.createElement('tr');
             tr.setAttribute('data-employee-id', emp.id);
@@ -145,7 +114,7 @@ const shiftSchedule = {
                 const date = new Date(this.currentYear, this.currentMonth, day);
                 const dayOfWeek = date.getDay();
                 const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-                const currentShift = (monthData[emp.id] && monthData[emp.id][day]) ? monthData[emp.id][day] : (isWeekend ? 'Libur' : '');
+                const currentShift = (monthData[emp.id] && monthData[emp.id][day]) ? monthData[emp.id][day] : '';
                 
                 const dateStr = `${this.currentYear}-${String(this.currentMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
                 const validShifts = this.getShiftsForDate(dateStr);
@@ -188,27 +157,19 @@ const shiftSchedule = {
         const key = `${this.currentYear}-${this.currentMonth+1}`;
         if (!this.scheduleData[key]) this.scheduleData[key] = {};
         if (!this.scheduleData[key][employeeId]) this.scheduleData[key][employeeId] = {};
-        this.scheduleData[key][employeeId][day] = shiftValue;
+        this.scheduleData[key][employeeId][day] = shiftValue || "";
         storage.set('shift_schedule', this.scheduleData);
         
         // Simpan ke database via API - sinkron dengan sheet ShiftSchedule di Google Sheets
         const date = `${key}-${String(day).padStart(2,'0')}`;
         try {
-            const result = await api.saveShiftScheduleItem(employeeId, date, shiftValue);
+            const result = await api.saveShiftScheduleItem(employeeId, date, shiftValue || "");
             if (result && result.success) {
                 toast.success(`Shift untuk tanggal ${date} telah disimpan ke database`);
                 // Update tampilan select tanpa reload penuh agar tidak kosong
                 const selectElement = document.querySelector(`select[data-employee-id="${employeeId}"][data-day="${day}"]`);
                 if (selectElement) {
                     selectElement.value = shiftValue || '';
-                    selectElement.className = `shift-select ${shiftValue ? 'shift-' + shiftValue.toLowerCase() : ''}`;
-                    // Pastikan value tetap terpilih setelah update
-                    setTimeout(() => {
-                        if (selectElement) {
-                            selectElement.value = shiftValue || '';
-                        }
-                    }, 100);
-                }
             } else {
                 toast.error(result?.error || 'Gagal menyimpan ke database');
             }
@@ -316,9 +277,17 @@ const shiftSchedule = {
             this.updateSummary();
         });
         const deptFilter = document.getElementById('schedule-dept-filter');
-        if (deptFilter) deptFilter.addEventListener('change', (e) => { this.filters.department = e.target.value; this.renderTable(); this.updateSummary(); });
+        if (deptFilter) deptFilter.addEventListener('change', (e) => { 
+            this.filters.department = e.target.value; 
+            this.renderTable(); 
+            this.updateSummary(); 
+        });
         const searchInput = document.getElementById('schedule-employee-search');
-        if (searchInput) searchInput.addEventListener('input', (e) => { this.filters.search = e.target.value.toLowerCase(); this.renderTable(); this.updateSummary(); });
+        if (searchInput) searchInput.addEventListener('input', (e) => { 
+            this.filters.search = e.target.value.toLowerCase(); 
+            this.renderTable(); 
+            this.updateSummary(); 
+        });
         const saveBtn = document.getElementById('btn-save-schedule');
         if (saveBtn) saveBtn.addEventListener('click', () => this.saveSchedule());
         const copyBtn = document.getElementById('btn-copy-schedule');
