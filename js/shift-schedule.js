@@ -27,7 +27,7 @@ const shiftSchedule = {
             this.employees = empResult.data || [];
             this.shifts = shiftResult.data || [];
             
-            // Ambil jadwal dari database (sheet ShiftSchedule)
+            // Ambil jadwal dari database (sheet ShiftSchedule) - sinkron dengan Portal Karyawan.xlsx
             const yearMonth = `${this.currentYear}-${String(this.currentMonth+1).padStart(2,'0')}`;
             const scheduleResult = await api.getShiftScheduleForMonth(yearMonth);
             if (scheduleResult.success) {
@@ -36,6 +36,9 @@ const shiftSchedule = {
                 this.scheduleData = {};
             }
             storage.set('shift_schedule', this.scheduleData);
+            
+            // Refresh shifts setelah load untuk memastikan data date terbaru dari database
+            console.log('Shift Schedule: Data loaded successfully for', yearMonth);
         } catch (error) {
             console.error('Error loading schedule:', error);
             this.employees = storage.get('admin_employees', []);
@@ -133,7 +136,7 @@ const shiftSchedule = {
         });
     },
 
-    // Fungsi baru: update lokal + simpan ke database langsung
+    // Fungsi baru: update lokal + simpan ke database langsung (sinkron dengan Portal Karyawan.xlsx)
     async updateShiftAndSave(employeeId, day, shiftValue) {
         const key = `${this.currentYear}-${this.currentMonth+1}`;
         if (!this.scheduleData[key]) this.scheduleData[key] = {};
@@ -141,15 +144,17 @@ const shiftSchedule = {
         this.scheduleData[key][employeeId][day] = shiftValue;
         storage.set('shift_schedule', this.scheduleData);
         
-        // Simpan ke database via API
+        // Simpan ke database via API - sinkron dengan sheet ShiftSchedule di Google Sheets
         const date = `${key}-${String(day).padStart(2,'0')}`;
         try {
             const result = await api.saveShiftScheduleItem(employeeId, date, shiftValue);
             if (result && result.success) {
-                toast.success(`Shift untuk tanggal ${date} telah disimpan`);
+                toast.success(`Shift untuk tanggal ${date} telah disimpan ke database`);
+                // Reload data shifts untuk memastikan sinkronisasi dengan sheet Shifts yang memiliki kolom date
+                await this.loadData();
+                this.renderTable();
             } else {
                 toast.error(result?.error || 'Gagal menyimpan ke database');
-                // rollback local jika gagal? (opsional)
             }
         } catch (error) {
             console.error('Error saving shift item:', error);
@@ -158,7 +163,7 @@ const shiftSchedule = {
     },
 
     async saveSchedule() {
-        // Fungsi ini tetap ada untuk cadangan (misalnya simpan massal)
+        // Fungsi ini tetap ada untuk cadangan (misalnya simpan massal) - sinkron dengan Portal Karyawan.xlsx
         const saveBtn = document.getElementById('btn-save-schedule');
         if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
         const key = `${this.currentYear}-${String(this.currentMonth+1).padStart(2,'0')}`;
@@ -167,6 +172,9 @@ const shiftSchedule = {
             const result = await api.saveShiftScheduleBulk(key, monthData);
             if (result.success) {
                 toast.success('Jadwal shift berhasil disimpan ke database!');
+                // Reload data shifts untuk memastikan sinkronisasi penuh dengan database
+                await this.loadData();
+                this.renderTable();
                 const fresh = await api.getShiftScheduleForMonth(key);
                 if (fresh.success) this.scheduleData[key] = fresh.data;
             } else {
@@ -189,7 +197,7 @@ const shiftSchedule = {
             const result = await api.getShiftScheduleForMonth(lastKey);
             if (result.success && result.data) {
                 this.scheduleData[currentKey] = JSON.parse(JSON.stringify(result.data));
-                // Simpan semua item satu per satu
+                // Simpan semua item satu per satu ke database
                 const monthData = this.scheduleData[currentKey];
                 for (const userId in monthData) {
                     for (const day in monthData[userId]) {
@@ -198,6 +206,8 @@ const shiftSchedule = {
                         await api.saveShiftScheduleItem(userId, date, shift);
                     }
                 }
+                // Reload data untuk sinkronisasi dengan database
+                await this.loadData();
                 this.renderTable();
                 this.updateSummary();
                 toast.success('Jadwal berhasil disalin');
