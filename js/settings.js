@@ -3,6 +3,14 @@
  * Admin settings - pure sync with database, no auto-save
  */
 
+const settings = {
+    shifts: [],
+
+    async init() {
+        if (!auth.isAdmin()) {
+            toast.error('Akses ditolak');
+            router.navigate('dashboard');
+            return;
         }
         await this.loadSettings();
         this.initForms();
