@@ -22,8 +22,16 @@ const adminEmployees = {
             return;
         }
 
+        // Load employees first, then populate filters
         loadingIndicator.show('Memuat data karyawan...');
         await this.loadEmployees();
+        
+        // Populate department filter AFTER employees are loaded
+        const deptFilter = document.getElementById('dept-filter');
+        if (deptFilter) {
+            await departmentManager.populateSelects('dept-filter');
+        }
+        
         this.bindEvents();
         this.renderTable();
         this.renderMobileCards();
@@ -57,8 +65,7 @@ const adminEmployees = {
         // Department filter
         const deptFilter = document.getElementById('dept-filter');
         if (deptFilter) {
-            // Populate department options dynamically
-            departmentManager.populateSelects('dept-filter');
+            // Options already populated in init(), just bind event
             deptFilter.addEventListener('change', (e) => {
                 this.filters.department = e.target.value;
                 this.currentPage = 1;
