@@ -26,6 +26,13 @@ const shiftSchedule = {
         this.showLoading();
         try {
             await this.loadData();
+            
+            // Populate department filter AFTER data is loaded
+            const deptFilter = document.getElementById('schedule-dept-filter');
+            if (deptFilter) {
+                await departmentManager.populateSelects('schedule-dept-filter');
+            }
+            
             this.bindEvents();
             this.renderTable();
             this.updateSummary();
@@ -332,8 +339,7 @@ const shiftSchedule = {
         });
         const deptFilter = document.getElementById('schedule-dept-filter');
         if (deptFilter) {
-            // Populate department options dynamically
-            departmentManager.populateSelects('schedule-dept-filter');
+            // Event handler only (already populated in init())
             deptFilter.addEventListener('change', (e) => { 
                 this.filters.department = e.target.value; 
                 this.renderTable(); 
