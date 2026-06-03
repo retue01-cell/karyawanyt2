@@ -1,10 +1,10 @@
 /**
- * Portal Karyawan - Shift Schedule (versi sinkron dengan sheet ShiftSchedule & Shifts date column)
+ * Portal Karyawan - Shift Schedule (versi dengan auto-sync ke Google Sheets)
  */
 
 const shiftSchedule = {
     employees: [],
-    shifts: [],            // array shift dengan properti {id, name, startTime, endTime, date}
+    shifts: [],
     scheduleData: {},
     currentMonth: new Date().getMonth(),
     currentYear: new Date().getFullYear(),
@@ -25,7 +25,6 @@ const shiftSchedule = {
                 api.getShifts()
             ]);
             this.employees = empResult.data || [];
-            // shifts sekarang memiliki properti date
             this.shifts = shiftResult.data || [];
             
             // Ambil jadwal dari database (sheet ShiftSchedule)
@@ -61,13 +60,10 @@ const shiftSchedule = {
         });
     },
 
-    // Helper: ambil shift yang valid untuk suatu tanggal
     getShiftsForDate(dateStr) {
         if (!dateStr) return this.shifts;
         return this.shifts.filter(shift => {
-            // shift.date kosong berarti berlaku global (selalu tampil)
             if (!shift.date || shift.date === '') return true;
-            // bandingkan dengan tanggal sel (YYYY-MM-DD)
             return shift.date === dateStr;
         });
     },
@@ -109,7 +105,6 @@ const shiftSchedule = {
                 const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
                 const currentShift = (monthData[emp.id] && monthData[emp.id][day]) ? monthData[emp.id][day] : (isWeekend ? 'Libur' : '');
                 
-                // Buat string tanggal untuk filter shift (YYYY-MM-DD)
                 const dateStr = `${this.currentYear}-${String(this.currentMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
                 const validShifts = this.getShiftsForDate(dateStr);
                 
@@ -125,10 +120,11 @@ const shiftSchedule = {
                 });
                 options += `<option value="Libur" ${currentShift === 'Libur' ? 'selected' : ''}>Libur</option>`;
                 select.innerHTML = options;
-                select.addEventListener('change', (e) => { 
-                    this.updateShift(emp.id, day, e.target.value); 
-                    select.className = `shift-select ${e.target.value ? 'shift-' + e.target.value.toLowerCase() : ''}`; 
-                    this.updateSummary(); 
+                select.addEventListener('change', async (e) => { 
+                    const newShift = e.target.value;
+                    await this.updateShiftAndSave(emp.id, day, newShift);
+                    select.className = `shift-select ${newShift ? 'shift-' + newShift.toLowerCase() : ''}`;
+                    this.updateSummary();
                 });
                 td.appendChild(select);
                 tr.appendChild(td);
@@ -137,15 +133,32 @@ const shiftSchedule = {
         });
     },
 
-    updateShift(employeeId, day, shiftValue) {
+    // Fungsi baru: update lokal + simpan ke database langsung
+    async updateShiftAndSave(employeeId, day, shiftValue) {
         const key = `${this.currentYear}-${this.currentMonth+1}`;
         if (!this.scheduleData[key]) this.scheduleData[key] = {};
         if (!this.scheduleData[key][employeeId]) this.scheduleData[key][employeeId] = {};
         this.scheduleData[key][employeeId][day] = shiftValue;
         storage.set('shift_schedule', this.scheduleData);
+        
+        // Simpan ke database via API
+        const date = `${key}-${String(day).padStart(2,'0')}`;
+        try {
+            const result = await api.saveShiftScheduleItem(employeeId, date, shiftValue);
+            if (result && result.success) {
+                toast.success(`Shift untuk tanggal ${date} telah disimpan`);
+            } else {
+                toast.error(result?.error || 'Gagal menyimpan ke database');
+                // rollback local jika gagal? (opsional)
+            }
+        } catch (error) {
+            console.error('Error saving shift item:', error);
+            toast.error('Gagal menyimpan ke database');
+        }
     },
 
     async saveSchedule() {
+        // Fungsi ini tetap ada untuk cadangan (misalnya simpan massal)
         const saveBtn = document.getElementById('btn-save-schedule');
         if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
         const key = `${this.currentYear}-${String(this.currentMonth+1).padStart(2,'0')}`;
@@ -154,7 +167,6 @@ const shiftSchedule = {
             const result = await api.saveShiftScheduleBulk(key, monthData);
             if (result.success) {
                 toast.success('Jadwal shift berhasil disimpan ke database!');
-                // Refresh data untuk memastikan konsistensi
                 const fresh = await api.getShiftScheduleForMonth(key);
                 if (fresh.success) this.scheduleData[key] = fresh.data;
             } else {
@@ -177,7 +189,15 @@ const shiftSchedule = {
             const result = await api.getShiftScheduleForMonth(lastKey);
             if (result.success && result.data) {
                 this.scheduleData[currentKey] = JSON.parse(JSON.stringify(result.data));
-                await this.saveSchedule();
+                // Simpan semua item satu per satu
+                const monthData = this.scheduleData[currentKey];
+                for (const userId in monthData) {
+                    for (const day in monthData[userId]) {
+                        const shift = monthData[userId][day];
+                        const date = `${currentKey}-${String(day).padStart(2,'0')}`;
+                        await api.saveShiftScheduleItem(userId, date, shift);
+                    }
+                }
                 this.renderTable();
                 this.updateSummary();
                 toast.success('Jadwal berhasil disalin');
@@ -212,14 +232,13 @@ const shiftSchedule = {
 
     bindEvents() {
         const periodInput = document.getElementById('schedule-period');
-        if (periodInput) periodInput.addEventListener('change', (e) => { 
+        if (periodInput) periodInput.addEventListener('change', async (e) => { 
             const [year, month] = e.target.value.split('-').map(Number);
             this.currentYear = year;
             this.currentMonth = month - 1;
-            this.loadData().then(() => {
-                this.renderTable(); 
-                this.updateSummary();
-            });
+            await this.loadData();
+            this.renderTable(); 
+            this.updateSummary();
         });
         const deptFilter = document.getElementById('schedule-dept-filter');
         if (deptFilter) deptFilter.addEventListener('change', (e) => { this.filters.department = e.target.value; this.renderTable(); this.updateSummary(); });
