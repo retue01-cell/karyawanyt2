@@ -467,26 +467,28 @@ const departmentManager = {
      * @param {string|Array} selectors - ID elemen select/datalist atau array of IDs
      * @param {string} currentValue - Nilai yang sedang dipilih (untuk edit mode)
      */
-    populateSelects(selectors, currentValue = '') {
+    async populateSelects(selectors, currentValue = '') {
         const selects = Array.isArray(selectors) ? selectors : [selectors];
         
         console.log('[populateSelects] Memulai populate untuk:', selectors);
         console.log('[populateSelects] Cache saat ini:', this.cache);
         
+        // Tunggu sebentar untuk memastikan DOM siap
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         // Selalu fetch data terbaru dari server untuk memastikan data sinkron
-        return this.fetchDepartments()
-            .then(departments => {
-                console.log('[populateSelects] Data departemen diterima:', departments);
-                this._fillSelects(selects, currentValue);
-                return departments;
-            })
-            .catch(err => {
-                console.error('[populateSelects] Error fetching departments:', err);
-                // Tetap coba isi dengan cache atau default jika ada error
-                console.log('[populateSelects] Menggunakan fallback ke default departments');
-                this._fillSelects(selects, currentValue);
-                return [];
-            });
+        try {
+            const departments = await this.fetchDepartments();
+            console.log('[populateSelects] Data departemen diterima:', departments);
+            this._fillSelects(selects, currentValue);
+            return departments;
+        } catch (err) {
+            console.error('[populateSelects] Error fetching departments:', err);
+            // Tetap coba isi dengan cache atau default jika ada error
+            console.log('[populateSelects] Menggunakan fallback ke default departments');
+            this._fillSelects(selects, currentValue);
+            return [];
+        }
     },
     
     /**
