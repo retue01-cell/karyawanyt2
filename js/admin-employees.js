@@ -22,21 +22,20 @@ const adminEmployees = {
             return;
         }
 
-        // Load employees first, then populate filters
         loadingIndicator.show('Memuat data karyawan...');
-        await this.loadEmployees();
-        
-        // Populate department filter AFTER employees are loaded
-        const deptFilter = document.getElementById('dept-filter');
-        if (deptFilter) {
-            await departmentManager.populateSelects('dept-filter');
+        try {
+            await this.loadEmployees();               // 1. Ambil data
+            await departmentManager.populateSelects('dept-filter'); // 2. Isi dropdown departemen
+            this.bindEvents();                       // 3. Bind event
+            this.renderTable();                      // 4. Render tabel
+            this.renderMobileCards();                // 5. Render card mobile
+            this.updatePaginationInfo();             // 6. Update paginasi
+        } catch (error) {
+            console.error('Error init employees:', error);
+            toast.error('Gagal memuat data karyawan');
+        } finally {
+            loadingIndicator.hide();                 // Tutup loading setelah SEMUA selesai
         }
-        
-        this.bindEvents();
-        this.renderTable();
-        this.renderMobileCards();
-        this.updatePaginationInfo();
-        loadingIndicator.hide();
     },
 
     async loadEmployees() {
