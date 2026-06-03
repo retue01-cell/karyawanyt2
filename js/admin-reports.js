@@ -24,6 +24,7 @@ const adminReports = {
             router.navigate('dashboard');
             return;
         }
+        loadingIndicator.show('Memuat rekap absensi...');
         await this.loadData();
         this.bindAttendanceEvents();
         // Default filter ke bulan terkini
@@ -32,6 +33,7 @@ const adminReports = {
         const monthInput = document.getElementById('attendance-month');
         if (monthInput) monthInput.value = this.filters.attendance.month;
         this.renderAttendanceReports();
+        loadingIndicator.hide();
     },
     async initJurnalReports() {
         if (!auth.isAdmin()) {
@@ -39,6 +41,7 @@ const adminReports = {
             router.navigate('dashboard');
             return;
         }
+        loadingIndicator.show('Memuat rekap jurnal...');
         await this.loadData();
         this.bindJurnalEvents();
         if (!this.filters.jurnal.month) {
@@ -48,6 +51,7 @@ const adminReports = {
             if (monthInput) monthInput.value = this.filters.jurnal.month;
         }
         this.renderJurnalReports();
+        loadingIndicator.hide();
     },
     async initLeaveReports() {
         if (!auth.isAdmin()) {
@@ -55,6 +59,7 @@ const adminReports = {
             router.navigate('dashboard');
             return;
         }
+        loadingIndicator.show('Memuat rekap cuti & izin...');
         await this.loadData();
         this.bindLeaveEvents();
         // Default filter ke bulan terkini
@@ -69,10 +74,12 @@ const adminReports = {
         const statusInput = document.getElementById('leave-status-filter');
         if (statusInput) statusInput.value = '';
         this.renderLeaveReports();
+        loadingIndicator.hide();
     },
 
     async loadData() {
         try {
+            loadingIndicator.show('Mengambil data dari server...');
             console.log('🔄 Loading data from API...');
             const [empResult, jurnalResult, leaveResult, izinResult, attResult] = await Promise.all([
                 api.getEmployees(),
@@ -81,6 +88,7 @@ const adminReports = {
                 api.getAllIzin(),
                 api.getAllAttendance()
             ]);
+            loadingIndicator.hide();
             console.log('📡 API Results - Employees:', empResult);
             console.log('📡 API Results - Leaves:', leaveResult);
             console.log('📡 API Results - Izin:', izinResult);
