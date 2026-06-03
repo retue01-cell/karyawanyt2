@@ -1,10 +1,10 @@
 /**
- * Portal Karyawan - Shift Schedule (versi sinkron dengan sheet ShiftSchedule)
+ * Portal Karyawan - Shift Schedule (versi sinkron dengan sheet ShiftSchedule & Shifts date column)
  */
 
 const shiftSchedule = {
     employees: [],
-    shifts: [],
+    shifts: [],            // array shift dengan properti {id, name, startTime, endTime, date}
     scheduleData: {},
     currentMonth: new Date().getMonth(),
     currentYear: new Date().getFullYear(),
@@ -25,6 +25,7 @@ const shiftSchedule = {
                 api.getShifts()
             ]);
             this.employees = empResult.data || [];
+            // shifts sekarang memiliki properti date
             this.shifts = shiftResult.data || [];
             
             // Ambil jadwal dari database (sheet ShiftSchedule)
@@ -47,7 +48,6 @@ const shiftSchedule = {
         if (periodInput && !periodInput.value) {
             periodInput.value = `${this.currentYear}-${String(this.currentMonth+1).padStart(2,'0')}`;
         }
-        // Jangan generate sample data otomatis, biarkan kosong
     },
 
     getDaysInMonth(month, year) { return new Date(year, month + 1, 0).getDate(); },
@@ -58,6 +58,17 @@ const shiftSchedule = {
             const matchDept = !this.filters.department || emp.department === this.filters.department;
             const matchSearch = !this.filters.search || emp.name.toLowerCase().includes(this.filters.search) || emp.email.toLowerCase().includes(this.filters.search);
             return matchDept && matchSearch;
+        });
+    },
+
+    // Helper: ambil shift yang valid untuk suatu tanggal
+    getShiftsForDate(dateStr) {
+        if (!dateStr) return this.shifts;
+        return this.shifts.filter(shift => {
+            // shift.date kosong berarti berlaku global (selalu tampil)
+            if (!shift.date || shift.date === '') return true;
+            // bandingkan dengan tanggal sel (YYYY-MM-DD)
+            return shift.date === dateStr;
         });
     },
 
@@ -97,6 +108,11 @@ const shiftSchedule = {
                 const dayOfWeek = date.getDay();
                 const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
                 const currentShift = (monthData[emp.id] && monthData[emp.id][day]) ? monthData[emp.id][day] : (isWeekend ? 'Libur' : '');
+                
+                // Buat string tanggal untuk filter shift (YYYY-MM-DD)
+                const dateStr = `${this.currentYear}-${String(this.currentMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                const validShifts = this.getShiftsForDate(dateStr);
+                
                 const td = document.createElement('td');
                 td.className = `shift-select-cell ${isWeekend ? 'weekend' : ''}`;
                 const select = document.createElement('select');
@@ -104,10 +120,16 @@ const shiftSchedule = {
                 select.setAttribute('data-employee-id', emp.id);
                 select.setAttribute('data-day', day);
                 let options = '<option value="">-</option>';
-                this.shifts.forEach(shift => { options += `<option value="${shift.name}" ${currentShift === shift.name ? 'selected' : ''}>${shift.name}</option>`; });
+                validShifts.forEach(shift => {
+                    options += `<option value="${shift.name}" ${currentShift === shift.name ? 'selected' : ''}>${shift.name}</option>`;
+                });
                 options += `<option value="Libur" ${currentShift === 'Libur' ? 'selected' : ''}>Libur</option>`;
                 select.innerHTML = options;
-                select.addEventListener('change', (e) => { this.updateShift(emp.id, day, e.target.value); select.className = `shift-select ${e.target.value ? 'shift-' + e.target.value.toLowerCase() : ''}`; this.updateSummary(); });
+                select.addEventListener('change', (e) => { 
+                    this.updateShift(emp.id, day, e.target.value); 
+                    select.className = `shift-select ${e.target.value ? 'shift-' + e.target.value.toLowerCase() : ''}`; 
+                    this.updateSummary(); 
+                });
                 td.appendChild(select);
                 tr.appendChild(td);
             }
