@@ -306,7 +306,7 @@ const api = {
         return this.request('deleteShift', { id });
     },
 
-    // ========== SCHEDULE (old) ==========
+    // ========== SCHEDULE (old JSON based) ==========
     async getSchedule(month, year) {
         if (!API_BASE_URL) {
             const key = `schedule_${year}_${month}`;
@@ -338,6 +338,18 @@ const api = {
             return { success: true };
         }
         return this.request('saveShiftScheduleBulk', { yearMonth, schedule });
+    },
+    async saveShiftScheduleItem(userId, date, shift) {
+        if (!API_BASE_URL) {
+            const key = date.substring(0, 7);
+            let schedule = storage.get('shift_schedule', {});
+            if (!schedule[key]) schedule[key] = {};
+            if (!schedule[key][userId]) schedule[key][userId] = {};
+            schedule[key][userId][parseInt(date.split('-')[2], 10)] = shift;
+            storage.set('shift_schedule', schedule);
+            return { success: true };
+        }
+        return this.request('saveShiftScheduleItem', { userId, date, shift });
     },
 
     // ========== LOCAL FALLBACK ==========
