@@ -430,29 +430,31 @@ const departmentManager = {
      */
     fetchDepartments() {
         return new Promise((resolve, reject) => {
-            // Tampilkan loading indicator saat fetch
-            if (window.loadingIndicator) {
-                window.loadingIndicator.show('Memuat departemen...');
-            }
+            console.log('[fetchDepartments] Memulai fetch departemen dari server');
+            
+            // Tampilkan loading indicator saat fetch (opsional, bisa dimatikan jika mengganggu)
+            // if (window.loadingIndicator) {
+            //     window.loadingIndicator.show('Memuat departemen...');
+            // }
             
             google.script.run
                 .withSuccessHandler((departments) => {
-                    if (window.loadingIndicator) {
-                        window.loadingIndicator.hide();
-                    }
+                    // if (window.loadingIndicator) {
+                    //     window.loadingIndicator.hide();
+                    // }
                     
-                    console.log('Departemen berhasil dimuat:', departments);
-                    this.cache = departments;
-                    resolve(departments);
+                    console.log('[fetchDepartments] Berhasil menerima departemen:', departments);
+                    this.cache = departments || [];
+                    resolve(departments || []);
                 })
                 .withFailureHandler((error) => {
-                    if (window.loadingIndicator) {
-                        window.loadingIndicator.hide();
-                    }
+                    // if (window.loadingIndicator) {
+                    //     window.loadingIndicator.hide();
+                    // }
                     
-                    console.error('Failed to fetch departments:', error);
+                    console.error('[fetchDepartments] Gagal mengambil departemen:', error);
                     // Jangan tampilkan toast error, cukup log dan resolve dengan array kosong
-                    console.warn('Menggunakan daftar departemen kosong karena error');
+                    console.warn('[fetchDepartments] Menggunakan daftar departemen kosong karena error');
                     this.cache = [];
                     resolve([]); // Resolve dengan array kosong agar tidak reject
                 })
@@ -468,23 +470,23 @@ const departmentManager = {
     populateSelects(selectors, currentValue = '') {
         const selects = Array.isArray(selectors) ? selectors : [selectors];
         
-        // Gunakan cache jika sudah ada, atau fetch baru
-        if (this.cache && this.cache.length > 0) {
-            this._fillSelects(selects, currentValue);
-            return Promise.resolve(this.cache);
-        } else {
-            return this.fetchDepartments()
-                .then(departments => {
-                    this._fillSelects(selects, currentValue);
-                    return departments;
-                })
-                .catch(err => {
-                    console.error('Error populating departments:', err);
-                    // Tetap coba isi dengan cache kosong jika ada error
-                    this._fillSelects(selects, currentValue);
-                    return [];
-                });
-        }
+        console.log('[populateSelects] Memulai populate untuk:', selectors);
+        console.log('[populateSelects] Cache saat ini:', this.cache);
+        
+        // Selalu fetch data terbaru dari server untuk memastikan data sinkron
+        return this.fetchDepartments()
+            .then(departments => {
+                console.log('[populateSelects] Data departemen diterima:', departments);
+                this._fillSelects(selects, currentValue);
+                return departments;
+            })
+            .catch(err => {
+                console.error('[populateSelects] Error fetching departments:', err);
+                // Tetap coba isi dengan cache atau default jika ada error
+                console.log('[populateSelects] Menggunakan fallback ke default departments');
+                this._fillSelects(selects, currentValue);
+                return [];
+            });
     },
     
     /**
@@ -492,21 +494,44 @@ const departmentManager = {
      * @private
      */
     _fillSelects(selects, currentValue) {
+        console.log('[_fillSelects] Memulai pengisian elemen:', selects);
+        console.log('[_fillSelects] Cache departemen:', this.cache);
+        
         selects.forEach(selectorId => {
             const selectEl = document.getElementById(selectorId);
-            if (!selectEl) return;
+            if (!selectEl) {
+                console.warn('[_fillSelects] Elemen tidak ditemukan:', selectorId);
+                return;
+            }
+            
+            console.log('[_fillSelects] Memproses elemen:', selectorId, 'Tag:', selectEl.tagName);
             
             // Cek apakah ini datalist atau select
             if (selectEl.tagName.toLowerCase() === 'datalist') {
                 // Handle datalist
+                console.log('[_fillSelects] Mengisi datalist dengan', this.cache.length, 'departemen');
                 selectEl.innerHTML = '';
-                this.cache.forEach(dept => {
-                    const opt = document.createElement('option');
-                    opt.value = dept;
-                    selectEl.add(opt);
-                });
+                
+                // Jika cache kosong, tambahkan beberapa departemen default sebagai fallback
+                if (!this.cache || this.cache.length === 0) {
+                    console.log('[_fillSelects] Cache kosong, menggunakan departemen default');
+                    const defaultDepts = ['IT', 'HR', 'Finance', 'Marketing', 'Operations'];
+                    defaultDepts.forEach(dept => {
+                        const opt = document.createElement('option');
+                        opt.value = dept;
+                        selectEl.add(opt);
+                    });
+                } else {
+                    this.cache.forEach(dept => {
+                        const opt = document.createElement('option');
+                        opt.value = dept;
+                        selectEl.add(opt);
+                    });
+                }
+                console.log('[_fillSelects] Datalist selesai diisi, total options:', selectEl.options.length);
             } else if (selectEl.tagName.toLowerCase() === 'select') {
                 // Handle select dropdown
+                console.log('[_fillSelects] Mengisi select dropdown dengan', this.cache.length, 'departemen');
                 let firstOption = selectEl.options[0];
                 const isDefaultEmpty = firstOption && firstOption.value === '';
                 
@@ -523,18 +548,25 @@ const departmentManager = {
                     selectEl.add(defaultOpt);
                 }
                 
+                // Jika cache kosong, gunakan departemen default
+                const departmentsToUse = (!this.cache || this.cache.length === 0) 
+                    ? ['IT', 'HR', 'Finance', 'Marketing', 'Operations'] 
+                    : this.cache;
+                
                 // Isi dengan data departemen
-                this.cache.forEach(dept => {
+                departmentsToUse.forEach(dept => {
                     const opt = document.createElement('option');
                     opt.value = dept;
                     opt.text = dept;
                     selectEl.add(opt);
                 });
                 
-                // Kembalikan nilai sebelumnya jika valid
-                if (currentValue && this.cache.includes(currentValue)) {
+                // Set current value jika ada
+                if (currentValue && departmentsToUse.includes(currentValue)) {
                     selectEl.value = currentValue;
                 }
+                
+                console.log('[_fillSelects] Select selesai diisi, total options:', selectEl.options.length);
             }
         });
     },
