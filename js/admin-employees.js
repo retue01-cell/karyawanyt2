@@ -57,6 +57,8 @@ const adminEmployees = {
         // Department filter
         const deptFilter = document.getElementById('dept-filter');
         if (deptFilter) {
+            // Populate department options dynamically
+            departmentManager.populateSelects('dept-filter');
             deptFilter.addEventListener('change', (e) => {
                 this.filters.department = e.target.value;
                 this.currentPage = 1;
