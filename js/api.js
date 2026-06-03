@@ -306,7 +306,7 @@ const api = {
         return this.request('deleteShift', { id });
     },
 
-    // ========== SCHEDULE (old JSON based) ==========
+    // ========== SCHEDULE (old) ==========
     async getSchedule(month, year) {
         if (!API_BASE_URL) {
             const key = `schedule_${year}_${month}`;
@@ -339,6 +339,7 @@ const api = {
         }
         return this.request('saveShiftScheduleBulk', { yearMonth, schedule });
     },
+    // Tambahan: simpan satu item shift schedule
     async saveShiftScheduleItem(userId, date, shift) {
         if (!API_BASE_URL) {
             const key = date.substring(0, 7);
