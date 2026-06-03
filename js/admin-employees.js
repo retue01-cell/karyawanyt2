@@ -22,11 +22,13 @@ const adminEmployees = {
             return;
         }
 
+        loadingIndicator.show('Memuat data karyawan...');
         await this.loadEmployees();
         this.bindEvents();
         this.renderTable();
         this.renderMobileCards();
         this.updatePaginationInfo();
+        loadingIndicator.hide();
     },
 
     async loadEmployees() {
@@ -347,7 +349,9 @@ const adminEmployees = {
         const employeeData = { name, email, password, department, position, shift, status, joinDate };
 
         try {
+            loadingIndicator.show('Menyimpan data karyawan...');
             const result = await api.addEmployee(employeeData);
+            loadingIndicator.hide();
             if (result && result.success) {
                 this.employees.unshift(result.data);
                 this.updateDeptFilterOptions(department);
@@ -360,6 +364,7 @@ const adminEmployees = {
                 toast.error(result?.error || 'Gagal menambahkan karyawan');
             }
         } catch (error) {
+            loadingIndicator.hide();
             console.error('Error adding employee:', error);
             toast.error('Terjadi kesalahan');
         } finally {
@@ -464,7 +469,9 @@ const adminEmployees = {
         }
 
         try {
+            loadingIndicator.show('Memperbarui data karyawan...');
             const result = await api.updateEmployee(this.currentEditId, updateData);
+            loadingIndicator.hide();
             if (result && result.success) {
                 const index = this.employees.findIndex(e => e.id == this.currentEditId);
                 if (index !== -1) {
@@ -479,6 +486,7 @@ const adminEmployees = {
                 toast.error(result?.error || 'Gagal memperbarui karyawan');
             }
         } catch (error) {
+            loadingIndicator.hide();
             console.error('Error updating employee:', error);
             toast.error('Terjadi kesalahan');
         }
@@ -487,13 +495,16 @@ const adminEmployees = {
     async deleteEmployee(id) {
         if (confirm('Apakah Anda yakin ingin menghapus karyawan ini?')) {
             try {
+                loadingIndicator.show('Menghapus karyawan...');
                 await api.deleteEmployee(id);
+                loadingIndicator.hide();
                 this.employees = this.employees.filter(e => e.id != id);
                 this.renderTable();
                 this.renderMobileCards();
                 this.updatePaginationInfo();
                 toast.success('Karyawan berhasil dihapus');
             } catch (error) {
+                loadingIndicator.hide();
                 console.error('Error deleting employee:', error);
                 toast.error('Gagal menghapus karyawan');
             }
