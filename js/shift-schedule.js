@@ -25,24 +25,20 @@ const shiftSchedule = {
         if (!auth.isAdmin()) { toast.error('Akses ditolak'); router.navigate('dashboard'); return; }
         this.showLoading();
         try {
-            await this.loadData();
-            
-            // Populate department filter AFTER data is loaded
-            const deptFilter = document.getElementById('schedule-dept-filter');
-            if (deptFilter) {
-                await departmentManager.populateSelects('schedule-dept-filter');
-            }
-            
+            await this.loadData();                         // Ambil employees, shifts, schedule
+            await departmentManager.populateSelects('schedule-dept-filter'); // Isi dropdown departemen
             this.bindEvents();
             this.renderTable();
             this.updateSummary();
+        } catch (error) {
+            console.error(error);
+            toast.error('Gagal memuat jadwal shift');
         } finally {
             this.hideLoading();
         }
     },
 
     async loadData() {
-        this.showLoading();
         try {
             const [empResult, shiftResult] = await Promise.all([
                 api.getEmployees(),
@@ -72,8 +68,6 @@ const shiftSchedule = {
             if (!this.scheduleData[yearMonth]) {
                 this.scheduleData[yearMonth] = {};
             }
-        } finally {
-            this.hideLoading();
         }
         
         const periodInput = document.getElementById('schedule-period');
