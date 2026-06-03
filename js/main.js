@@ -430,13 +430,28 @@ const departmentManager = {
      */
     fetchDepartments() {
         return new Promise((resolve, reject) => {
+            // Tampilkan loading indicator saat fetch
+            if (window.loadingIndicator) {
+                window.loadingIndicator.show('Memuat departemen...');
+            }
+            
             google.script.run
                 .withSuccessHandler((departments) => {
+                    if (window.loadingIndicator) {
+                        window.loadingIndicator.hide();
+                    }
+                    
+                    console.log('Departemen berhasil dimuat:', departments);
                     this.cache = departments;
                     resolve(departments);
                 })
                 .withFailureHandler((error) => {
+                    if (window.loadingIndicator) {
+                        window.loadingIndicator.hide();
+                    }
+                    
                     console.error('Failed to fetch departments:', error);
+                    toast.error('Gagal memuat daftar departemen: ' + (error.message || error), 'Error');
                     reject(error);
                 })
                 .getUniqueDepartments();
