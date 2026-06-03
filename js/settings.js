@@ -180,14 +180,17 @@ const settings = {
         const name = document.getElementById('company-name').value;
         const logo = document.getElementById('company-logo').value;
         try {
+            loadingIndicator.show('Menyimpan informasi perusahaan...');
             const results = await Promise.all([
                 api.saveSetting('company_name', name),
                 api.saveSetting('company_logo', logo)
             ]);
+            loadingIndicator.hide();
             if (results.some(r => !r || !r.success)) throw new Error('Gagal menyimpan');
             updateCompanyUI();
             toast.success('Informasi perusahaan disimpan ke database');
         } catch (error) {
+            loadingIndicator.hide();
             console.error(error);
             toast.error(error.message || 'Gagal menyimpan');
         }
@@ -204,7 +207,9 @@ const settings = {
         console.log('[Settings] Saving workdays:', workdays, jsonString);
 
         try {
+            loadingIndicator.show('Menyimpan hari kerja...');
             const result = await api.saveSetting('working_days', jsonString);
+            loadingIndicator.hide();
             if (!result || !result.success) throw new Error(result?.error || 'Gagal menyimpan');
 
             toast.success('Hari kerja disimpan ke database');
@@ -223,6 +228,7 @@ const settings = {
             const errDiv = document.querySelector('.workdays-error');
             if (errDiv) errDiv.remove();
         } catch (error) {
+            loadingIndicator.hide();
             console.error('[Settings] Save workdays error:', error);
             toast.error(error.message || 'Gagal menyimpan ke database');
         }
@@ -233,14 +239,17 @@ const settings = {
         const faceRecognition = document.getElementById('setting-face-recognition').checked;
         const locationTracking = document.getElementById('setting-location-tracking').checked;
         try {
+            loadingIndicator.show('Menyimpan pengaturan sistem...');
             const results = await Promise.all([
                 api.saveSetting('late_tolerance', lateTolerance),
                 api.saveSetting('face_recognition', String(faceRecognition)),
                 api.saveSetting('location_tracking', String(locationTracking))
             ]);
+            loadingIndicator.hide();
             if (results.some(r => !r || !r.success)) throw new Error('Gagal menyimpan');
             toast.success('Pengaturan sistem disimpan ke database');
         } catch (error) {
+            loadingIndicator.hide();
             console.error(error);
             toast.error(error.message || 'Gagal menyimpan');
         }
