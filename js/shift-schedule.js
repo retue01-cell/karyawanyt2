@@ -10,15 +10,32 @@ const shiftSchedule = {
     currentYear: new Date().getFullYear(),
     filters: { department: '', search: '' },
 
+    // Fungsi untuk menampilkan/menyembunyikan loading overlay
+    showLoading() {
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) overlay.classList.add('active');
+    },
+
+    hideLoading() {
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) overlay.classList.remove('active');
+    },
+
     async init() {
         if (!auth.isAdmin()) { toast.error('Akses ditolak'); router.navigate('dashboard'); return; }
-        await this.loadData();
-        this.bindEvents();
-        this.renderTable();
-        this.updateSummary();
+        this.showLoading();
+        try {
+            await this.loadData();
+            this.bindEvents();
+            this.renderTable();
+            this.updateSummary();
+        } finally {
+            this.hideLoading();
+        }
     },
 
     async loadData() {
+        this.showLoading();
         try {
             const [empResult, shiftResult] = await Promise.all([
                 api.getEmployees(),
@@ -48,6 +65,8 @@ const shiftSchedule = {
             if (!this.scheduleData[yearMonth]) {
                 this.scheduleData[yearMonth] = {};
             }
+        } finally {
+            this.hideLoading();
         }
         
         const periodInput = document.getElementById('schedule-period');
@@ -175,6 +194,7 @@ const shiftSchedule = {
         
         // Simpan ke database via API - sinkron dengan sheet ShiftSchedule di Google Sheets
         const date = `${key}-${String(day).padStart(2,'0')}`;
+        this.showLoading();
         try {
             const result = await api.saveShiftScheduleItem(employeeId, date, shiftValue || "");
             if (result && result.success) {
@@ -194,6 +214,8 @@ const shiftSchedule = {
         } catch (error) {
             console.error('Error saving shift item:', error);
             toast.error('Gagal menyimpan ke database');
+        } finally {
+            this.hideLoading();
         }
     },
 
@@ -201,6 +223,7 @@ const shiftSchedule = {
         // Fungsi ini tetap ada untuk cadangan (misalnya simpan massal) - sinkron dengan Portal Karyawan.xlsx
         const saveBtn = document.getElementById('btn-save-schedule');
         if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+        this.showLoading();
         const key = `${this.currentYear}-${String(this.currentMonth+1).padStart(2,'0')}`;
         const monthData = this.scheduleData[key] || {};
         try {
@@ -222,8 +245,10 @@ const shiftSchedule = {
         } catch (error) {
             console.error(error);
             toast.error('Gagal menyimpan jadwal');
+        } finally {
+            this.hideLoading();
+            if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-save"></i> Simpan Jadwal';
         }
-        if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-save"></i> Simpan Jadwal';
     },
 
     async copyFromLastMonth() {
@@ -232,6 +257,7 @@ const shiftSchedule = {
         const lastKey = `${lastYear}-${String(lastMonth+1).padStart(2,'0')}`;
         const currentKey = `${this.currentYear}-${String(this.currentMonth+1).padStart(2,'0')}`;
         if (!confirm(`Salin jadwal dari bulan ${lastKey} ke ${currentKey}?`)) return;
+        this.showLoading();
         try {
             const result = await api.getShiftScheduleForMonth(lastKey);
             if (result.success && result.data) {
@@ -260,6 +286,8 @@ const shiftSchedule = {
             }
         } catch (e) {
             toast.error('Gagal menyalin jadwal');
+        } finally {
+            this.hideLoading();
         }
     },
 
@@ -293,9 +321,14 @@ const shiftSchedule = {
             // Reset scheduleData untuk bulan ini agar dipaksa load ulang dari server
             const key = `${this.currentYear}-${String(this.currentMonth+1).padStart(2,'0')}`;
             delete this.scheduleData[key];
-            await this.loadData();
-            this.renderTable(); 
-            this.updateSummary();
+            this.showLoading();
+            try {
+                await this.loadData();
+                this.renderTable(); 
+                this.updateSummary();
+            } finally {
+                this.hideLoading();
+            }
         });
         const deptFilter = document.getElementById('schedule-dept-filter');
         if (deptFilter) deptFilter.addEventListener('change', (e) => { 
