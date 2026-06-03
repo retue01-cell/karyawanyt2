@@ -451,8 +451,10 @@ const departmentManager = {
                     }
                     
                     console.error('Failed to fetch departments:', error);
-                    toast.error('Gagal memuat daftar departemen: ' + (error.message || error), 'Error');
-                    reject(error);
+                    // Jangan tampilkan toast error, cukup log dan resolve dengan array kosong
+                    console.warn('Menggunakan daftar departemen kosong karena error');
+                    this.cache = [];
+                    resolve([]); // Resolve dengan array kosong agar tidak reject
                 })
                 .getUniqueDepartments();
         });
@@ -467,14 +469,20 @@ const departmentManager = {
         const selects = Array.isArray(selectors) ? selectors : [selectors];
         
         // Gunakan cache jika sudah ada, atau fetch baru
-        if (this.cache.length > 0) {
+        if (this.cache && this.cache.length > 0) {
             this._fillSelects(selects, currentValue);
+            return Promise.resolve(this.cache);
         } else {
-            this.fetchDepartments()
-                .then(() => this._fillSelects(selects, currentValue))
+            return this.fetchDepartments()
+                .then(departments => {
+                    this._fillSelects(selects, currentValue);
+                    return departments;
+                })
                 .catch(err => {
                     console.error('Error populating departments:', err);
-                    toast.error('Gagal memuat daftar departemen', 'Error');
+                    // Tetap coba isi dengan cache kosong jika ada error
+                    this._fillSelects(selects, currentValue);
+                    return [];
                 });
         }
     },
