@@ -25,22 +25,24 @@ const adminReports = {
             return;
         }
         loadingIndicator.show('Memuat rekap absensi...');
-        await this.loadData();
-        
-        // Populate department filter AFTER data is loaded
-        const dept = document.getElementById('report-dept-filter');
-        if (dept) {
-            await departmentManager.populateSelects('report-dept-filter');
+        try {
+            await this.loadData();                   // Ambil semua data (employees, attendance, dll)
+            await departmentManager.populateSelects('report-dept-filter'); // Isi dropdown departemen
+            this.bindAttendanceEvents();
+            
+            // Default filter ke bulan terkini
+            const today = new Date();
+            this.filters.attendance.month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+            const monthInput = document.getElementById('attendance-month');
+            if (monthInput) monthInput.value = this.filters.attendance.month;
+            
+            this.renderAttendanceReports();          // Render tabel
+        } catch (error) {
+            console.error(error);
+            toast.error('Gagal memuat data');
+        } finally {
+            loadingIndicator.hide();
         }
-        
-        this.bindAttendanceEvents();
-        // Default filter ke bulan terkini
-        const today = new Date();
-        this.filters.attendance.month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-        const monthInput = document.getElementById('attendance-month');
-        if (monthInput) monthInput.value = this.filters.attendance.month;
-        this.renderAttendanceReports();
-        loadingIndicator.hide();
     },
     async initJurnalReports() {
         if (!auth.isAdmin()) {
@@ -49,16 +51,22 @@ const adminReports = {
             return;
         }
         loadingIndicator.show('Memuat rekap jurnal...');
-        await this.loadData();
-        this.bindJurnalEvents();
-        if (!this.filters.jurnal.month) {
-            const today = new Date();
-            this.filters.jurnal.month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-            const monthInput = document.getElementById('jurnal-month');
-            if (monthInput) monthInput.value = this.filters.jurnal.month;
+        try {
+            await this.loadData();
+            this.bindJurnalEvents();
+            if (!this.filters.jurnal.month) {
+                const today = new Date();
+                this.filters.jurnal.month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+                const monthInput = document.getElementById('jurnal-month');
+                if (monthInput) monthInput.value = this.filters.jurnal.month;
+            }
+            this.renderJurnalReports();
+        } catch (error) {
+            console.error(error);
+            toast.error('Gagal memuat data');
+        } finally {
+            loadingIndicator.hide();
         }
-        this.renderJurnalReports();
-        loadingIndicator.hide();
     },
     async initLeaveReports() {
         if (!auth.isAdmin()) {
@@ -67,26 +75,31 @@ const adminReports = {
             return;
         }
         loadingIndicator.show('Memuat rekap cuti & izin...');
-        await this.loadData();
-        this.bindLeaveEvents();
-        // Default filter ke bulan terkini
-        const today = new Date();
-        this.filters.leave.month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-        this.filters.leave.type = '';
-        this.filters.leave.status = '';
-        const monthInput = document.getElementById('leave-month');
-        if (monthInput) monthInput.value = this.filters.leave.month;
-        const typeInput = document.getElementById('leave-type-filter');
-        if (typeInput) typeInput.value = '';
-        const statusInput = document.getElementById('leave-status-filter');
-        if (statusInput) statusInput.value = '';
-        this.renderLeaveReports();
-        loadingIndicator.hide();
+        try {
+            await this.loadData();
+            this.bindLeaveEvents();
+            // Default filter ke bulan terkini
+            const today = new Date();
+            this.filters.leave.month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+            this.filters.leave.type = '';
+            this.filters.leave.status = '';
+            const monthInput = document.getElementById('leave-month');
+            if (monthInput) monthInput.value = this.filters.leave.month;
+            const typeInput = document.getElementById('leave-type-filter');
+            if (typeInput) typeInput.value = '';
+            const statusInput = document.getElementById('leave-status-filter');
+            if (statusInput) statusInput.value = '';
+            this.renderLeaveReports();
+        } catch (error) {
+            console.error(error);
+            toast.error('Gagal memuat data');
+        } finally {
+            loadingIndicator.hide();
+        }
     },
 
     async loadData() {
         try {
-            loadingIndicator.show('Mengambil data dari server...');
             console.log('🔄 Loading data from API...');
             const [empResult, jurnalResult, leaveResult, izinResult, attResult] = await Promise.all([
                 api.getEmployees(),
@@ -95,7 +108,6 @@ const adminReports = {
                 api.getAllIzin(),
                 api.getAllAttendance()
             ]);
-            loadingIndicator.hide();
             console.log('📡 API Results - Employees:', empResult);
             console.log('📡 API Results - Leaves:', leaveResult);
             console.log('📡 API Results - Izin:', izinResult);
