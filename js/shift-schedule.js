@@ -331,11 +331,15 @@ const shiftSchedule = {
             }
         });
         const deptFilter = document.getElementById('schedule-dept-filter');
-        if (deptFilter) deptFilter.addEventListener('change', (e) => { 
-            this.filters.department = e.target.value; 
-            this.renderTable(); 
-            this.updateSummary(); 
-        });
+        if (deptFilter) {
+            // Populate department options dynamically
+            departmentManager.populateSelects('schedule-dept-filter');
+            deptFilter.addEventListener('change', (e) => { 
+                this.filters.department = e.target.value; 
+                this.renderTable(); 
+                this.updateSummary(); 
+            });
+        }
         const searchInput = document.getElementById('schedule-employee-search');
         if (searchInput) searchInput.addEventListener('input', (e) => { 
             this.filters.search = e.target.value.toLowerCase(); 
