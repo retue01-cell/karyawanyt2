@@ -1,6 +1,7 @@
 /**
  * Portal Karyawan - Settings
  * Admin settings - pure sync with database, no auto-save
+ * Menambahkan dukungan kolom date pada shift
  */
 
 const settings = {
@@ -27,12 +28,13 @@ const settings = {
             if (!settingsResult.success) throw new Error('Gagal memuat pengaturan');
             if (!shiftsResult.success) throw new Error('Gagal memuat shift');
 
-            // Proses shifts
+            // Proses shifts (termasuk date)
             this.shifts = (shiftsResult.data || []).map(shift => ({
                 id: shift.id,
                 name: shift.name,
                 startTime: this.normalizeTime(shift.startTime),
-                endTime: this.normalizeTime(shift.endTime)
+                endTime: this.normalizeTime(shift.endTime),
+                date: shift.date || ''
             }));
             storage.set('shifts', this.shifts);
 
@@ -67,7 +69,6 @@ const settings = {
             if (existingErr) existingErr.remove();
 
             if (workdays && typeof workdays === 'object') {
-                // Terapkan ke checkbox
                 days.forEach(day => {
                     const chk = document.getElementById(`day-${day}`);
                     if (chk) {
@@ -77,7 +78,6 @@ const settings = {
                 console.log('[Settings] Applied workdays from DB:', workdays);
                 toast.success('Hari kerja dimuat dari database');
             } else {
-                // Data tidak ada atau invalid -> tampilkan error, jangan simpan otomatis
                 console.warn('[Settings] Working days tidak valid atau kosong');
                 const container = document.querySelector('.working-days');
                 if (container && !document.querySelector('.workdays-error')) {
@@ -87,7 +87,6 @@ const settings = {
                     errDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Data hari kerja belum ada di database. Silakan atur checkbox di bawah lalu klik "Simpan Hari Kerja".';
                     container.prepend(errDiv);
                 }
-                // Kosongkan semua checkbox (biar user mengisi)
                 days.forEach(day => {
                     const chk = document.getElementById(`day-${day}`);
                     if (chk) chk.checked = false;
@@ -221,7 +220,6 @@ const settings = {
                     toast.warning('Data tersimpan tidak sesuai, coba refresh');
                 }
             }
-            // Hapus pesan error jika ada
             const errDiv = document.querySelector('.workdays-error');
             if (errDiv) errDiv.remove();
         } catch (error) {
@@ -272,6 +270,11 @@ const settings = {
                     <input type="time" value="${shift.endTime}" 
                            onchange="settings.updateShift(${index}, 'endTime', this.value)">
                 </div>
+                <div class="shift-input-group">
+                    <label>Tanggal Berlaku (Opsional)</label>
+                    <input type="date" value="${shift.date || ''}" 
+                           onchange="settings.updateShift(${index}, 'date', this.value)">
+                </div>
                 <button type="button" class="btn-delete-shift" onclick="settings.deleteShift(${index})">
                     <i class="fas fa-trash"></i>
                 </button>
@@ -280,7 +283,7 @@ const settings = {
     },
 
     async addShift() {
-        const newShift = { name: 'Shift Baru', startTime: '09:00', endTime: '18:00' };
+        const newShift = { name: 'Shift Baru', startTime: '09:00', endTime: '18:00', date: '' };
         try {
             const result = await api.addShift(newShift);
             if (!result || !result.success) throw new Error(result?.error || 'Gagal menambah shift');
@@ -299,7 +302,8 @@ const settings = {
         const oldValue = this.shifts[index][field];
         this.shifts[index][field] = value;
         try {
-            const result = await api.updateShift(this.shifts[index].id, { [field]: value });
+            const updateData = { [field]: value };
+            const result = await api.updateShift(this.shifts[index].id, updateData);
             if (!result || !result.success) throw new Error(result?.error || 'Gagal update shift');
             storage.set('shifts', this.shifts);
             toast.success('Shift diperbarui di database');
