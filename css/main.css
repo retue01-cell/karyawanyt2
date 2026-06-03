@@ -228,6 +228,45 @@ img {
     100% { background-position: 200% 0; }
 }
 
+/* Loading Indicator - Top Right Corner (Global) */
+.loading-indicator {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    background: var(--bg-secondary);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-lg);
+    display: none;
+    align-items: center;
+    gap: var(--spacing-md);
+    z-index: 10000;
+    border-left: 4px solid var(--color-primary);
+    animation: slideIn 0.3s ease-out;
+}
+
+.loading-indicator.active {
+    display: flex;
+}
+
+.loading-indicator i {
+    font-size: var(--font-size-xl);
+    color: var(--color-primary);
+    animation: spin 1s linear infinite;
+}
+
+.loading-indicator span {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
 /* App Container */
 #app-container {
     color-scheme: light !important;
