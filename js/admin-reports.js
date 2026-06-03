@@ -26,6 +26,13 @@ const adminReports = {
         }
         loadingIndicator.show('Memuat rekap absensi...');
         await this.loadData();
+        
+        // Populate department filter AFTER data is loaded
+        const dept = document.getElementById('report-dept-filter');
+        if (dept) {
+            await departmentManager.populateSelects('report-dept-filter');
+        }
+        
         this.bindAttendanceEvents();
         // Default filter ke bulan terkini
         const today = new Date();
@@ -254,10 +261,9 @@ const adminReports = {
         const month = document.getElementById('attendance-month');
         if (month) month.onchange = (e) => { this.filters.attendance.month = e.target.value; this.renderAttendanceReports(); };
         
-        // Populate department filter dynamically
+        // Department filter event (already populated in initAttendanceReports)
         const dept = document.getElementById('report-dept-filter');
         if (dept) {
-            departmentManager.populateSelects('report-dept-filter');
             dept.onchange = (e) => { this.filters.attendance.dept = e.target.value; this.renderAttendanceReports(); };
         }
         
