@@ -392,3 +392,30 @@ window.formUtils = formUtils;
 window.animations = animations;
 window.updateCompanyUI = updateCompanyUI;
 window.onDOMReady = onDOMReady;
+
+// Loading Indicator Manager (Global)
+const loadingIndicator = {
+    element: null,
+    
+    init() {
+        this.element = document.getElementById('loading-indicator');
+    },
+    
+    show(message = 'Memproses data...') {
+        if (!this.element) this.init();
+        if (this.element) {
+            const span = this.element.querySelector('span');
+            if (span) span.textContent = message;
+            this.element.classList.add('active');
+        }
+    },
+    
+    hide() {
+        if (!this.element) this.init();
+        if (this.element) {
+            this.element.classList.remove('active');
+        }
+    }
+};
+
+window.loadingIndicator = loadingIndicator;
