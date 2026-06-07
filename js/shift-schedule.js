@@ -148,8 +148,11 @@ const shiftSchedule = {
                 const dayOfWeek = date.getDay();
                 const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
                 
-                // Get current shift from loaded data
-                const currentShift = (monthData[emp.id] && monthData[emp.id][day]) ? monthData[emp.id][day] : '';
+                // Tentukan shift hari ini: gunakan kustomisasi jadwal jika ada di database; 
+                // jika tidak ada, gunakan shift default dari profil karyawan (emp.shift)
+                const currentShift = (monthData[emp.id] && typeof monthData[emp.id][day] !== 'undefined' && monthData[emp.id][day] !== '') 
+                    ? monthData[emp.id][day] 
+                    : (emp.shift || 'Pagi');
                 
                 const td = document.createElement('td');
                 td.className = `shift-select-cell ${isWeekend ? 'weekend' : ''}`;
@@ -296,16 +299,24 @@ const shiftSchedule = {
         const key = `${this.currentYear}-${String(this.currentMonth+1).padStart(2,'0')}`;
         const monthData = this.scheduleData[key] || {};
         const filteredEmployees = this.getFilteredEmployees();
+        const daysInMonth = this.getDaysInMonth(this.currentMonth, this.currentYear);
         let pagi = 0, siang = 0, malam = 0, libur = 0;
+        
         filteredEmployees.forEach(emp => {
             const empData = monthData[emp.id] || {};
-            Object.values(empData).forEach(shift => {
+            for (let day = 1; day <= daysInMonth; day++) {
+                // Terapkan logika fallback yang sama pada perhitungan statistik ringkasan
+                const shift = (typeof empData[day] !== 'undefined' && empData[day] !== '') 
+                    ? empData[day] 
+                    : (emp.shift || 'Pagi');
+                    
                 if (shift === 'Pagi') pagi++;
                 else if (shift === 'Siang') siang++;
                 else if (shift === 'Malam') malam++;
                 else if (shift === 'Libur') libur++;
-            });
+            }
         });
+        
         document.getElementById('summary-total-employees').textContent = filteredEmployees.length;
         document.getElementById('summary-pagi').textContent = pagi;
         document.getElementById('summary-siang').textContent = siang;
