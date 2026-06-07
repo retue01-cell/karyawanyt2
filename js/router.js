@@ -95,6 +95,12 @@ const router = {
         // Trigger page-specific init functions
         this.triggerPageInit(page);
         
+        // Refresh company data when switching pages (without loading indicator)
+        if (window.refreshCompanyData && !this._isRefreshing) {
+            this._isRefreshing = true;
+            window.refreshCompanyData().finally(() => { this._isRefreshing = false; });
+        }
+        
         // Scroll to top
         document.querySelector('.page-content').scrollTop = 0;
         
