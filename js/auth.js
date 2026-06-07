@@ -189,6 +189,11 @@ const auth = {
             // Reset form
             const loginForm = document.getElementById('login-form');
             if (loginForm) loginForm.reset();
+            
+            // Apply login display settings when showing login page
+            if (window.applyLoginDisplaySettings) {
+                window.applyLoginDisplaySettings();
+            }
         }
     },
 
@@ -313,6 +318,10 @@ const auth = {
 // Initialize auth on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
     auth.init();
+    // Apply login display settings on initial page load
+    if (window.applyLoginDisplaySettings) {
+        window.applyLoginDisplaySettings();
+    }
 });
 
 // Expose to global
