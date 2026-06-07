@@ -557,6 +557,9 @@ window.onDOMReady = onDOMReady;
 // Loading Indicator Manager (Global)
 const loadingIndicator = {
     element: null,
+    counter: 0,
+    timer: null,
+    minDisplayTime: 600, // Minimal 600ms agar tidak flicker
     
     init() {
         this.element = document.getElementById('loading-indicator');
@@ -564,6 +567,14 @@ const loadingIndicator = {
     
     show(message = 'Memproses data...') {
         if (!this.element) this.init();
+        this.counter++;
+        
+        // Clear pending hide timer jika ada request baru
+        if (this.timer) {
+            clearTimeout(this.timer);
+            this.timer = null;
+        }
+
         if (this.element) {
             const span = this.element.querySelector('span');
             if (span) span.textContent = message;
@@ -573,9 +584,26 @@ const loadingIndicator = {
     
     hide() {
         if (!this.element) this.init();
-        if (this.element) {
-            this.element.classList.remove('active');
+        this.counter--;
+        
+        if (this.counter <= 0) {
+            this.counter = 0;
+            // Delay hiding untuk memastikan minimum display time
+            if (this.timer) clearTimeout(this.timer);
+            
+            this.timer = setTimeout(() => {
+                if (this.element && this.counter === 0) {
+                    this.element.classList.remove('active');
+                }
+                this.timer = null;
+            }, this.minDisplayTime);
         }
+    },
+
+    forceHide() {
+        this.counter = 0;
+        if (this.timer) clearTimeout(this.timer);
+        if (this.element) this.element.classList.remove('active');
     }
 };
 
