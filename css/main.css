@@ -323,6 +323,11 @@ img {
 
 .sidebar-brand {
     transition: opacity var(--transition);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+    display: inline-block;
 }
 
 .sidebar.collapsed .sidebar-brand {
