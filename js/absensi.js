@@ -40,7 +40,6 @@ const absensi = {
     async loadTodayAttendance() {
         const currentUser = auth.getCurrentUser();
         const userId = currentUser?.id || 'demo-user';
-        loadingIndicator.show('Mengambil data kehadiran hari ini...');
         try {
             const [result, settingsRes] = await Promise.all([
                 api.getTodayAttendance(userId),
@@ -134,13 +133,10 @@ const absensi = {
             console.log('Loaded attendance for today:', todayAttendance.date, this.attendanceData);
         } catch (error) {
             console.error('Error loading attendance:', error);
-        } finally {
-            loadingIndicator.hide();
         }
     },
 
     async loadAttendanceHistory() {
-        loadingIndicator.show('Memuat riwayat absensi...');
         try {
             const result = await api.getAllAttendance();
             const allData = result.data || [];
@@ -153,8 +149,6 @@ const absensi = {
             this.renderHistory(historyData);
         } catch (error) {
             console.error('Error loading history:', error);
-        } finally {
-            loadingIndicator.hide();
         }
     },
 
