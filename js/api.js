@@ -294,10 +294,23 @@ const api = {
                 if (key === 'company_name') company.name = value;
                 if (key === 'company_logo') company.logo = value;
                 storage.set('company', company);
+                // Panggil update UI langsung untuk mode offline
+                if (window.updateCompanyUI) window.updateCompanyUI();
             }
             return { success: true, data: { key, value } };
         }
-        return this.request('saveSetting', { key, value });
+        const result = await this.request('saveSetting', { key, value });
+        if (result && result.success) {
+            // Jika sukses, update storage lokal juga agar UI langsung berubah
+            if (key === 'company_name' || key === 'company_logo') {
+                const company = storage.get('company', { name: '', logo: '' });
+                if (key === 'company_name') company.name = value;
+                if (key === 'company_logo') company.logo = value;
+                storage.set('company', company);
+                if (window.updateCompanyUI) window.updateCompanyUI();
+            }
+        }
+        return result;
     },
 
     // ========== SHIFTS ==========
