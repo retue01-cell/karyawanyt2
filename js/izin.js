@@ -8,13 +8,21 @@ const izin = {
     filterStatus: '',
 
     async init() {
-        await this.loadIzinData();
-        this.initForm();
-        this.initFilters();
-        this.renderIzinList();
-        this.updateStats();
-        const dateInput = document.getElementById('izin-date');
-        if (dateInput) dateInput.valueAsDate = new Date();
+        loadingIndicator.show('Memuat data izin...');
+        try {
+            await this.loadIzinData();
+            this.initForm();
+            this.initFilters();
+            this.renderIzinList();
+            this.updateStats();
+            const dateInput = document.getElementById('izin-date');
+            if (dateInput) dateInput.valueAsDate = new Date();
+        } catch (error) {
+            console.error('Error initializing izin:', error);
+            toast.error('Gagal memuat data izin');
+        } finally {
+            loadingIndicator.hide();
+        }
     },
 
     async loadIzinData() {
