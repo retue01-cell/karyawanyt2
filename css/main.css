@@ -605,10 +605,16 @@ img {
     justify-content: center;
 }
 
-/* Styling khusus untuk tombol logout mobile */
+/* Styling untuk tombol logout di top bar - semua perangkat */
 #mobile-logout-btn {
     background: rgba(239, 68, 68, 0.1);
     color: #EF4444;
+    border-radius: var(--border-radius);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #mobile-logout-btn:hover {
