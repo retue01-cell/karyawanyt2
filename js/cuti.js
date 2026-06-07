@@ -24,7 +24,6 @@ const cuti = {
     },
 
     async loadLeaves() {
-        loadingIndicator.show('Mengambil daftar cuti...');
         try {
             const currentUser = auth.getCurrentUser();
             const userId = currentUser?.id || 'demo-user';
@@ -33,8 +32,6 @@ const cuti = {
         } catch (error) {
             console.error('Error loading leaves:', error);
             this.leaves = storage.get('leaves', []);
-        } finally {
-            loadingIndicator.hide();
         }
         const savedBalance = storage.get('leaveBalance');
         if (savedBalance !== null) this.leaveBalance = savedBalance;
