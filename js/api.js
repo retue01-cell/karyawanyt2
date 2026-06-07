@@ -305,6 +305,15 @@ const api = {
         if (!API_BASE_URL) return { success: true, data: storage.get('shifts', []) };
         return this.request('getShifts');
     },
+    async getDepartments() {
+        if (!API_BASE_URL) {
+            // Fallback: ekstrak dari employees yang tersimpan
+            const employees = storage.get('admin_employees', []);
+            const depts = [...new Set(employees.map(e => e.department).filter(d => d))];
+            return { success: true, data: depts };
+        }
+        return this.request('getDepartments');
+    },
     async addShift(data) {
         if (!API_BASE_URL) {
             const all = storage.get('shifts', []);
