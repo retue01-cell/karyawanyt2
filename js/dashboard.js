@@ -180,6 +180,11 @@ const dashboard = {
                 // Jika belum clock out, tampilkan 0j 0m
                 durationEl.textContent = '0j 0m';
             }
+        } else {
+            // Jika tidak ada data hari ini, reset semua
+            if (clockInEl) clockInEl.textContent = '--:--';
+            if (clockOutEl) clockOutEl.textContent = '--:--';
+            if (durationEl) durationEl.textContent = '0j 0m';
         }
     },
 
