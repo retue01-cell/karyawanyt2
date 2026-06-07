@@ -16,23 +16,27 @@ const adminDashboard = {
             return;
         }
         loadingIndicator.show('Memuat dashboard admin...');
-        await this.loadData();
-        this.updateStats();
-        this.renderRecentActivity();
-        this.renderOnlineUsers();
-        loadingIndicator.hide();
+        try {
+            await this.loadData();
+            this.updateStats();
+            this.renderRecentActivity();
+            this.renderOnlineUsers();
+        } catch (error) {
+            console.error('Error initializing admin dashboard:', error);
+            toast.error('Gagal memuat dashboard admin');
+        } finally {
+            loadingIndicator.hide();
+        }
     },
 
     async loadData() {
         try {
-            loadingIndicator.show('Mengambil data karyawan dan absensi...');
             const [empResult, attResult, leaveResult, izinResult] = await Promise.all([
                 api.getEmployees(),
                 api.getAllAttendance(),
                 api.getAllLeaves(),
                 api.getAllIzin()
             ]);
-            loadingIndicator.hide();
             this.employees = empResult.data || [];
             this.attendance = attResult.data || [];
             this.leaves = leaveResult.data || [];
@@ -49,7 +53,6 @@ const adminDashboard = {
                 ];
             }
         } catch (error) {
-            loadingIndicator.hide();
             console.error('Error loading admin data:', error);
             this.employees = storage.get('admin_employees', []);
             this.attendance = storage.get('attendance', []);
