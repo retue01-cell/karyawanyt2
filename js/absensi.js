@@ -191,6 +191,12 @@ const absensi = {
             let statusBadge = '<span class="badge-status">Waiting</span>';
             if (record.status && record.status.toLowerCase() === 'ontime') {
                 statusBadge = '<span class="badge-status success">Tepat Waktu</span>';
+            } else if (record.status && record.status.toLowerCase() === 'tepat') {
+                statusBadge = '<span class="badge-status success">Tepat Waktu</span>';
+            } else if (record.status && record.status.toLowerCase() === 'early in') {
+                statusBadge = '<span class="badge-status info">Early In</span>';
+            } else if (record.status && record.status.toLowerCase() === 'rajin') {
+                statusBadge = '<span class="badge-status success">Rajin</span>';
             } else if (record.status && (record.status.toLowerCase() === 'terlambat' || record.status.toLowerCase() === 'late')) {
                 statusBadge = '<span class="badge-status warning">Terlambat</span>';
             }
