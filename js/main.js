@@ -427,6 +427,18 @@ const departmentManager = {
     async fetchDepartments() {
         console.log('[fetchDepartments] Memulai fetch departemen dari API');
         try {
+            // Coba gunakan endpoint baru getDepartments jika tersedia
+            if (api.getDepartments) {
+                const result = await api.getDepartments();
+                if (result.success && result.data) {
+                    const departments = Array.isArray(result.data) ? result.data.sort() : [];
+                    console.log('[fetchDepartments] Departemen unik dari API:', departments);
+                    this.cache = departments;
+                    return departments;
+                }
+            }
+            
+            // Fallback: ekstrak dari employees
             const result = await api.getEmployees();
             const employees = result.data || [];
             
@@ -439,7 +451,7 @@ const departmentManager = {
             });
             
             const departments = Array.from(deptSet).sort();
-            console.log('[fetchDepartments] Departemen unik:', departments);
+            console.log('[fetchDepartments] Departemen unik dari employees:', departments);
             this.cache = departments;
             return departments;
         } catch (error) {
