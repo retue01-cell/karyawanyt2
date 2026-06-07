@@ -119,6 +119,9 @@ const auth = {
                 await window.refreshCompanyData();
             }
 
+            // Hapus schedule cache agar dipaksa refresh saat dashboard dibuka
+            storage.remove('shift_schedule');
+
             // Show app
             this.showApp();
 
