@@ -321,6 +321,13 @@ img {
     max-width: 100%;
 }
 
+.sidebar-logo-img {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
 .sidebar-logo i {
     font-size: var(--font-size-2xl);
     flex-shrink: 0;
