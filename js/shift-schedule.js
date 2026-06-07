@@ -88,15 +88,8 @@ const shiftSchedule = {
     },
 
     getShiftsForDate(dateStr) {
-        // Selalu tampilkan shift dasar: Libur, Pagi, Siang, Malam untuk setiap hari
-        const baseShifts = [
-            { name: 'Libur', startTime: '', endTime: '', date: '' },
-            { name: 'Pagi', startTime: '07:00', endTime: '15:00', date: '' },
-            { name: 'Siang', startTime: '15:00', endTime: '23:00', date: '' },
-            { name: 'Malam', startTime: '23:00', endTime: '07:00', date: '' }
-        ];
-        
-        return baseShifts;
+        // Kembalikan semua shift dari database (dinamis)
+        return this.shifts;
     },
 
     renderTable() {
@@ -161,18 +154,16 @@ const shiftSchedule = {
                 select.setAttribute('data-employee-id', emp.id);
                 select.setAttribute('data-day', day);
                 
-                // Build options with base shifts only (no duplicates)
-                const baseShifts = [
-                    { name: 'Libur' },
-                    { name: 'Pagi' },
-                    { name: 'Siang' },
-                    { name: 'Malam' }
-                ];
-                
+                // Build options dengan shift dinamis dari database
                 let options = '<option value="">-</option>';
-                baseShifts.forEach(shift => {
-                    options += `<option value="${shift.name}" ${currentShift === shift.name ? 'selected' : ''}>${shift.name}</option>`;
+                this.shifts.forEach(shift => {
+                    const shiftName = shift.name;
+                    options += `<option value="${shiftName}" ${currentShift === shiftName ? 'selected' : ''}>${shiftName}</option>`;
                 });
+                // Tambahkan opsi "Libur" jika tidak ada di shifts
+                if (!this.shifts.some(s => s.name === 'Libur')) {
+                    options += `<option value="Libur" ${currentShift === 'Libur' ? 'selected' : ''}>Libur</option>`;
+                }
                 
                 select.innerHTML = options;
                 select.addEventListener('change', async (e) => { 
