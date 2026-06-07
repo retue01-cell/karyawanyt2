@@ -185,7 +185,19 @@ const settings = {
             ]);
             loadingIndicator.hide();
             if (results.some(r => !r || !r.success)) throw new Error('Gagal menyimpan');
-            updateCompanyUI();
+            
+            // 🔥 Ambil ulang data terbaru dari server dan update storage + UI
+            if (window.refreshCompanyData) {
+                await window.refreshCompanyData();
+            } else {
+                // fallback: update manual dan panggil updateCompanyUI
+                const company = storage.get('company', {});
+                company.name = name;
+                company.logo = logo;
+                storage.set('company', company);
+                if (window.updateCompanyUI) window.updateCompanyUI();
+            }
+            
             toast.success('Informasi perusahaan disimpan ke database');
         } catch (error) {
             loadingIndicator.hide();
