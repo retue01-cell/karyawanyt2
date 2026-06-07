@@ -633,9 +633,41 @@
         font-size: var(--font-size-lg);
     }
     
-    /* Hide time on mobile top bar */
+    /* Tampilkan jam dan tanggal di mobile dengan ukuran lebih kecil */
+    .top-bar-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .current-time {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        line-height: 1.2;
+        text-align: right;
+    }
+
+    .current-time .time {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--color-text);
+        display: block;
+    }
+
     .current-time .date {
-        display: none;
+        font-size: 0.65rem;
+        color: var(--color-text-muted);
+        display: block;
+        margin-top: 2px;
+    }
+
+    /* Pastikan tombol aksi tidak menumpuk */
+    .top-bar-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
     
     /* Tampilkan tombol logout mobile hanya di layar kecil */
