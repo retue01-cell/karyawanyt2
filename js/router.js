@@ -112,15 +112,17 @@ const router = {
         }, 300);
     },
     
-    triggerPageInit(page) {
+    async triggerPageInit(page) {
         // Call init function for each page if exists
         switch(page) {
             case 'dashboard':
-                if (window.initDashboard) window.initDashboard();
-                // Refresh shift info setiap kali halaman dashboard diaktifkan
-                if (window.dashboard && window.dashboard.refreshShiftInfo) {
-                    window.dashboard.refreshShiftInfo();
-                }
+                if (window.initDashboard) await window.initDashboard();
+                // Refresh shift info sekali lagi untuk memastikan (interval pendek)
+                setTimeout(() => {
+                    if (window.dashboard && window.dashboard.refreshShiftInfo) {
+                        window.dashboard.refreshShiftInfo();
+                    }
+                }, 200);
                 break;
             case 'absensi':
                 if (window.initAbsensi) window.initAbsensi();
