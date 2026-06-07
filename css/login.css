@@ -175,21 +175,50 @@
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.02) !important;
 }
 
-/* Animasi untuk halaman login */
-@keyframes gentleFloat {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-15px); }
-}
+/* Animasi untuk halaman login - HANYA untuk gambar logo, bukan container */
 .animate-float {
     animation: gentleFloat 3s ease-in-out infinite;
+    transform-origin: center;
+}
+
+.animate-pulse {
+    animation: gentlePulse 2s ease-in-out infinite;
+    transform-origin: center;
+}
+
+@keyframes gentleFloat {
+    0%, 100% { 
+        transform: translateY(0); 
+    }
+    50% { 
+        transform: translateY(-8px); 
+    }
 }
 
 @keyframes gentlePulse {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.02); opacity: 0.9; }
+    0%, 100% { 
+        transform: scale(1); 
+    }
+    50% { 
+        transform: scale(1.05); 
+    }
 }
-.animate-pulse {
-    animation: gentlePulse 2s ease-in-out infinite;
+
+/* Pastikan container logo-core tidak memiliki transform yang mengganggu */
+.logo-core {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--spacing-lg);
+    background: transparent;
+    transition: width 0.2s, height 0.2s;
+}
+
+.logo-core img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 .logo-core i {
