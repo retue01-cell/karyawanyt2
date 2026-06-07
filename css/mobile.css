@@ -670,16 +670,33 @@
         gap: 8px;
     }
     
-    /* Tampilkan tombol logout mobile hanya di layar kecil */
-    .mobile-only {
-        display: flex !important;
+    /* Styling untuk tombol logout di top bar - semua perangkat */
+    #mobile-logout-btn {
+        background: rgba(239, 68, 68, 0.1);
+        color: #EF4444;
+        border-radius: var(--border-radius);
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    #mobile-logout-btn:hover {
+        background: #EF4444;
+        color: white;
     }
 }
 
-/* Sembunyikan tombol mobile-only di desktop */
+/* Tombol logout di top bar TAMPIL untuk semua perangkat - tidak perlu class mobile-only lagi */
 @media (min-width: 769px) {
-    .mobile-only {
-        display: none !important;
+    /* Styling untuk tombol logout di desktop sudah ada di main.css */
+}
+
+/* Sembunyikan logout di sidebar saat mobile agar tidak rame */
+@media (max-width: 768px) {
+    .sidebar-footer .btn-logout {
+        display: none;
     }
 }
 
