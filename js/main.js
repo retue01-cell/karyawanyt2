@@ -386,7 +386,20 @@ function updateCompanyUI() {
         if (loginLogoIcon) loginLogoIcon.style.display = 'none';
     } else {
         if (loginLogoImg) loginLogoImg.style.display = 'none';
-        if (loginLogoIcon) loginLogoIcon.style.display = 'block';
+        if (loginLogoIcon) loginLogoIcon.style.display = 'flex';
+    }
+
+    // Update footer contact info
+    const footerContact = document.getElementById('footer-contact');
+    if (footerContact) {
+        const address = storage.get('company_address', '');
+        const phone = storage.get('company_phone', '');
+        const hours = storage.get('company_hours', '');
+        const parts = [];
+        if (address) parts.push(address);
+        if (phone) parts.push(`Telp: ${phone}`);
+        if (hours) parts.push(hours);
+        footerContact.textContent = parts.join(' | ');
     }
 }
 
@@ -397,9 +410,17 @@ async function refreshCompanyData() {
         if (result && result.success && result.data) {
             const company = {
                 name: result.data.company_name || 'Portal Karyawan',
-                logo: result.data.company_logo || ''
+                logo: result.data.company_logo || '',
+                address: result.data.company_address || '',
+                phone: result.data.company_phone || '',
+                email: result.data.company_email || '',
+                hours: result.data.company_hours || ''
             };
             storage.set('company', company);
+            storage.set('company_address', company.address);
+            storage.set('company_phone', company.phone);
+            storage.set('company_email', company.email);
+            storage.set('company_hours', company.hours);
             updateCompanyUI();
             console.log('Company data refreshed:', company.name, 'Logo:', company.logo);
         }
