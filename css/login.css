@@ -154,6 +154,13 @@
     animation: pulse-core 2s ease-in-out infinite;
 }
 
+.logo-core img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
 @keyframes pulse-core {
     0%, 100% {
         transform: translate(-50%, -50%) scale(1);
