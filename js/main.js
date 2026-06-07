@@ -526,6 +526,7 @@ function onDOMReady(callback) {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+    loadingIndicator.init();
     initializeData();
     updateCompanyUI();
     applyLoginDisplaySettings();
