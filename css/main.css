@@ -605,6 +605,17 @@ img {
     justify-content: center;
 }
 
+/* Styling khusus untuk tombol logout mobile */
+#mobile-logout-btn {
+    background: rgba(239, 68, 68, 0.1);
+    color: #EF4444;
+}
+
+#mobile-logout-btn:hover {
+    background: #EF4444;
+    color: white;
+}
+
 .current-time {
     text-align: right;
 }
