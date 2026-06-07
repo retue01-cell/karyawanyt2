@@ -32,6 +32,12 @@ const auth = {
             logoutBtn.addEventListener('click', () => this.handleLogout());
         }
 
+        // Tombol logout mobile (untuk tampilan mobile)
+        const mobileLogoutBtn = document.getElementById('mobile-logout-btn');
+        if (mobileLogoutBtn) {
+            mobileLogoutBtn.addEventListener('click', () => this.handleLogout());
+        }
+
         // Profile click - open profile modal
         const userProfile = document.querySelector('.user-profile');
         if (userProfile) {
