@@ -117,6 +117,10 @@ const router = {
         switch(page) {
             case 'dashboard':
                 if (window.initDashboard) window.initDashboard();
+                // Refresh shift info setiap kali halaman dashboard diaktifkan
+                if (window.dashboard && window.dashboard.refreshShiftInfo) {
+                    window.dashboard.refreshShiftInfo();
+                }
                 break;
             case 'absensi':
                 if (window.initAbsensi) window.initAbsensi();
