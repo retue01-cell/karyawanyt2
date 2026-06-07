@@ -60,9 +60,11 @@ const absensi = {
 
             if (!todayAttendance.date) {
                 const today = dateTime.getLocalDate();
-                let currentShift = currentUser?.shift || 'Pagi';
+                // Backend sudah mengirim shift yang benar (dengan fallback: ShiftSchedule -> Employees -> 'Pagi')
+                // Jadi kita langsung gunakan shift dari backend
+                let currentShift = todayAttendance.shift || currentUser?.shift || 'Pagi';
 
-                // Automated shift lookup from admin schedule
+                // Automated shift lookup from admin schedule (fallback tambahan di sisi frontend)
                 try {
                     const stringUserId = String(userId);
                     const schedules = storage.get('shift_schedule', {});
@@ -70,14 +72,14 @@ const absensi = {
                     const currentYear = todayObj.getFullYear();
                     const currentMonth = todayObj.getMonth();
                     const currentDay = todayObj.getDate();
-                    const key = `${currentYear}-${currentMonth}`;
+                    const key = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}`;
 
                     console.log('Absen Shift Sync - Key:', key, 'UserId:', stringUserId, 'Day:', currentDay);
 
                     if (schedules[key] && schedules[key][stringUserId]) {
                         const assignedShift = schedules[key][stringUserId][currentDay];
                         console.log('Absen Shift Sync - Found Shift:', assignedShift);
-                        if (assignedShift) {
+                        if (assignedShift && assignedShift !== '') {
                             currentShift = assignedShift;
                         }
                     } else {
