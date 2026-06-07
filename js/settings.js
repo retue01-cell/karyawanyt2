@@ -48,6 +48,16 @@ const settings = {
             if (companyNameInput) companyNameInput.value = allSettings.company_name || '';
             if (companyLogoInput) companyLogoInput.value = allSettings.company_logo || '';
 
+            // Contact & General info
+            const addressInput = document.getElementById('company-address');
+            const phoneInput = document.getElementById('company-phone');
+            const emailInput = document.getElementById('company-email');
+            const hoursInput = document.getElementById('company-hours');
+            if (addressInput) addressInput.value = allSettings.company_address || '';
+            if (phoneInput) phoneInput.value = allSettings.company_phone || '';
+            if (emailInput) emailInput.value = allSettings.company_email || '';
+            if (hoursInput) hoursInput.value = allSettings.company_hours || '';
+
             // ========== WORKING DAYS ==========
             const days = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'];
             let rawWorkingDays = allSettings.working_days;
@@ -155,6 +165,12 @@ const settings = {
         const companyForm = document.getElementById('company-form');
         if (companyForm) companyForm.addEventListener('submit', (e) => this.saveCompany(e));
 
+        // Contact form
+        const contactForm = document.getElementById('contact-form');
+        if (contactForm) {
+            contactForm.addEventListener('submit', (e) => this.saveContactSettings(e));
+        }
+
         const addShiftBtn = document.getElementById('btn-add-shift');
         if (addShiftBtn) addShiftBtn.addEventListener('click', () => this.addShift());
 
@@ -199,6 +215,35 @@ const settings = {
             }
             
             toast.success('Informasi perusahaan disimpan ke database');
+        } catch (error) {
+            loadingIndicator.hide();
+            console.error(error);
+            toast.error(error.message || 'Gagal menyimpan');
+        }
+    },
+
+    async saveContactSettings(e) {
+        e.preventDefault();
+        const address = document.getElementById('company-address').value;
+        const phone = document.getElementById('company-phone').value;
+        const email = document.getElementById('company-email').value;
+        const hours = document.getElementById('company-hours').value;
+
+        try {
+            loadingIndicator.show('Menyimpan pengaturan kontak...');
+            const results = await Promise.all([
+                api.saveSetting('company_address', address),
+                api.saveSetting('company_phone', phone),
+                api.saveSetting('company_email', email),
+                api.saveSetting('company_hours', hours)
+            ]);
+            if (results.some(r => !r || !r.success)) throw new Error('Gagal menyimpan');
+            
+            // Refresh data perusahaan agar semua pengguna mendapat update
+            if (window.refreshCompanyData) await window.refreshCompanyData();
+            
+            loadingIndicator.hide();
+            toast.success('Pengaturan kontak berhasil disimpan!');
         } catch (error) {
             loadingIndicator.hide();
             console.error(error);
