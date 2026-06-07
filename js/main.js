@@ -411,47 +411,51 @@ function applyLoginDisplaySettings() {
     const loginLogoSize = storage.get('login_logo_size', '120');
     const sidebarLogoSize = storage.get('sidebar_logo_size', '32');
     
-    // Apply shape and shadow to logo image
+    // Apply size to login logo container (logo-core)
+    const logoCore = document.querySelector('.logo-core');
+    if (logoCore) {
+        logoCore.style.width = `${loginLogoSize}px`;
+        logoCore.style.height = `${loginLogoSize}px`;
+        // Pastikan container tidak memiliki animasi
+        logoCore.classList.remove('animate-float', 'animate-pulse');
+    }
+    
+    // Apply size to sidebar logo
+    const sidebarLogoImg = document.getElementById('sidebar-logo-img');
+    if (sidebarLogoImg) {
+        sidebarLogoImg.style.width = `${sidebarLogoSize}px`;
+        sidebarLogoImg.style.height = `${sidebarLogoSize}px`;
+    }
+    
+    // Apply shape, shadow, and animation to logo IMAGE only (not container)
     const loginLogoImg = document.getElementById('login-logo-img');
     if (loginLogoImg) {
-        loginLogoImg.classList.remove('rounded-full', 'rounded-lg', 'rounded-none', 'shadow-lg');
+        // Hapus class sebelumnya
+        loginLogoImg.classList.remove('rounded-full', 'rounded-lg', 'rounded-none', 'shadow-lg', 'animate-float', 'animate-pulse');
+        
+        // Terapkan bentuk
         loginLogoImg.classList.add(logoShape);
+        
+        // Terapkan bayangan
         if (hasShadow) {
             loginLogoImg.classList.add('shadow-lg');
         }
+        
+        // 🔥 PERBAIKAN: Animasi hanya pada gambar, bukan container
+        if (animation === 'float') {
+            loginLogoImg.classList.add('animate-float');
+        } else if (animation === 'pulse') {
+            loginLogoImg.classList.add('animate-pulse');
+        }
     }
     
-    // Also apply to sidebar logo if present
-    const sidebarLogoImg = document.getElementById('sidebar-logo-img');
+    // Also apply shape and shadow to sidebar logo image
     if (sidebarLogoImg) {
         sidebarLogoImg.classList.remove('rounded-full', 'rounded-lg', 'rounded-none', 'shadow-lg');
         sidebarLogoImg.classList.add(logoShape);
         if (hasShadow) {
             sidebarLogoImg.classList.add('shadow-lg');
         }
-    }
-    
-    // Apply animation to logo core
-    const logoCore = document.querySelector('.logo-core');
-    if (logoCore) {
-        logoCore.classList.remove('animate-float', 'animate-pulse');
-        if (animation === 'float') {
-            logoCore.classList.add('animate-float');
-        } else if (animation === 'pulse') {
-            logoCore.classList.add('animate-pulse');
-        }
-    }
-    
-    // Apply size to login logo (logo-core)
-    if (logoCore) {
-        logoCore.style.width = `${loginLogoSize}px`;
-        logoCore.style.height = `${loginLogoSize}px`;
-    }
-    
-    // Apply size to sidebar logo
-    if (sidebarLogoImg) {
-        sidebarLogoImg.style.width = `${sidebarLogoSize}px`;
-        sidebarLogoImg.style.height = `${sidebarLogoSize}px`;
     }
 }
 
