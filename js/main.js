@@ -403,6 +403,44 @@ function updateCompanyUI() {
     }
 }
 
+// Apply login display settings (logo shape, shadow, animation)
+function applyLoginDisplaySettings() {
+    const logoShape = storage.get('login_logo_shape', 'rounded-full');
+    const hasShadow = storage.get('login_logo_shadow', true);
+    const animation = storage.get('login_animation_effect', 'float');
+    
+    // Apply shape and shadow to logo image
+    const loginLogoImg = document.getElementById('login-logo-img');
+    if (loginLogoImg) {
+        loginLogoImg.classList.remove('rounded-full', 'rounded-lg', 'rounded-none', 'shadow-lg');
+        loginLogoImg.classList.add(logoShape);
+        if (hasShadow) {
+            loginLogoImg.classList.add('shadow-lg');
+        }
+    }
+    
+    // Also apply to sidebar logo if present
+    const sidebarLogoImg = document.getElementById('sidebar-logo-img');
+    if (sidebarLogoImg) {
+        sidebarLogoImg.classList.remove('rounded-full', 'rounded-lg', 'rounded-none', 'shadow-lg');
+        sidebarLogoImg.classList.add(logoShape);
+        if (hasShadow) {
+            sidebarLogoImg.classList.add('shadow-lg');
+        }
+    }
+    
+    // Apply animation to logo core
+    const logoCore = document.querySelector('.logo-core');
+    if (logoCore) {
+        logoCore.classList.remove('animate-float', 'animate-pulse');
+        if (animation === 'float') {
+            logoCore.classList.add('animate-float');
+        } else if (animation === 'pulse') {
+            logoCore.classList.add('animate-pulse');
+        }
+    }
+}
+
 // Refresh company data from server and update UI
 async function refreshCompanyData() {
     try {
@@ -414,14 +452,22 @@ async function refreshCompanyData() {
                 address: result.data.company_address || '',
                 phone: result.data.company_phone || '',
                 email: result.data.company_email || '',
-                hours: result.data.company_hours || ''
+                hours: result.data.company_hours || '',
+                logoShape: result.data.login_logo_shape || 'rounded-full',
+                logoShadow: result.data.login_logo_shadow === 'true',
+                loginAnimation: result.data.login_animation_effect || 'float'
             };
             storage.set('company', company);
             storage.set('company_address', company.address);
             storage.set('company_phone', company.phone);
             storage.set('company_email', company.email);
             storage.set('company_hours', company.hours);
+            // Simpan pengaturan tampilan login
+            storage.set('login_logo_shape', company.logoShape);
+            storage.set('login_logo_shadow', company.logoShadow);
+            storage.set('login_animation_effect', company.loginAnimation);
             updateCompanyUI();
+            applyLoginDisplaySettings();
             console.log('Company data refreshed:', company.name, 'Logo:', company.logo);
         }
     } catch (error) {
@@ -445,6 +491,7 @@ function onDOMReady(callback) {
 document.addEventListener('DOMContentLoaded', () => {
     initializeData();
     updateCompanyUI();
+    applyLoginDisplaySettings();
 
     // Update time display
     const timeEl = document.getElementById('current-time');
@@ -466,6 +513,7 @@ window.dateTime = dateTime;
 window.formUtils = formUtils;
 window.animations = animations;
 window.updateCompanyUI = updateCompanyUI;
+window.applyLoginDisplaySettings = applyLoginDisplaySettings;
 window.onDOMReady = onDOMReady;
 
 // Loading Indicator Manager (Global)
