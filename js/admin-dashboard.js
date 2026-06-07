@@ -8,6 +8,7 @@ const adminDashboard = {
     attendance: [],
     leaves: [],
     izin: [],
+    todayAttendanceList: [],
 
     async init() {
         if (!auth.isAdmin()) {
@@ -20,7 +21,7 @@ const adminDashboard = {
             await this.loadData();
             this.updateStats();
             this.renderRecentActivity();
-            this.renderOnlineUsers();
+            this.renderPresentEmployees();
         } catch (error) {
             console.error('Error initializing admin dashboard:', error);
             toast.error('Gagal memuat dashboard admin');
@@ -41,6 +42,12 @@ const adminDashboard = {
             this.attendance = attResult.data || [];
             this.leaves = leaveResult.data || [];
             this.izin = izinResult.data || [];
+
+            // Hitung karyawan yang sudah datang hari ini
+            const todayStr = dateTime.getLocalDate();
+            this.todayAttendanceList = this.attendance.filter(a => a.date === todayStr && a.clockIn);
+            console.log('Karyawan datang hari ini:', this.todayAttendanceList);
+
             // Jika data kosong, gunakan dummy untuk demo
             if (this.employees.length === 0) {
                 console.warn('Data karyawan kosong, gunakan data dummy');
@@ -126,20 +133,41 @@ const adminDashboard = {
         `).join('');
     },
 
-    renderOnlineUsers() {
-        const container = document.getElementById('admin-online-users');
+    renderPresentEmployees() {
+        const container = document.getElementById('admin-present-users');
         if (!container) return;
-        const onlineUsers = this.employees.filter(e => e.status === 'active').slice(0, 5);
-        const onlineCount = onlineUsers.length;
-        const countEl = document.getElementById('online-count');
-        if (countEl) countEl.textContent = onlineCount;
-        container.innerHTML = onlineUsers.map(user => `
+
+        // Map attendance records ke employee data
+        const presentUsers = this.todayAttendanceList.map(att => {
+            const emp = this.employees.find(e => String(e.id) === String(att.userId));
+            return emp || { name: 'Unknown', department: '', avatar: '', id: att.userId };
+        }).filter(emp => emp.name !== 'Unknown');
+
+        const presentCount = presentUsers.length;
+        const countEl = document.getElementById('present-count');
+        if (countEl) countEl.textContent = presentCount;
+
+        if (presentUsers.length === 0) {
+            container.innerHTML = '<div class="empty-state" style="text-align:center; padding:var(--spacing);">Belum ada karyawan yang datang hari ini.</div>';
+            return;
+        }
+
+        container.innerHTML = presentUsers.map(user => `
             <div class="online-user-item">
-                <div class="user-status-dot"></div>
+                <div class="user-status-dot" style="background: var(--color-success);"></div>
                 <div class="activity-avatar"><img src="${getAvatarUrl(user)}" alt="${user.name}"></div>
-                <div class="activity-content"><p class="activity-text"><strong>${user.name}</strong></p><span class="activity-time">${user.department} - ${user.position}</span></div>
+                <div class="activity-content">
+                    <p class="activity-text"><strong>${this.escapeHtml(user.name)}</strong></p>
+                    <span class="activity-time">${user.department || '-'}</span>
+                </div>
             </div>
         `).join('');
+    },
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 };
 
