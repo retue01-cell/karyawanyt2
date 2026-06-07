@@ -462,7 +462,11 @@ function applyLoginDisplaySettings() {
 // Refresh company data from server and update UI
 async function refreshCompanyData() {
     try {
-        const result = await api.getSettings();
+        const [result, shiftsResult] = await Promise.all([
+            api.getSettings(),
+            api.getShifts() // Tarik konfigurasi shift terbaru sekaligus
+        ]);
+        
         if (result && result.success && result.data) {
             const company = {
                 name: result.data.company_name || 'Portal Karyawan',
@@ -488,6 +492,12 @@ async function refreshCompanyData() {
             storage.set('login_animation_effect', company.loginAnimation);
             storage.set('login_logo_size', company.loginLogoSize);
             storage.set('sidebar_logo_size', company.sidebarLogoSize);
+            
+            // Simpan shift kerja yang diperbarui ke localStorage
+            if (shiftsResult && shiftsResult.success && shiftsResult.data) {
+                storage.set('shifts', shiftsResult.data);
+            }
+            
             updateCompanyUI();
             applyLoginDisplaySettings();
             console.log('Company data refreshed:', company.name, 'Logo:', company.logo);
