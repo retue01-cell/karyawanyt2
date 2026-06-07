@@ -105,8 +105,16 @@ const settings = {
             }
 
             // ========== SETTING LAINNYA ==========
+            const earlyThreshold = (allSettings.early_in_threshold !== undefined && allSettings.early_in_threshold !== null) ? allSettings.early_in_threshold : '60';
+            const diligentThreshold = (allSettings.diligent_threshold !== undefined && allSettings.diligent_threshold !== null) ? allSettings.diligent_threshold : '30';
             const lateTolerance = (allSettings.late_tolerance !== undefined && allSettings.late_tolerance !== null) ? allSettings.late_tolerance : 15;
+            
+            const earlyInput = document.getElementById('setting-early-threshold');
+            const diligentInput = document.getElementById('setting-diligent-threshold');
             const toleranceInput = document.getElementById('setting-late-tolerance');
+            
+            if (earlyInput) earlyInput.value = earlyThreshold;
+            if (diligentInput) diligentInput.value = diligentThreshold;
             if (toleranceInput) toleranceInput.value = lateTolerance;
 
             const faceRecognition = (allSettings.face_recognition === 'true' || allSettings.face_recognition === true || allSettings.face_recognition === 'TRUE');
@@ -309,12 +317,16 @@ const settings = {
     },
 
     async saveSystemSettings() {
+        const earlyThreshold = document.getElementById('setting-early-threshold').value;
+        const diligentThreshold = document.getElementById('setting-diligent-threshold').value;
         const lateTolerance = document.getElementById('setting-late-tolerance').value;
         const faceRecognition = document.getElementById('setting-face-recognition').checked;
         const locationTracking = document.getElementById('setting-location-tracking').checked;
         try {
             loadingIndicator.show('Menyimpan pengaturan sistem...');
             const results = await Promise.all([
+                api.saveSetting('early_in_threshold', earlyThreshold),
+                api.saveSetting('diligent_threshold', diligentThreshold),
                 api.saveSetting('late_tolerance', lateTolerance),
                 api.saveSetting('face_recognition', String(faceRecognition)),
                 api.saveSetting('location_tracking', String(locationTracking))
