@@ -491,6 +491,11 @@ async function refreshCompanyData() {
             updateCompanyUI();
             applyLoginDisplaySettings();
             console.log('Company data refreshed:', company.name, 'Logo:', company.logo);
+
+            // 🔥 Refresh dashboard shift jika halaman dashboard sedang aktif
+            if (window.dashboard && document.getElementById('page-dashboard')?.classList.contains('active')) {
+                await window.dashboard.refreshShiftInfo();
+            }
         }
     } catch (error) {
         console.error('Failed to refresh company data:', error);
