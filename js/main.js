@@ -341,12 +341,13 @@ function initializeData() {
 
 // Update company name in UI
 function updateCompanyUI() {
-    const company = storage.get('company', { name: 'Portal Karyawan' });
+    const company = storage.get('company', { name: 'Portal Karyawan', logo: '' });
+    const companyName = company.name || 'Portal Karyawan';
 
     const elements = {
-        'login-company-name': company.name,
-        'footer-company': company.name,
-        'sidebar-brand': company.name && typeof company.name === 'string' ? company.name.substring(0, 10) : 'Portal'
+        'login-company-name': companyName,
+        'footer-company': companyName,
+        'sidebar-brand': companyName && typeof companyName === 'string' ? companyName.substring(0, 10) : 'Portal'
     };
 
     Object.entries(elements).forEach(([id, value]) => {
@@ -354,8 +355,41 @@ function updateCompanyUI() {
         if (el) el.textContent = value;
     });
 
-    document.title = company.name;
+    document.title = companyName;
+    
+    // Update logo jika ada
+    if (company.logo) {
+        const logoEls = document.querySelectorAll('.company-logo');
+        logoEls.forEach(el => {
+            if (el.tagName === 'IMG') {
+                el.src = company.logo;
+            } else {
+                el.style.backgroundImage = `url(${company.logo})`;
+            }
+        });
+    }
 }
+
+// Refresh company data from server and update UI
+async function refreshCompanyData() {
+    try {
+        const result = await api.getSettings();
+        if (result && result.success && result.data) {
+            const company = {
+                name: result.data.company_name || 'Portal Karyawan',
+                logo: result.data.company_logo || ''
+            };
+            storage.set('company', company);
+            updateCompanyUI();
+            console.log('Company data refreshed:', company.name);
+        }
+    } catch (error) {
+        console.error('Failed to refresh company data:', error);
+    }
+}
+
+// Export ke global
+window.refreshCompanyData = refreshCompanyData;
 
 // DOM Ready
 function onDOMReady(callback) {
