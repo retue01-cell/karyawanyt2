@@ -676,6 +676,18 @@
     .current-time .date {
         display: none;
     }
+    
+    /* Tampilkan tombol logout mobile hanya di layar kecil */
+    .mobile-only {
+        display: flex !important;
+    }
+}
+
+/* Sembunyikan tombol mobile-only di desktop */
+@media (min-width: 769px) {
+    .mobile-only {
+        display: none !important;
+    }
 }
 
 @media (max-width: 576px) {
