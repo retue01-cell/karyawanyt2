@@ -160,6 +160,37 @@
     box-shadow: 0 8px 25px rgba(0,0,0,0.1);
 }
 
+/* Bentuk logo - dapat diubah via class */
+.rounded-full {
+    border-radius: 50% !important;
+}
+.rounded-lg {
+    border-radius: 20px !important;
+}
+.rounded-none {
+    border-radius: 0 !important;
+}
+.shadow-lg {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.02) !important;
+}
+
+/* Animasi untuk halaman login */
+@keyframes gentleFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-15px); }
+}
+.animate-float {
+    animation: gentleFloat 3s ease-in-out infinite;
+}
+
+@keyframes gentlePulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.02); opacity: 0.9; }
+}
+.animate-pulse {
+    animation: gentlePulse 2s ease-in-out infinite;
+}
+
 .logo-core i {
     font-size: 4rem;
     color: var(--color-primary);
