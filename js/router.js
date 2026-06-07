@@ -116,13 +116,14 @@ const router = {
         // Call init function for each page if exists
         switch(page) {
             case 'dashboard':
-                if (window.initDashboard) await window.initDashboard();
-                // Refresh shift info sekali lagi untuk memastikan (interval pendek)
-                setTimeout(() => {
+                if (window.initDashboard) {
+                    await window.initDashboard();
+                } else {
+                    // fallback
                     if (window.dashboard && window.dashboard.refreshShiftInfo) {
-                        window.dashboard.refreshShiftInfo();
+                        await window.dashboard.refreshShiftInfo();
                     }
-                }, 200);
+                }
                 break;
             case 'absensi':
                 if (window.initAbsensi) window.initAbsensi();
