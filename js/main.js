@@ -161,9 +161,13 @@ const dateTime = {
     calculateDuration(start, end) {
         if (!start || !end) return '0j 0m';
         
+        // Konversi titik ke titik dua (format Indonesia ke format standar)
+        const cleanStart = String(start).replace(/\./g, ':');
+        const cleanEnd = String(end).replace(/\./g, ':');
+        
         // Ambil hanya HH:MM (abaikan detik jika ada)
-        const startStr = String(start).substring(0, 5);
-        const endStr = String(end).substring(0, 5);
+        const startStr = cleanStart.substring(0, 5);
+        const endStr = cleanEnd.substring(0, 5);
         
         const startTime = new Date(`2000-01-01 ${startStr}`);
         const endTime = new Date(`2000-01-01 ${endStr}`);
@@ -177,8 +181,8 @@ const dateTime = {
             diff += 24 * 60 * 60 * 1000;
         }
         
-        const hours = Math.floor(diff / 3600000);
-        const minutes = Math.floor((diff % 3600000) / 60000);
+        const hours = Math.floor(diff / (60 * 60 * 1000));
+        const minutes = Math.floor((diff % (60 * 60 * 1000)) / (60 * 1000));
         
         return `${hours}j ${minutes}m`;
     }
