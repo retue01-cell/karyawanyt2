@@ -88,7 +88,6 @@
 
     <!-- Main App Container (Hidden by default) -->
     <div id="app-container" class="app-container hidden">
-        <div class="sidebar-overlay" id="sidebar-overlay"></div>
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-logo" id="sidebar-logo-container">
@@ -135,7 +134,10 @@
 
         <main class="main-content">
             <header class="top-bar">
-                <div class="top-bar-left"><button class="mobile-menu-toggle" id="mobile-menu-toggle" style="display: none;"><i class="fas fa-bars"></i></button><h1 class="page-title" id="page-title">Dashboard</h1></div>
+                <div class="top-bar-left">
+                    <!-- Tombol hamburger dihapus untuk mobile, navigasi menggunakan bottom bar -->
+                    <h1 class="page-title" id="page-title">Dashboard</h1>
+                </div>
                 <div class="top-bar-right">
                     <div class="top-bar-actions">
                         <button class="btn-icon" id="btn-notifications"><i class="fas fa-bell"></i><span class="badge">3</span></button>
