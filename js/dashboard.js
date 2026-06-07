@@ -9,6 +9,15 @@ const dashboard = {
 
     async init() {
         console.log('Dashboard init - start');
+        
+        // Periksa kesiapan user. Jika belum siap, jangan set initialized
+        const currentUser = auth.getCurrentUser();
+        if (!currentUser) {
+            console.warn('Dashboard init ditangguhkan: Sesi pengguna belum dimuat.');
+            return;
+        }
+        
+        // Jalankan inisialisasi hanya jika halaman belum pernah di-init
         if (this.initialized) return;
 
         await this.loadData();
@@ -190,6 +199,9 @@ const dashboard = {
 window.initDashboard = async () => {
     await dashboard.init();
 };
+
+// Ekspos objek dashboard ke global window agar dapat diakses dari main.js
+window.dashboard = dashboard;
 
 // Auto-update progress every minute
 setInterval(() => {
