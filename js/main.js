@@ -343,36 +343,50 @@ function initializeData() {
 function updateCompanyUI() {
     const company = storage.get('company', { name: 'Portal Karyawan', logo: '' });
     const companyName = company.name || 'Portal Karyawan';
+    const companyLogo = company.logo || '';
 
-    const elements = {
-        'login-company-name': companyName,
-        'footer-company': companyName,
-        'sidebar-brand': companyName
-    };
-
-    Object.entries(elements).forEach(([id, value]) => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.textContent = value;
-            // Tambahkan tooltip untuk nama lengkap saat hover
-            if (id === 'sidebar-brand' && value) {
-                el.title = value;
-            }
-        }
-    });
-
+    // Update title
     document.title = companyName;
-    
-    // Update logo jika ada
-    if (company.logo) {
-        const logoEls = document.querySelectorAll('.company-logo');
-        logoEls.forEach(el => {
-            if (el.tagName === 'IMG') {
-                el.src = company.logo;
-            } else {
-                el.style.backgroundImage = `url(${company.logo})`;
-            }
-        });
+
+    // Update teks nama perusahaan
+    const loginCompanyEl = document.getElementById('login-company-name');
+    if (loginCompanyEl) loginCompanyEl.textContent = companyName;
+
+    const footerCompanyEl = document.getElementById('footer-company');
+    if (footerCompanyEl) footerCompanyEl.textContent = companyName;
+
+    const sidebarBrandEl = document.getElementById('sidebar-brand');
+    if (sidebarBrandEl) {
+        sidebarBrandEl.textContent = companyName;
+        sidebarBrandEl.title = companyName;
+    }
+
+    // Update LOGO di sidebar
+    const sidebarLogoImg = document.getElementById('sidebar-logo-img');
+    const sidebarLogoIcon = document.getElementById('sidebar-logo-icon');
+    if (companyLogo && companyLogo.trim() !== '') {
+        if (sidebarLogoImg) {
+            sidebarLogoImg.src = companyLogo;
+            sidebarLogoImg.style.display = 'inline-block';
+        }
+        if (sidebarLogoIcon) sidebarLogoIcon.style.display = 'none';
+    } else {
+        if (sidebarLogoImg) sidebarLogoImg.style.display = 'none';
+        if (sidebarLogoIcon) sidebarLogoIcon.style.display = 'inline-block';
+    }
+
+    // Update LOGO di login page
+    const loginLogoImg = document.getElementById('login-logo-img');
+    const loginLogoIcon = document.getElementById('login-logo-icon');
+    if (companyLogo && companyLogo.trim() !== '') {
+        if (loginLogoImg) {
+            loginLogoImg.src = companyLogo;
+            loginLogoImg.style.display = 'block';
+        }
+        if (loginLogoIcon) loginLogoIcon.style.display = 'none';
+    } else {
+        if (loginLogoImg) loginLogoImg.style.display = 'none';
+        if (loginLogoIcon) loginLogoIcon.style.display = 'block';
     }
 }
 
@@ -387,7 +401,7 @@ async function refreshCompanyData() {
             };
             storage.set('company', company);
             updateCompanyUI();
-            console.log('Company data refreshed:', company.name);
+            console.log('Company data refreshed:', company.name, 'Logo:', company.logo);
         }
     } catch (error) {
         console.error('Failed to refresh company data:', error);
