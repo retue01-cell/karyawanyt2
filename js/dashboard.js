@@ -20,17 +20,22 @@ const dashboard = {
         // Jalankan inisialisasi hanya jika halaman belum pernah di-init
         if (this.initialized) return;
 
-        await this.loadData();
-        // Refresh shift info dari API getTodayAttendance
-        await this.refreshShiftInfo();
-        // Update komponen lain
-        this.updateWelcomeCard();
-        this.updateStats();
-        this.updateSessionInfo();
-        this.updateProgressBar();
+        loadingIndicator.show('Memuat dashboard...');
+        try {
+            await this.loadData();
+            // Refresh shift info dari API getTodayAttendance
+            await this.refreshShiftInfo();
+            // Update komponen lain
+            this.updateWelcomeCard();
+            this.updateStats();
+            this.updateSessionInfo();
+            this.updateProgressBar();
 
-        this.initialized = true;
-        console.log('Dashboard init - done');
+            this.initialized = true;
+            console.log('Dashboard init - done');
+        } finally {
+            loadingIndicator.hide();
+        }
     },
 
     async loadData() {
