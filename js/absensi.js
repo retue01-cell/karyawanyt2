@@ -201,6 +201,8 @@ const absensi = {
                 statusBadge = '<span class="badge-status warning">Terlambat</span>';
             } else if (record.status && record.status.toLowerCase() === 'outside') {
                 statusBadge = '<span class="badge-status danger">Outside</span>';
+            } else if (record.status && record.status.toLowerCase() === 'lembur') {
+                statusBadge = '<span class="badge-status warning">Lembur</span>';
             }
 
             // Format date to local standard UI string
@@ -451,9 +453,11 @@ const absensi = {
         if (statusRing) {
             statusRing.className = 'status-ring';
 
-            // Cek apakah status dari backend adalah Outside
+            // Cek apakah status dari backend adalah Outside atau Lembur
             const isOutside = this.attendanceData && this.attendanceData.status && 
                               this.attendanceData.status.toLowerCase() === 'outside';
+            const isLembur = this.attendanceData && this.attendanceData.status && 
+                             this.attendanceData.status.toLowerCase() === 'lembur';
 
             switch (this.currentState) {
                 case 'libur':
@@ -493,6 +497,10 @@ const absensi = {
                         statusRing.classList.add('completed');
                         if (statusText) statusText.textContent = 'Outside Shift';
                         if (statusSubtext) statusSubtext.textContent = 'Anda melakukan absensi di luar jam kerja.';
+                    } else if (isLembur) {
+                        statusRing.classList.add('completed');
+                        if (statusText) statusText.textContent = 'Lembur';
+                        if (statusSubtext) statusSubtext.textContent = 'Anda melakukan lembur melebihi jam kerja.';
                     } else {
                         statusRing.classList.add('completed');
                         if (statusText) statusText.textContent = 'Selesai Bekerja';
@@ -502,19 +510,23 @@ const absensi = {
             }
         }
 
-        // Update buttons
+        // Update buttons - Logika disable tombol yang lebih detail
         const btnClockIn = document.getElementById('btn-clock-in');
         const btnBreak = document.getElementById('btn-break');
         const btnAfterBreak = document.getElementById('btn-after-break');
         const btnOvertime = document.getElementById('btn-overtime');
         const btnClockOut = document.getElementById('btn-clock-out');
 
-        // Clock In button
-        if (btnClockIn) {
-            const isClockedIn = this.attendanceData.clockIn !== null && this.attendanceData.clockIn !== undefined;
-            const isLibur = this.currentState === 'libur';
+        const isClockedIn = this.attendanceData.clockIn !== null && this.attendanceData.clockIn !== undefined;
+        const isClockedOut = this.attendanceData.clockOut !== null && this.attendanceData.clockOut !== undefined;
+        const isBreakStarted = this.attendanceData.breakStart !== null && this.attendanceData.breakStart !== undefined;
+        const isBreakEnded = this.attendanceData.breakEnd !== null && this.attendanceData.breakEnd !== undefined;
+        const isOvertimeStarted = this.attendanceData.overtimeStart !== null && this.attendanceData.overtimeStart !== undefined;
 
-            btnClockIn.disabled = isClockedIn || isLibur;
+        // Clock In button: disabled jika sudah clock in atau sudah clock out
+        if (btnClockIn) {
+            const isLibur = this.currentState === 'libur';
+            btnClockIn.disabled = isClockedIn || isLibur || isClockedOut;
 
             if (isClockedIn) {
                 btnClockIn.classList.add('completed');
@@ -527,37 +539,37 @@ const absensi = {
             }
         }
 
-        // Break button
+        // Break button: disabled jika belum clock in, sudah break, atau sudah clock out
         if (btnBreak) {
-            btnBreak.disabled = !this.attendanceData.clockIn || this.attendanceData.breakStart !== null || this.attendanceData.clockOut !== null;
-            if (this.attendanceData.breakStart) {
+            btnBreak.disabled = !isClockedIn || isBreakStarted || isClockedOut;
+            if (isBreakStarted) {
                 btnBreak.classList.add('completed');
                 document.getElementById('break-time').textContent = this.attendanceData.breakStart;
             }
         }
 
-        // After Break button
+        // After Break button: disabled jika belum break start, sudah break end, sudah overtime, atau sudah clock out
         if (btnAfterBreak) {
-            btnAfterBreak.disabled = !this.attendanceData.breakStart || this.attendanceData.breakEnd !== null || this.attendanceData.clockOut !== null;
-            if (this.attendanceData.breakEnd) {
+            btnAfterBreak.disabled = !isBreakStarted || isBreakEnded || isOvertimeStarted || isClockedOut;
+            if (isBreakEnded) {
                 btnAfterBreak.classList.add('completed');
                 document.getElementById('after-break-time').textContent = this.attendanceData.breakEnd;
             }
         }
 
-        // Overtime button
+        // Overtime button: disabled jika belum clock in atau sudah clock out
         if (btnOvertime) {
-            btnOvertime.disabled = !this.attendanceData.clockIn || this.attendanceData.clockOut !== null;
-            if (this.attendanceData.overtimeStart) {
+            btnOvertime.disabled = !isClockedIn || isClockedOut;
+            if (isOvertimeStarted) {
                 btnOvertime.classList.add('completed');
                 document.getElementById('overtime-time').textContent = this.attendanceData.overtimeStart;
             }
         }
 
-        // Clock Out button
+        // Clock Out button: disabled jika belum clock in atau sudah clock out
         if (btnClockOut) {
-            btnClockOut.disabled = !this.attendanceData.clockIn || this.attendanceData.clockOut !== null;
-            if (this.attendanceData.clockOut) {
+            btnClockOut.disabled = !isClockedIn || isClockedOut;
+            if (isClockedOut) {
                 btnClockOut.classList.add('completed');
                 document.getElementById('clock-out-time').textContent = this.attendanceData.clockOut;
             }
