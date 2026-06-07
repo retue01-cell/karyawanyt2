@@ -403,11 +403,13 @@ function updateCompanyUI() {
     }
 }
 
-// Apply login display settings (logo shape, shadow, animation)
+// Apply login display settings (logo shape, shadow, animation, size)
 function applyLoginDisplaySettings() {
     const logoShape = storage.get('login_logo_shape', 'rounded-full');
     const hasShadow = storage.get('login_logo_shadow', true);
     const animation = storage.get('login_animation_effect', 'float');
+    const loginLogoSize = storage.get('login_logo_size', '120');
+    const sidebarLogoSize = storage.get('sidebar_logo_size', '32');
     
     // Apply shape and shadow to logo image
     const loginLogoImg = document.getElementById('login-logo-img');
@@ -439,6 +441,18 @@ function applyLoginDisplaySettings() {
             logoCore.classList.add('animate-pulse');
         }
     }
+    
+    // Apply size to login logo (logo-core)
+    if (logoCore) {
+        logoCore.style.width = `${loginLogoSize}px`;
+        logoCore.style.height = `${loginLogoSize}px`;
+    }
+    
+    // Apply size to sidebar logo
+    if (sidebarLogoImg) {
+        sidebarLogoImg.style.width = `${sidebarLogoSize}px`;
+        sidebarLogoImg.style.height = `${sidebarLogoSize}px`;
+    }
 }
 
 // Refresh company data from server and update UI
@@ -455,7 +469,9 @@ async function refreshCompanyData() {
                 hours: result.data.company_hours || '',
                 logoShape: result.data.login_logo_shape || 'rounded-full',
                 logoShadow: result.data.login_logo_shadow === 'true',
-                loginAnimation: result.data.login_animation_effect || 'float'
+                loginAnimation: result.data.login_animation_effect || 'float',
+                loginLogoSize: result.data.login_logo_size || '120',
+                sidebarLogoSize: result.data.sidebar_logo_size || '32'
             };
             storage.set('company', company);
             storage.set('company_address', company.address);
@@ -466,6 +482,8 @@ async function refreshCompanyData() {
             storage.set('login_logo_shape', company.logoShape);
             storage.set('login_logo_shadow', company.logoShadow);
             storage.set('login_animation_effect', company.loginAnimation);
+            storage.set('login_logo_size', company.loginLogoSize);
+            storage.set('sidebar_logo_size', company.sidebarLogoSize);
             updateCompanyUI();
             applyLoginDisplaySettings();
             console.log('Company data refreshed:', company.name, 'Logo:', company.logo);
