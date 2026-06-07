@@ -23,10 +23,10 @@ const shiftSchedule = {
 
     async init() {
         if (!auth.isAdmin()) { toast.error('Akses ditolak'); router.navigate('dashboard'); return; }
-        this.showLoading();
+        loadingIndicator.show('Memuat jadwal shift...');
         try {
-            await this.loadData();                         // Ambil employees, shifts, schedule
-            await departmentManager.populateSelects('schedule-dept-filter'); // Isi dropdown departemen
+            await this.loadData();
+            await departmentManager.populateSelects('schedule-dept-filter');
             this.bindEvents();
             this.renderTable();
             this.updateSummary();
@@ -34,7 +34,7 @@ const shiftSchedule = {
             console.error(error);
             toast.error('Gagal memuat jadwal shift');
         } finally {
-            this.hideLoading();
+            loadingIndicator.hide();
         }
     },
 
@@ -189,7 +189,7 @@ const shiftSchedule = {
         
         // Simpan ke database via API - sinkron dengan sheet ShiftSchedule di Google Sheets
         const date = `${key}-${String(day).padStart(2,'0')}`;
-        this.showLoading();
+        loadingIndicator.show('Menyimpan shift...');
         try {
             const result = await api.saveShiftScheduleItem(employeeId, date, shiftValue || "");
             if (result && result.success) {
@@ -210,7 +210,7 @@ const shiftSchedule = {
             console.error('Error saving shift item:', error);
             toast.error('Gagal menyimpan ke database');
         } finally {
-            this.hideLoading();
+            loadingIndicator.hide();
         }
     },
 
@@ -218,7 +218,7 @@ const shiftSchedule = {
         // Fungsi ini tetap ada untuk cadangan (misalnya simpan massal) - sinkron dengan Portal Karyawan.xlsx
         const saveBtn = document.getElementById('btn-save-schedule');
         if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
-        this.showLoading();
+        loadingIndicator.show('Menyimpan jadwal shift...');
         const key = `${this.currentYear}-${String(this.currentMonth+1).padStart(2,'0')}`;
         const monthData = this.scheduleData[key] || {};
         try {
@@ -241,7 +241,7 @@ const shiftSchedule = {
             console.error(error);
             toast.error('Gagal menyimpan jadwal');
         } finally {
-            this.hideLoading();
+            loadingIndicator.hide();
             if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-save"></i> Simpan Jadwal';
         }
     },
@@ -252,7 +252,7 @@ const shiftSchedule = {
         const lastKey = `${lastYear}-${String(lastMonth+1).padStart(2,'0')}`;
         const currentKey = `${this.currentYear}-${String(this.currentMonth+1).padStart(2,'0')}`;
         if (!confirm(`Salin jadwal dari bulan ${lastKey} ke ${currentKey}?`)) return;
-        this.showLoading();
+        loadingIndicator.show('Menyalin jadwal...');
         try {
             const result = await api.getShiftScheduleForMonth(lastKey);
             if (result.success && result.data) {
@@ -282,7 +282,7 @@ const shiftSchedule = {
         } catch (e) {
             toast.error('Gagal menyalin jadwal');
         } finally {
-            this.hideLoading();
+            loadingIndicator.hide();
         }
     },
 
