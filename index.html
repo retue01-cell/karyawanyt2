@@ -41,7 +41,10 @@
                     <div class="logo-ring ring-1"></div>
                     <div class="logo-ring ring-2"></div>
                     <div class="logo-ring ring-3"></div>
-                    <div class="logo-core"><i class="fas fa-building"></i></div>
+                    <div class="logo-core" id="login-logo-core">
+                        <i id="login-logo-icon" class="fas fa-building"></i>
+                        <img id="login-logo-img" src="" alt="Logo" style="display: none; width: 60px; height: 60px; object-fit: contain;">
+                    </div>
                 </div>
                 <h1 class="company-name" id="login-company-name">Portal Karyawan</h1>
                 <p class="tagline">Kelola kehadiran & produktivitas dengan mudah</p>
@@ -88,7 +91,11 @@
         <div class="sidebar-overlay" id="sidebar-overlay"></div>
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <div class="sidebar-logo"><i class="fas fa-infinity"></i><span class="sidebar-brand" id="sidebar-brand">Portal</span></div>
+                <div class="sidebar-logo" id="sidebar-logo-container">
+                    <img id="sidebar-logo-img" class="sidebar-logo-img" src="" alt="Logo" style="display: none; width: 32px; height: 32px; object-fit: contain;">
+                    <i id="sidebar-logo-icon" class="fas fa-infinity"></i>
+                    <span class="sidebar-brand" id="sidebar-brand">Portal</span>
+                </div>
                 <button class="sidebar-toggle" id="sidebar-toggle"><i class="fas fa-chevron-left"></i></button>
             </div>
             <nav class="sidebar-nav employee-menu" id="employee-menu">
