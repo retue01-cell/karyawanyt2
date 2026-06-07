@@ -116,6 +116,15 @@ const settings = {
             const locationTracking = (allSettings.location_tracking === 'true' || allSettings.location_tracking === true || allSettings.location_tracking === 'TRUE');
             const locationCheckbox = document.getElementById('setting-location-tracking');
             if (locationCheckbox) locationCheckbox.checked = locationTracking;
+
+            // Load pengaturan tampilan login
+            const logoShape = document.getElementById('logo-shape');
+            const logoShadow = document.getElementById('logo-shadow');
+            const loginAnimation = document.getElementById('login-animation');
+
+            if (logoShape) logoShape.value = allSettings.login_logo_shape || 'rounded-full';
+            if (logoShadow) logoShadow.value = allSettings.login_logo_shadow || 'true';
+            if (loginAnimation) loginAnimation.value = allSettings.login_animation_effect || 'float';
         } catch (error) {
             console.error('[Settings] Load error:', error);
             this.showError(error.message);
@@ -186,6 +195,12 @@ const settings = {
             const newBtn = saveSystemBtn.cloneNode(true);
             saveSystemBtn.parentNode.replaceChild(newBtn, saveSystemBtn);
             newBtn.addEventListener('click', () => this.saveSystemSettings());
+        }
+
+        // Login display form
+        const loginDisplayForm = document.getElementById('login-display-form');
+        if (loginDisplayForm) {
+            loginDisplayForm.addEventListener('submit', (e) => this.saveLoginDisplaySettings(e));
         }
     },
 
@@ -307,6 +322,30 @@ const settings = {
             loadingIndicator.hide();
             console.error(error);
             toast.error(error.message || 'Gagal menyimpan');
+        }
+    },
+
+    async saveLoginDisplaySettings(e) {
+        e.preventDefault();
+        const shape = document.getElementById('logo-shape').value;
+        const shadow = document.getElementById('logo-shadow').value;
+        const animation = document.getElementById('login-animation').value;
+
+        try {
+            loadingIndicator.show('Menyimpan pengaturan tampilan login...');
+            const results = await Promise.all([
+                api.saveSetting('login_logo_shape', shape),
+                api.saveSetting('login_logo_shadow', shadow),
+                api.saveSetting('login_animation_effect', animation)
+            ]);
+            if (results.some(r => !r || !r.success)) throw new Error('Gagal menyimpan');
+
+            if (window.refreshCompanyData) await window.refreshCompanyData();
+            loadingIndicator.hide();
+            toast.success('Pengaturan tampilan login berhasil disimpan!');
+        } catch (error) {
+            loadingIndicator.hide();
+            toast.error(error.message);
         }
     },
 
