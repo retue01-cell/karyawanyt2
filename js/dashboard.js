@@ -8,9 +8,12 @@ const dashboard = {
     attendanceData: [],
 
     // Method baru untuk mengambil shift hari ini berdasarkan jadwal admin
-    getTodayShift() {
+    async getTodayShift() {
         const currentUser = auth.getCurrentUser();
-        if (!currentUser) return 'Pagi';
+        if (!currentUser) {
+            console.warn('No current user in getTodayShift');
+            return 'Pagi';
+        }
 
         const userId = String(currentUser.id);
         const today = new Date();
@@ -19,41 +22,57 @@ const dashboard = {
         const day = today.getDate();
         const key = `${year}-${month}`;
 
-        // Ambil jadwal dari storage (sudah diisi oleh refreshCompanyData atau saat login)
-        const schedules = storage.get('shift_schedule', {});
-        const monthData = schedules[key] || {};
-        
-        // Cek apakah ada jadwal khusus untuk user ini di tanggal hari ini
-        if (monthData[userId] && monthData[userId][day] && monthData[userId][day] !== '') {
-            return monthData[userId][day];
-        }
-        
-        // Fallback ke shift default dari profil karyawan
-        return currentUser.shift || 'Pagi';
-    },
+        console.log(`getTodayShift: key=${key}, userId=${userId}, day=${day}`);
 
-    // Method untuk refresh tampilan shift di dashboard
-    async refreshShiftInfo() {
-        const today = new Date();
-        const key = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+        // Ambil jadwal dari storage
         let schedules = storage.get('shift_schedule', {});
-        
-        // Jika tidak ada data schedule untuk bulan ini, coba ambil dari API
-        if (!schedules[key]) {
+        let monthData = schedules[key] || {};
+
+        // Jika kosong, ambil dari API
+        if (Object.keys(monthData).length === 0) {
+            console.log('No schedule in storage for this month, fetching from API...');
             try {
                 const result = await api.getShiftScheduleForMonth(key);
                 if (result.success && result.data) {
                     schedules[key] = result.data;
                     storage.set('shift_schedule', schedules);
+                    monthData = result.data;
+                    console.log('Schedule fetched from API:', monthData);
+                } else {
+                    console.warn('API returned no data for shift schedule');
                 }
             } catch (e) {
-                console.error('Failed to fetch shift schedule:', e);
+                console.error('Failed to fetch shift schedule from API:', e);
             }
         }
-        
-        const shiftName = this.getTodayShift();
+
+        // Cek apakah ada jadwal khusus untuk user ini di tanggal hari ini
+        const userSchedule = monthData[userId];
+        let shiftToday = null;
+        if (userSchedule && userSchedule[day] && userSchedule[day] !== '') {
+            shiftToday = userSchedule[day];
+            console.log(`Found specific shift for day ${day}: ${shiftToday}`);
+        }
+
+        if (shiftToday) {
+            return shiftToday;
+        }
+
+        // Fallback ke shift default dari profil karyawan
+        const defaultShift = currentUser.shift || 'Pagi';
+        console.log(`No specific shift found, using default: ${defaultShift}`);
+        return defaultShift;
+    },
+
+    // Method untuk refresh tampilan shift di dashboard
+    async refreshShiftInfo() {
+        console.log('refreshShiftInfo called');
+        const shiftName = await this.getTodayShift();
         const shiftEl = document.getElementById('welcome-shift');
-        if (!shiftEl) return;
+        if (!shiftEl) {
+            console.warn('welcome-shift element not found');
+            return;
+        }
 
         // Ambil detail jam shift dari daftar shifts (storage)
         const shifts = storage.get('shifts', []);
@@ -82,16 +101,20 @@ const dashboard = {
     },
 
     async init() {
+        console.log('Dashboard init - start');
         if (this.initialized) return;
 
         await this.loadData();
-
+        // Refresh shift info (akan ambil dari API jika perlu)
+        await this.refreshShiftInfo();
+        // Update komponen lain
         this.updateWelcomeCard();
         this.updateStats();
         this.updateSessionInfo();
         this.updateProgressBar();
 
         this.initialized = true;
+        console.log('Dashboard init - done');
     },
 
     async loadData() {
@@ -119,7 +142,10 @@ const dashboard = {
                         }
                     });
                     if (Object.keys(loadedSchedules).length > 0) {
-                        storage.set('shift_schedule', loadedSchedules);
+                        // Gabungkan dengan yang sudah ada, jangan timpa
+                        const existing = storage.get('shift_schedule', {});
+                        const merged = { ...existing, ...loadedSchedules };
+                        storage.set('shift_schedule', merged);
                     }
                 }
             }
@@ -130,9 +156,8 @@ const dashboard = {
     },
 
     updateWelcomeCard() {
-        // Panggil refreshShiftInfo untuk mendapatkan shift terbaru
-        this.refreshShiftInfo();
-        
+        // Hanya update greeting, jangan panggil refreshShiftInfo lagi di sini
+        // (sudah dipanggil di init())
         const welcomeCard = document.querySelector('.welcome-card');
         const greetingEl = document.querySelector('.welcome-content h2');
         const iconEl = document.querySelector('.welcome-illustration i');
