@@ -141,8 +141,8 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 80px;
-    height: 80px;
+    width: 120px;
+    height: 120px;
     background: var(--color-primary-gradient);
     border-radius: 50%;
     display: flex;
@@ -155,10 +155,11 @@
 }
 
 .logo-core img {
-    width: 60px;
-    height: 60px;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
     border-radius: 50%;
-    object-fit: cover;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
 }
 
 @keyframes pulse-core {
@@ -432,8 +433,8 @@
     }
     
     .logo-core {
-        width: 60px;
-        height: 60px;
+        width: 90px;
+        height: 90px;
         font-size: 1.75rem;
     }
     
@@ -457,6 +458,11 @@
     
     .role-options {
         grid-template-columns: 1fr;
+    }
+    
+    .logo-core {
+        width: 90px;
+        height: 90px;
     }
 }
 
