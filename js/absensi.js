@@ -199,6 +199,8 @@ const absensi = {
                 statusBadge = '<span class="badge-status success">Rajin</span>';
             } else if (record.status && (record.status.toLowerCase() === 'terlambat' || record.status.toLowerCase() === 'late')) {
                 statusBadge = '<span class="badge-status warning">Terlambat</span>';
+            } else if (record.status && record.status.toLowerCase() === 'outside') {
+                statusBadge = '<span class="badge-status danger">Outside</span>';
             }
 
             // Format date to local standard UI string
@@ -449,6 +451,10 @@ const absensi = {
         if (statusRing) {
             statusRing.className = 'status-ring';
 
+            // Cek apakah status dari backend adalah Outside
+            const isOutside = this.attendanceData && this.attendanceData.status && 
+                              this.attendanceData.status.toLowerCase() === 'outside';
+
             switch (this.currentState) {
                 case 'libur':
                     statusRing.classList.add('waiting'); // Reuse waiting style or custom if desired
@@ -456,14 +462,26 @@ const absensi = {
                     if (statusSubtext) statusSubtext.textContent = 'Anda tidak memiliki jadwal kerja hari ini.';
                     break;
                 case 'waiting':
-                    statusRing.classList.add('waiting');
-                    if (statusText) statusText.textContent = 'Siap Clock In';
-                    if (statusSubtext) statusSubtext.textContent = 'Tekan tombol di bawah untuk memulai';
+                    if (isOutside) {
+                        statusRing.classList.add('completed');
+                        if (statusText) statusText.textContent = 'Outside Shift';
+                        if (statusSubtext) statusSubtext.textContent = 'Anda melakukan absensi di luar jam kerja.';
+                    } else {
+                        statusRing.classList.add('waiting');
+                        if (statusText) statusText.textContent = 'Siap Clock In';
+                        if (statusSubtext) statusSubtext.textContent = 'Tekan tombol di bawah untuk memulai';
+                    }
                     break;
                 case 'clocked-in':
-                    statusRing.classList.add('active');
-                    if (statusText) statusText.textContent = 'Sedang Bekerja';
-                    if (statusSubtext) statusSubtext.textContent = 'Semangat bekerja!';
+                    if (isOutside) {
+                        statusRing.classList.add('completed');
+                        if (statusText) statusText.textContent = 'Outside Shift';
+                        if (statusSubtext) statusSubtext.textContent = 'Anda melakukan absensi di luar jam kerja.';
+                    } else {
+                        statusRing.classList.add('active');
+                        if (statusText) statusText.textContent = 'Sedang Bekerja';
+                        if (statusSubtext) statusSubtext.textContent = 'Semangat bekerja!';
+                    }
                     break;
                 case 'on-break':
                     statusRing.classList.add('on-break');
@@ -471,9 +489,15 @@ const absensi = {
                     if (statusSubtext) statusSubtext.textContent = 'Nikmati waktu istirahat Anda';
                     break;
                 case 'completed':
-                    statusRing.classList.add('completed');
-                    if (statusText) statusText.textContent = 'Selesai Bekerja';
-                    if (statusSubtext) statusSubtext.textContent = 'Terima kasih atas kerja kerasnya!';
+                    if (isOutside) {
+                        statusRing.classList.add('completed');
+                        if (statusText) statusText.textContent = 'Outside Shift';
+                        if (statusSubtext) statusSubtext.textContent = 'Anda melakukan absensi di luar jam kerja.';
+                    } else {
+                        statusRing.classList.add('completed');
+                        if (statusText) statusText.textContent = 'Selesai Bekerja';
+                        if (statusSubtext) statusSubtext.textContent = 'Terima kasih atas kerja kerasnya!';
+                    }
                     break;
             }
         }
