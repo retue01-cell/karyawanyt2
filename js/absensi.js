@@ -117,6 +117,9 @@ const absensi = {
 
             this.attendanceData = todayAttendance;
 
+            // Update tampilan shift
+            this.updateShiftDisplay();
+
             // Determine current state
             if (todayAttendance.shift === 'Libur' && !todayAttendance.clockIn) {
                 this.currentState = 'libur';
@@ -528,6 +531,25 @@ const absensi = {
                 btnClockOut.classList.add('completed');
                 document.getElementById('clock-out-time').textContent = this.attendanceData.clockOut;
             }
+        }
+    },
+
+    updateShiftDisplay() {
+        const shiftNameEl = document.getElementById('current-shift-name');
+        const shiftTimeEl = document.getElementById('current-shift-time');
+        if (!shiftNameEl || !shiftTimeEl) return;
+
+        const shiftName = this.attendanceData.shift || 'Pagi';
+        shiftNameEl.textContent = shiftName;
+
+        // Cari jam kerja shift dari storage (shifts)
+        const shifts = storage.get('shifts', []);
+        const shiftDetail = shifts.find(s => s.name === shiftName);
+        if (shiftDetail) {
+            shiftTimeEl.textContent = `${shiftDetail.startTime} - ${shiftDetail.endTime}`;
+        } else {
+            // Fallback default
+            shiftTimeEl.textContent = '08:00 - 17:00';
         }
     },
 
