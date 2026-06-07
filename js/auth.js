@@ -108,6 +108,11 @@ const auth = {
             // Update UI
             this.updateUserUI();
 
+            // Refresh company data from server
+            if (window.refreshCompanyData) {
+                await window.refreshCompanyData();
+            }
+
             // Show app
             this.showApp();
 
