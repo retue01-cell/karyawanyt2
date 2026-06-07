@@ -347,12 +347,18 @@ function updateCompanyUI() {
     const elements = {
         'login-company-name': companyName,
         'footer-company': companyName,
-        'sidebar-brand': companyName && typeof companyName === 'string' ? companyName.substring(0, 10) : 'Portal'
+        'sidebar-brand': companyName
     };
 
     Object.entries(elements).forEach(([id, value]) => {
         const el = document.getElementById(id);
-        if (el) el.textContent = value;
+        if (el) {
+            el.textContent = value;
+            // Tambahkan tooltip untuk nama lengkap saat hover
+            if (id === 'sidebar-brand' && value) {
+                el.title = value;
+            }
+        }
     });
 
     document.title = companyName;
