@@ -31,7 +31,6 @@ const jurnal = {
     },
 
     async loadJurnals() {
-        loadingIndicator.show('Mengambil riwayat jurnal...');
         try {
             const currentUser = auth.getCurrentUser();
             const userId = currentUser?.id || 'demo-user';
@@ -40,8 +39,6 @@ const jurnal = {
         } catch (error) {
             console.error('Error loading journals:', error);
             this.jurnals = storage.get('jurnals', []);
-        } finally {
-            loadingIndicator.hide();
         }
     },
 
