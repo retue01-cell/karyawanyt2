@@ -122,6 +122,12 @@ const auth = {
             // Hapus schedule cache agar dipaksa refresh saat dashboard dibuka
             storage.remove('shift_schedule');
 
+            // Ambil data shift dari API dan simpan ke storage
+            const shiftsResult = await api.getShifts();
+            if (shiftsResult.success && shiftsResult.data) {
+                storage.set('shifts', shiftsResult.data);
+            }
+
             // Show app
             this.showApp();
 
