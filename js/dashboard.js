@@ -7,105 +7,12 @@ const dashboard = {
     initialized: false,
     attendanceData: [],
 
-    // Method baru untuk mengambil shift hari ini berdasarkan jadwal admin
-    async getTodayShift() {
-        const currentUser = auth.getCurrentUser();
-        if (!currentUser) {
-            console.warn('No current user in getTodayShift');
-            return 'Pagi';
-        }
-
-        const userId = String(currentUser.id);
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = today.getDate();
-        const key = `${year}-${month}`;
-
-        console.log(`getTodayShift: key=${key}, userId=${userId}, day=${day}`);
-
-        // Ambil jadwal dari storage
-        let schedules = storage.get('shift_schedule', {});
-        let monthData = schedules[key] || {};
-
-        // Jika kosong, ambil dari API
-        if (Object.keys(monthData).length === 0) {
-            console.log('No schedule in storage for this month, fetching from API...');
-            try {
-                const result = await api.getShiftScheduleForMonth(key);
-                if (result.success && result.data) {
-                    schedules[key] = result.data;
-                    storage.set('shift_schedule', schedules);
-                    monthData = result.data;
-                    console.log('Schedule fetched from API:', monthData);
-                } else {
-                    console.warn('API returned no data for shift schedule');
-                }
-            } catch (e) {
-                console.error('Failed to fetch shift schedule from API:', e);
-            }
-        }
-
-        // Cek apakah ada jadwal khusus untuk user ini di tanggal hari ini
-        const userSchedule = monthData[userId];
-        let shiftToday = null;
-        if (userSchedule && userSchedule[day] && userSchedule[day] !== '') {
-            shiftToday = userSchedule[day];
-            console.log(`Found specific shift for day ${day}: ${shiftToday}`);
-        }
-
-        if (shiftToday) {
-            return shiftToday;
-        }
-
-        // Fallback ke shift default dari profil karyawan
-        const defaultShift = currentUser.shift || 'Pagi';
-        console.log(`No specific shift found, using default: ${defaultShift}`);
-        return defaultShift;
-    },
-
-    // Method untuk refresh tampilan shift di dashboard
-    async refreshShiftInfo() {
-        console.log('refreshShiftInfo called');
-        const shiftName = await this.getTodayShift();
-        const shiftEl = document.getElementById('welcome-shift');
-        if (!shiftEl) {
-            console.warn('welcome-shift element not found');
-            return;
-        }
-
-        // Ambil detail jam shift dari daftar shifts (storage)
-        const shifts = storage.get('shifts', []);
-        const shiftDetail = shifts.find(s => s.name === shiftName);
-        
-        if (shiftName === 'Libur') {
-            shiftEl.textContent = `Shift: Libur (Tidak ada jadwal)`;
-        } else if (shiftDetail) {
-            shiftEl.textContent = `Shift: ${shiftDetail.name} (${shiftDetail.startTime} - ${shiftDetail.endTime})`;
-        } else {
-            shiftEl.textContent = `Shift: ${shiftName}`;
-        }
-        
-        // Simpan shift terbaru ke currentUser agar konsisten
-        if (auth.currentUser) {
-            auth.currentUser.shift = shiftName;
-            // Update session storage
-            const session = storage.get('session');
-            if (session) {
-                session.shift = shiftName;
-                storage.set('session', session);
-            }
-        }
-        
-        console.log(`Dashboard shift updated to: ${shiftName}`);
-    },
-
     async init() {
         console.log('Dashboard init - start');
         if (this.initialized) return;
 
         await this.loadData();
-        // Refresh shift info (akan ambil dari API jika perlu)
+        // Refresh shift info dari API getTodayAttendance
         await this.refreshShiftInfo();
         // Update komponen lain
         this.updateWelcomeCard();
@@ -121,37 +28,59 @@ const dashboard = {
         try {
             const currentUser = auth.getCurrentUser();
             if (currentUser && currentUser.id) {
-                // Fetch attendance and global settings concurrently
-                const [attResult, settingsRes] = await Promise.all([
-                    api.getAttendance(currentUser.id),
-                    api.getSettings()
-                ]);
-
+                // Fetch attendance data only
+                const attResult = await api.getAttendance(currentUser.id);
                 this.attendanceData = (attResult && attResult.success) ? attResult.data : [];
-
-                // Sync global schedule shift mapping from Admin to this employee's local instance
-                if (settingsRes && settingsRes.success && settingsRes.data) {
-                    const globalSettings = settingsRes.data;
-                    const loadedSchedules = {};
-                    Object.keys(globalSettings).forEach(k => {
-                        if (k.startsWith('shift_schedule_')) {
-                            const monthKey = k.replace('shift_schedule_', '');
-                            try {
-                                loadedSchedules[monthKey] = JSON.parse(globalSettings[k]);
-                            } catch (e) { }
-                        }
-                    });
-                    if (Object.keys(loadedSchedules).length > 0) {
-                        // Gabungkan dengan yang sudah ada, jangan timpa
-                        const existing = storage.get('shift_schedule', {});
-                        const merged = { ...existing, ...loadedSchedules };
-                        storage.set('shift_schedule', merged);
-                    }
-                }
             }
         } catch (error) {
             console.error('Error loading dashboard data:', error);
             this.attendanceData = [];
+        }
+    },
+
+    async refreshShiftInfo() {
+        const currentUser = auth.getCurrentUser();
+        if (!currentUser) {
+            console.warn('No current user');
+            return;
+        }
+
+        try {
+            // Panggil API getTodayAttendance yang sudah memiliki logika shift
+            const result = await api.getTodayAttendance(currentUser.id);
+            console.log('getTodayAttendance result:', result);
+            
+            if (result.success && result.data) {
+                const shiftName = result.data.shift || 'Pagi';
+                const shiftEl = document.getElementById('welcome-shift');
+                if (!shiftEl) return;
+
+                // Ambil detail jam shift dari storage (shifts)
+                const shifts = storage.get('shifts', []);
+                const shiftDetail = shifts.find(s => s.name === shiftName);
+                
+                if (shiftName === 'Libur') {
+                    shiftEl.textContent = `Shift: Libur (Tidak ada jadwal)`;
+                } else if (shiftDetail) {
+                    shiftEl.textContent = `Shift: ${shiftDetail.name} (${shiftDetail.startTime} - ${shiftDetail.endTime})`;
+                } else {
+                    shiftEl.textContent = `Shift: ${shiftName}`;
+                }
+                
+                // Update currentUser agar konsisten
+                auth.currentUser.shift = shiftName;
+                const session = storage.get('session');
+                if (session) {
+                    session.shift = shiftName;
+                    storage.set('session', session);
+                }
+                
+                console.log(`Dashboard shift updated to: ${shiftName}`);
+            } else {
+                console.warn('API getTodayAttendance returned no data');
+            }
+        } catch (error) {
+            console.error('Error fetching today attendance:', error);
         }
     },
 
