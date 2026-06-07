@@ -418,8 +418,9 @@ const absensi = {
         try {
             const result = await api.saveAttendance(this.attendanceData);
             if (result && result.success && result.data) {
-                // Keep the frontend in sync with server-calculated data (especially 'status')
-                this.attendanceData = result.data;
+                // Gabungkan data server dengan data lokal, jangan timpa sepenuhnya
+                // Ini penting agar clockOut yang baru diset tidak hilang
+                this.attendanceData = { ...this.attendanceData, ...result.data };
             }
         } catch (error) {
             console.error('Error saving attendance:', error);
@@ -532,18 +533,18 @@ const absensi = {
             }
         }
 
-        // After Break button: disabled jika belum break start, sudah break end, sudah overtime, atau sudah clock out
+        // After Break button: PRIORITAS - disabled jika sudah clock out, belum break start, sudah break end, atau sudah overtime
         if (btnAfterBreak) {
-            btnAfterBreak.disabled = !isBreakStarted || isBreakEnded || isOvertimeStarted || isClockedOut;
+            btnAfterBreak.disabled = isClockedOut || !isBreakStarted || isBreakEnded || isOvertimeStarted;
             if (isBreakEnded) {
                 btnAfterBreak.classList.add('completed');
                 document.getElementById('after-break-time').textContent = this.attendanceData.breakEnd;
             }
         }
 
-        // Overtime button: disabled jika belum clock in, sudah clock out, atau sudah mulai overtime
+        // Overtime button: PRIORITAS - disabled jika sudah clock out, belum clock in, atau sudah mulai overtime
         if (btnOvertime) {
-            btnOvertime.disabled = !isClockedIn || isClockedOut || isOvertimeStarted;
+            btnOvertime.disabled = isClockedOut || !isClockedIn || isOvertimeStarted;
             if (isOvertimeStarted) {
                 btnOvertime.classList.add('completed');
                 document.getElementById('overtime-time').textContent = this.attendanceData.overtimeStart;
