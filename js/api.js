@@ -55,10 +55,38 @@ const api = {
             const today = dateTime.getLocalDate();
             const all = storage.get('attendance', []);
             const todayRecord = all.find(a => a.date === today);
+            
+            // Fallback logic untuk mode offline: cek shift_schedule dulu, lalu profile user
+            let fallbackShift = 'Pagi';
+            try {
+                const schedules = storage.get('shift_schedule', {});
+                const todayObj = new Date();
+                const currentYear = todayObj.getFullYear();
+                const currentMonth = todayObj.getMonth();
+                const currentDay = todayObj.getDate();
+                const key = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}`;
+                
+                if (schedules[key] && schedules[key][String(userId)]) {
+                    const assignedShift = schedules[key][String(userId)][currentDay];
+                    if (assignedShift && assignedShift !== '') {
+                        fallbackShift = assignedShift;
+                    }
+                } else {
+                    // Cek dari profil karyawan di storage
+                    const employees = storage.get('admin_employees', []);
+                    const emp = employees.find(e => String(e.id) === String(userId));
+                    if (emp && emp.shift) {
+                        fallbackShift = emp.shift;
+                    }
+                }
+            } catch (e) {
+                console.error('Error determining fallback shift:', e);
+            }
+            
             return {
                 success: true,
                 data: todayRecord || {
-                    date: today, shift: 'Pagi', clockIn: null, clockOut: null,
+                    date: today, shift: fallbackShift, clockIn: null, clockOut: null,
                     breakStart: null, breakEnd: null, overtimeStart: null, status: 'waiting'
                 }
             };
