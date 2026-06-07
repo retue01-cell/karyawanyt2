@@ -171,10 +171,14 @@ const dashboard = {
             if (clockOutEl) clockOutEl.textContent = todayAttendance.clockOut || '--:--';
 
             if (todayAttendance.clockIn && todayAttendance.clockOut && durationEl) {
-                durationEl.textContent = dateTime.calculateDuration(
+                const duration = dateTime.calculateDuration(
                     todayAttendance.clockIn,
                     todayAttendance.clockOut
                 );
+                durationEl.textContent = duration;
+            } else if (durationEl) {
+                // Jika belum clock out, tampilkan 0j 0m
+                durationEl.textContent = '0j 0m';
             }
         }
     },
