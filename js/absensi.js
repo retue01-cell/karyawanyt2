@@ -165,26 +165,10 @@ const absensi = {
         }
 
         tbody.innerHTML = historyData.slice(0, 10).map(record => {
-            // Calculate duration if clocked out
+            // Calculate duration using the shared utility function
             let duration = '--';
             if (record.clockIn && record.clockOut) {
-                const [inH, inM] = record.clockIn.split(':').map(Number);
-                const [outH, outM] = record.clockOut.split(':').map(Number);
-                let diffInMinutes = (outH * 60 + outM) - (inH * 60 + inM);
-
-                // Subtract break (assuming 1 hour if they took a break)
-                if (record.breakStart && record.breakEnd) {
-                    const [bInH, bInM] = record.breakStart.split(':').map(Number);
-                    const [bOutH, bOutM] = record.breakEnd.split(':').map(Number);
-                    const breakMinutes = (bOutH * 60 + bOutM) - (bInH * 60 + bInM);
-                    diffInMinutes -= breakMinutes;
-                }
-
-                if (diffInMinutes > 0) {
-                    const h = Math.floor(diffInMinutes / 60);
-                    const m = diffInMinutes % 60;
-                    duration = `${h}j ${m}m`;
-                }
+                duration = dateTime.calculateDuration(record.clockIn, record.clockOut);
             }
 
             // Status Badge
@@ -517,11 +501,11 @@ const absensi = {
         const btnOvertime = document.getElementById('btn-overtime');
         const btnClockOut = document.getElementById('btn-clock-out');
 
-        const isClockedIn = this.attendanceData.clockIn !== null && this.attendanceData.clockIn !== undefined;
-        const isClockedOut = this.attendanceData.clockOut !== null && this.attendanceData.clockOut !== undefined;
-        const isBreakStarted = this.attendanceData.breakStart !== null && this.attendanceData.breakStart !== undefined;
-        const isBreakEnded = this.attendanceData.breakEnd !== null && this.attendanceData.breakEnd !== undefined;
-        const isOvertimeStarted = this.attendanceData.overtimeStart !== null && this.attendanceData.overtimeStart !== undefined;
+        const isClockedIn = this.attendanceData.clockIn && this.attendanceData.clockIn !== '';
+        const isClockedOut = this.attendanceData.clockOut && this.attendanceData.clockOut !== '';
+        const isBreakStarted = this.attendanceData.breakStart && this.attendanceData.breakStart !== '';
+        const isBreakEnded = this.attendanceData.breakEnd && this.attendanceData.breakEnd !== '';
+        const isOvertimeStarted = this.attendanceData.overtimeStart && this.attendanceData.overtimeStart !== '';
 
         // Clock In button: disabled jika sudah clock in atau sudah clock out
         if (btnClockIn) {
@@ -557,9 +541,9 @@ const absensi = {
             }
         }
 
-        // Overtime button: disabled jika belum clock in atau sudah clock out
+        // Overtime button: disabled jika belum clock in, sudah clock out, atau sudah mulai overtime
         if (btnOvertime) {
-            btnOvertime.disabled = !isClockedIn || isClockedOut;
+            btnOvertime.disabled = !isClockedIn || isClockedOut || isOvertimeStarted;
             if (isOvertimeStarted) {
                 btnOvertime.classList.add('completed');
                 document.getElementById('overtime-time').textContent = this.attendanceData.overtimeStart;
