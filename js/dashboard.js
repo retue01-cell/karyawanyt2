@@ -41,64 +41,34 @@ const dashboard = {
     async refreshShiftInfo() {
         const currentUser = auth.getCurrentUser();
         if (!currentUser) {
-            console.warn('No current user');
+            console.warn('User belum siap, coba lagi nanti');
             return;
         }
-
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = today.getDate();
-        const key = `${year}-${month}`;
-
         try {
-            // Ambil jadwal bulan ini dari API (sama dengan yang digunakan admin di halaman Jadwal Shift)
-            const result = await api.getShiftScheduleForMonth(key);
-            console.log('Shift schedule for month:', result);
-            
-            let shiftName = currentUser.shift || 'Pagi'; // default dari profil
-            
+            const result = await api.getTodayAttendance(currentUser.id);
             if (result.success && result.data) {
-                const userId = String(currentUser.id);
-                const monthData = result.data;
-                
-                // Cek apakah ada jadwal khusus untuk user ini di tanggal hari ini
-                if (monthData[userId] && monthData[userId][day] && monthData[userId][day] !== '') {
-                    shiftName = monthData[userId][day];
-                    console.log(`Found specific shift for today (day ${day}): ${shiftName}`);
-                } else {
-                    console.log('No specific shift for today, using profile default:', shiftName);
+                const shiftName = result.data.shift || 'Pagi';
+                const shiftEl = document.getElementById('welcome-shift');
+                if (shiftEl) {
+                    const shifts = storage.get('shifts', []);
+                    const shiftDetail = shifts.find(s => s.name === shiftName);
+                    
+                    if (shiftName === 'Libur') {
+                        shiftEl.textContent = `Shift: Libur (Tidak ada jadwal)`;
+                    } else if (shiftDetail) {
+                        shiftEl.textContent = `Shift: ${shiftDetail.name} (${shiftDetail.startTime} - ${shiftDetail.endTime})`;
+                    } else {
+                        shiftEl.textContent = `Shift: ${shiftName}`;
+                    }
                 }
-            } else {
-                console.warn('API getShiftScheduleForMonth returned no data, using default');
+                // Update session
+                auth.currentUser.shift = shiftName;
+                const session = storage.get('session');
+                if (session) { session.shift = shiftName; storage.set('session', session); }
+                console.log(`Dashboard shift updated to: ${shiftName}`);
             }
-            
-            // Update UI
-            const shiftEl = document.getElementById('welcome-shift');
-            if (shiftEl) {
-                const shifts = storage.get('shifts', []);
-                const shiftDetail = shifts.find(s => s.name === shiftName);
-                
-                if (shiftName === 'Libur') {
-                    shiftEl.textContent = `Shift: Libur (Tidak ada jadwal)`;
-                } else if (shiftDetail) {
-                    shiftEl.textContent = `Shift: ${shiftDetail.name} (${shiftDetail.startTime} - ${shiftDetail.endTime})`;
-                } else {
-                    shiftEl.textContent = `Shift: ${shiftName}`;
-                }
-            }
-            
-            // Update currentUser agar konsisten
-            auth.currentUser.shift = shiftName;
-            const session = storage.get('session');
-            if (session) {
-                session.shift = shiftName;
-                storage.set('session', session);
-            }
-            
-            console.log(`Dashboard shift updated to: ${shiftName}`);
         } catch (error) {
-            console.error('Error fetching shift schedule:', error);
+            console.error('Gagal ambil shift:', error);
         }
     },
 
