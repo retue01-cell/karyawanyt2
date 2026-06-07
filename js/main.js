@@ -159,13 +159,27 @@ const dateTime = {
     },
 
     calculateDuration(start, end) {
-        const startTime = new Date(`2000-01-01 ${start}`);
-        const endTime = new Date(`2000-01-01 ${end}`);
-        const diff = endTime - startTime;
-
+        if (!start || !end) return '0j 0m';
+        
+        // Ambil hanya HH:MM (abaikan detik jika ada)
+        const startStr = String(start).substring(0, 5);
+        const endStr = String(end).substring(0, 5);
+        
+        const startTime = new Date(`2000-01-01 ${startStr}`);
+        const endTime = new Date(`2000-01-01 ${endStr}`);
+        
+        if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) return '0j 0m';
+        
+        let diff = endTime - startTime;
+        
+        // Handle overnight shifts (if end time is less than start time, add 24 hours)
+        if (diff < 0) {
+            diff += 24 * 60 * 60 * 1000;
+        }
+        
         const hours = Math.floor(diff / 3600000);
         const minutes = Math.floor((diff % 3600000) / 60000);
-
+        
         return `${hours}j ${minutes}m`;
     }
 };
