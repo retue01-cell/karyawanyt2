@@ -121,10 +121,14 @@ const settings = {
             const logoShape = document.getElementById('logo-shape');
             const logoShadow = document.getElementById('logo-shadow');
             const loginAnimation = document.getElementById('login-animation');
+            const loginLogoSize = document.getElementById('login-logo-size');
+            const sidebarLogoSize = document.getElementById('sidebar-logo-size');
 
             if (logoShape) logoShape.value = allSettings.login_logo_shape || 'rounded-full';
             if (logoShadow) logoShadow.value = allSettings.login_logo_shadow || 'true';
             if (loginAnimation) loginAnimation.value = allSettings.login_animation_effect || 'float';
+            if (loginLogoSize) loginLogoSize.value = allSettings.login_logo_size || '120';
+            if (sidebarLogoSize) sidebarLogoSize.value = allSettings.sidebar_logo_size || '32';
         } catch (error) {
             console.error('[Settings] Load error:', error);
             this.showError(error.message);
@@ -330,19 +334,23 @@ const settings = {
         const shape = document.getElementById('logo-shape').value;
         const shadow = document.getElementById('logo-shadow').value;
         const animation = document.getElementById('login-animation').value;
+        const loginLogoSize = document.getElementById('login-logo-size').value;
+        const sidebarLogoSize = document.getElementById('sidebar-logo-size').value;
 
         try {
-            loadingIndicator.show('Menyimpan pengaturan tampilan login...');
+            loadingIndicator.show('Menyimpan pengaturan tampilan...');
             const results = await Promise.all([
                 api.saveSetting('login_logo_shape', shape),
                 api.saveSetting('login_logo_shadow', shadow),
-                api.saveSetting('login_animation_effect', animation)
+                api.saveSetting('login_animation_effect', animation),
+                api.saveSetting('login_logo_size', loginLogoSize),
+                api.saveSetting('sidebar_logo_size', sidebarLogoSize)
             ]);
             if (results.some(r => !r || !r.success)) throw new Error('Gagal menyimpan');
 
             if (window.refreshCompanyData) await window.refreshCompanyData();
             loadingIndicator.hide();
-            toast.success('Pengaturan tampilan login berhasil disimpan!');
+            toast.success('Pengaturan tampilan berhasil disimpan!');
         } catch (error) {
             loadingIndicator.hide();
             toast.error(error.message);
