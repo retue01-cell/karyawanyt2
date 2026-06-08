@@ -1,6 +1,6 @@
 /**
- * Portal Karyawan - Face Recognition & Location
- * Face detection and geolocation functionality
+ * Portal Karyawan - Photo Capture & Location
+ * Simple photo capture for attendance verification (no face recognition)
  */
 
 const faceRecognition = {
@@ -11,12 +11,15 @@ const faceRecognition = {
     photoCaptured: false,
     locationVerified: false,
     position: null,
+    countdownTimer: null,
+    countdownSeconds: 3,
 
     init(action) {
         this.currentAction = action;
         this.photoCaptured = false;
         this.locationVerified = false;
         this.position = null;
+        this.countdownTimer = null;
 
         // Update UI based on action
         this.updateActionTitle(action);
@@ -33,12 +36,12 @@ const faceRecognition = {
 
     updateActionTitle(action) {
         const titles = {
-            'clock-in': { title: 'Clock In - Verifikasi Wajah', subtitle: 'Verifikasi wajah Anda untuk Clock In' },
-            'clock-out': { title: 'Clock Out - Verifikasi Wajah', subtitle: 'Verifikasi wajah Anda untuk Clock Out' },
-            'break': { title: 'Istirahat - Verifikasi Wajah', subtitle: 'Verifikasi wajah Anda untuk mulai istirahat' },
-            'after-break': { title: 'Selesai Istirahat - Verifikasi Wajah', subtitle: 'Verifikasi wajah Anda untuk kembali bekerja' },
-            'overtime': { title: 'Lembur - Verifikasi Wajah', subtitle: 'Verifikasi wajah Anda untuk mulai lembur' },
-            'izin': { title: 'Pengajuan Izin - Verifikasi Wajah', subtitle: 'Verifikasi wajah untuk pengajuan izin' }
+            'clock-in': { title: 'Clock In - Ambil Foto', subtitle: 'Ambil foto untuk bukti absensi Clock In' },
+            'clock-out': { title: 'Clock Out - Ambil Foto', subtitle: 'Ambil foto untuk bukti absensi Clock Out' },
+            'break': { title: 'Istirahat - Ambil Foto', subtitle: 'Ambil foto untuk mulai istirahat' },
+            'after-break': { title: 'Selesai Istirahat - Ambil Foto', subtitle: 'Ambil foto untuk kembali bekerja' },
+            'overtime': { title: 'Lembur - Ambil Foto', subtitle: 'Ambil foto untuk mulai lembur' },
+            'izin': { title: 'Pengajuan Izin - Ambil Foto', subtitle: 'Ambil foto untuk pengajuan izin' }
         };
 
         const titleEl = document.getElementById('face-rec-title');
@@ -199,52 +202,32 @@ const faceRecognition = {
         // Draw video frame to canvas
         ctx.drawImage(this.video, 0, 0);
 
-        // Show scanning animation
-        const scanningLine = document.getElementById('scanning-line');
-        if (scanningLine) {
-            scanningLine.style.display = 'block';
+        // Stop camera immediately (no fake verification delay)
+        this.stopCamera();
+
+        // Show captured photo with preview
+        const preview = document.getElementById('camera-preview');
+        if (preview) {
+            preview.innerHTML = `
+                <img src="${this.canvas.toDataURL('image/jpeg', 0.8)}" class="captured-photo" alt="Captured">
+                <div class="verification-status show" id="verification-status">
+                    <div class="status-icon">
+                        <i class="fas fa-camera"></i>
+                    </div>
+                    <p>Foto Tersimpan</p>
+                </div>
+            `;
         }
 
-        // Simulate face verification (2 seconds)
-        setTimeout(() => {
-            if (scanningLine) {
-                scanningLine.style.display = 'none';
-            }
+        // Update buttons
+        const captureBtn = document.getElementById('btn-capture');
+        const retakeBtn = document.getElementById('btn-retake');
 
-            // Show verification success
-            const statusEl = document.getElementById('verification-status');
-            if (statusEl) {
-                statusEl.classList.add('show');
-            }
+        if (captureBtn) captureBtn.style.display = 'none';
+        if (retakeBtn) retakeBtn.style.display = 'flex';
 
-            // Stop camera
-            this.stopCamera();
-
-            // Show captured photo
-            const preview = document.getElementById('camera-preview');
-            if (preview) {
-                preview.innerHTML = `
-                    <img src="${this.canvas.toDataURL('image/png')}" class="captured-photo" alt="Captured">
-                    <div class="verification-status show" id="verification-status">
-                        <div class="status-icon">
-                            <i class="fas fa-check-circle"></i>
-                        </div>
-                        <p>Wajah Terverifikasi</p>
-                    </div>
-                `;
-            }
-
-            // Update buttons
-            const captureBtn = document.getElementById('btn-capture');
-            const retakeBtn = document.getElementById('btn-retake');
-
-            if (captureBtn) captureBtn.style.display = 'none';
-            if (retakeBtn) retakeBtn.style.display = 'flex';
-
-            this.photoCaptured = true;
-            this.checkCanSubmit();
-
-        }, 2000);
+        this.photoCaptured = true;
+        this.checkCanSubmit();
     },
 
     retakePhoto() {
@@ -264,11 +247,10 @@ const faceRecognition = {
                         <div class="face-corner bottom-right"></div>
                     </div>
                     <div class="face-guide">
-                        <i class="fas fa-user"></i>
+                        <i class="fas fa-camera"></i>
                         <p>Posisikan wajah di dalam frame</p>
                     </div>
                 </div>
-                <div class="scanning-line" id="scanning-line" style="display: none;"></div>
             `;
         }
 
@@ -303,11 +285,11 @@ const faceRecognition = {
 
     confirmAttendance() {
         if (!this.photoCaptured || !this.locationVerified) {
-            toast.error('Harap verifikasi wajah dan lokasi terlebih dahulu!');
+            toast.error('Harap ambil foto dan verifikasi lokasi terlebih dahulu!');
             return;
         }
 
-        // Save data
+        // Save data with compressed photo (JPEG 0.8 quality)
         const attendanceData = {
             action: this.currentAction,
             timestamp: new Date().toISOString(),
@@ -316,14 +298,14 @@ const faceRecognition = {
                 longitude: this.position.coords.longitude,
                 accuracy: this.position.coords.accuracy
             },
-            photo: this.canvas ? this.canvas.toDataURL('image/png') : null
+            photo: this.canvas ? this.canvas.toDataURL('image/jpeg', 0.8) : null
         };
 
         // Store temporary data
         storage.set('temp_attendance', attendanceData);
 
         // Process based on action
-        toast.success('Verifikasi berhasil!');
+        toast.success('Foto berhasil disimpan!');
 
         // Wrap in async IIFE to allow awaiting the process before navigating
         (async () => {
@@ -349,6 +331,10 @@ const faceRecognition = {
     // Cleanup when leaving page
     cleanup() {
         this.stopCamera();
+        if (this.countdownTimer) {
+            clearInterval(this.countdownTimer);
+            this.countdownTimer = null;
+        }
     }
 };
 
