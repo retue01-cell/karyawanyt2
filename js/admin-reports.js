@@ -244,7 +244,8 @@ const adminReports = {
             empAtt.forEach(a => {
                 if (a.clockIn) {
                     present++;
-                    if (a.status && a.status.toLowerCase() === 'terlambat') late++;
+                    // Gunakan status yang sesuai dengan backend: 'Terlambat' atau 'late'
+                    if (a.status && (a.status.toLowerCase() === 'terlambat' || a.status.toLowerCase() === 'late')) late++;
                 }
             });
             const empLeaves = this.rawLeaves.filter(l => String(l.userId) === String(emp.id) && l.status === 'approved');
@@ -543,8 +544,11 @@ const adminReports = {
             let photoHtml = '-';
             
             if (rec && rec.clockIn) {
-                const statusClass = rec.status === 'ontime' ? 'success' : (rec.status === 'Terlambat' ? 'warning' : 'secondary');
-                statusHtml = `<span class="badge-status ${statusClass}">${rec.status === 'ontime' ? 'Hadir' : rec.status}</span>`;
+                // Sesuaikan dengan status backend: 'Tepat', 'Rajin', 'Early In' = Hadir/Success
+                const isPresent = rec.status === 'Tepat' || rec.status === 'Rajin' || rec.status === 'Early In' || rec.status === 'ontime';
+                const statusClass = isPresent ? 'success' : (rec.status === 'Terlambat' || rec.status === 'late' ? 'warning' : 'secondary');
+                const statusLabel = isPresent ? 'Hadir' : rec.status;
+                statusHtml = `<span class="badge-status ${statusClass}">${statusLabel}</span>`;
                 
                 // Cek apakah ada foto verifikasi
                 if (rec.verificationPhoto && rec.verificationPhoto.startsWith('data:image')) {
