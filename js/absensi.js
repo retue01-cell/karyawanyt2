@@ -480,6 +480,17 @@ const absensi = {
         this.updateUI();
         this.renderTimeline();
 
+        // Refresh dashboard setelah absensi untuk update statistik
+        if (window.dashboard) {
+            try {
+                await window.dashboard.loadData();
+                window.dashboard.updateStats();
+                window.dashboard.updateSessionInfo();
+            } catch (e) {
+                console.error('Error refreshing dashboard:', e);
+            }
+        }
+
         // Refresh shift info setelah clock out untuk konsistensi dashboard
         if (action === 'clock-out' && window.dashboard) {
             await window.dashboard.refreshShiftInfo();
