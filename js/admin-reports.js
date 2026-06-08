@@ -523,6 +523,7 @@ const adminReports = {
     viewAttendanceDetail(name) {
         const emp = this.rawEmployees.find(e => e.name === name);
         if (!emp) { toast.error('Karyawan tidak ditemukan'); return; }
+        
         let selectedMonth = this.filters.attendance.month;
         if (!selectedMonth) {
             const today = new Date();
@@ -533,25 +534,55 @@ const adminReports = {
         const attendanceRecords = this.rawAttendance.filter(a => String(a.userId) === String(emp.id) && a.date && a.date.startsWith(selectedMonth));
         const recordsMap = {};
         attendanceRecords.forEach(rec => { recordsMap[rec.date] = rec; });
+        
         let tableRows = '';
         for (let d = 1; d <= daysInMonth; d++) {
             const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
             const rec = recordsMap[dateStr];
             let statusHtml = '<span class="badge-status warning">Tidak Hadir</span>';
+            let photoHtml = '-';
+            
             if (rec && rec.clockIn) {
                 const statusClass = rec.status === 'ontime' ? 'success' : (rec.status === 'Terlambat' ? 'warning' : 'secondary');
                 statusHtml = `<span class="badge-status ${statusClass}">${rec.status === 'ontime' ? 'Hadir' : rec.status}</span>`;
+                
+                // Cek apakah ada foto verifikasi
+                if (rec.verificationPhoto && rec.verificationPhoto.startsWith('data:image')) {
+                    photoHtml = `<button class="btn-action view" onclick="adminReports.viewPhoto('${rec.verificationPhoto.replace(/'/g, "\\'")}')" title="Lihat Bukti Foto"><i class="fas fa-camera"></i></button>`;
+                } else if (rec.verificationPhoto) {
+                    // Mungkin berupa URL atau data yang sudah tercompress, coba tetap ditampilkan
+                    photoHtml = `<button class="btn-action view" onclick="adminReports.viewPhoto('${rec.verificationPhoto.replace(/'/g, "\\'")}')" title="Lihat Bukti Foto"><i class="fas fa-image"></i></button>`;
+                }
             } else if (rec && rec.status === 'libur') {
                 statusHtml = '<span class="badge-status secondary">Libur</span>';
             }
-            tableRows += `<tr><td class="text-center">${d}</div><td class="text-center">${dateStr}</div><td class="text-center">${rec ? rec.clockIn || '-' : '-'}</div><td class="text-center">${rec ? rec.clockOut || '-' : '-'}</div><td class="text-center">${statusHtml}</div></tr>`;
+            
+            tableRows += `
+                <tr>
+                    <td class="text-center">${d}</td>
+                    <td class="text-center">${dateStr}</td>
+                    <td class="text-center">${rec ? rec.clockIn || '-' : '-'}</td>
+                    <td class="text-center">${rec ? rec.clockOut || '-' : '-'}</td>
+                    <td class="text-center">${statusHtml}</td>
+                    <td class="text-center">${photoHtml}</td>
+                </tr>
+            `;
         }
+        
         const formattedMonth = `${month}-${year}`;
         const modalContent = `
             <div style="max-height:60vh;overflow-y:auto;">
                 <h4>Riwayat Absensi ${emp.name} - Bulan ${formattedMonth}</h4>
                 <table class="history-table" style="width:100%;font-size:12px;border-collapse:collapse;">
-                    <thead><tr><th>Tanggal</th><th>Clock In</th><th>Clock Out</th><th>Status</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Clock In</th>
+                            <th>Clock Out</th>
+                            <th>Status</th>
+                            <th>Bukti Foto</th>
+                        </tr>
+                    </thead>
                     <tbody>${tableRows}</tbody>
                 </table>
             </div>
