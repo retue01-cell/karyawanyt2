@@ -143,6 +143,11 @@ const auth = {
 
     handleLogout() {
         if (confirm('Apakah Anda yakin ingin logout?')) {
+            // Reset absensi state jika ada
+            if (window.absensi && typeof window.absensi.reset === 'function') {
+                window.absensi.reset();
+            }
+
             this.currentUser = null;
             storage.remove('session');
             storage.remove('currentPage');
