@@ -48,6 +48,14 @@ const settings = {
             if (companyNameInput) companyNameInput.value = allSettings.company_name || '';
             if (companyLogoInput) companyLogoInput.value = allSettings.company_logo || '';
 
+            // Location settings
+            const latInput = document.getElementById('company-lat');
+            const lngInput = document.getElementById('company-lng');
+            const radiusInput = document.getElementById('company-radius');
+            if (latInput) latInput.value = allSettings.company_lat || '';
+            if (lngInput) lngInput.value = allSettings.company_lng || '';
+            if (radiusInput) radiusInput.value = allSettings.company_radius || 100;
+
             // Contact & General info
             const addressInput = document.getElementById('company-address');
             const phoneInput = document.getElementById('company-phone');
@@ -192,6 +200,12 @@ const settings = {
             contactForm.addEventListener('submit', (e) => this.saveContactSettings(e));
         }
 
+        // Location settings form
+        const locationSettingsForm = document.getElementById('location-settings-form');
+        if (locationSettingsForm) {
+            locationSettingsForm.addEventListener('submit', (e) => this.saveLocationSettings(e));
+        }
+
         const addShiftBtn = document.getElementById('btn-add-shift');
         if (addShiftBtn) addShiftBtn.addEventListener('click', () => this.addShift());
 
@@ -334,6 +348,30 @@ const settings = {
             loadingIndicator.hide();
             if (results.some(r => !r || !r.success)) throw new Error('Gagal menyimpan');
             toast.success('Pengaturan sistem disimpan ke database');
+        } catch (error) {
+            loadingIndicator.hide();
+            console.error(error);
+            toast.error(error.message || 'Gagal menyimpan');
+        }
+    },
+
+    async saveLocationSettings(e) {
+        e.preventDefault();
+        const lat = parseFloat(document.getElementById('company-lat').value);
+        const lng = parseFloat(document.getElementById('company-lng').value);
+        const radius = parseInt(document.getElementById('company-radius').value);
+        
+        if (isNaN(lat) || isNaN(lng) || isNaN(radius)) {
+            toast.error('Isi semua field dengan benar');
+            return;
+        }
+        
+        try {
+            loadingIndicator.show('Menyimpan pengaturan lokasi...');
+            const result = await api.request('saveLocationSettings', { lat, lng, radius });
+            loadingIndicator.hide();
+            if (!result || !result.success) throw new Error(result?.error || 'Gagal menyimpan');
+            toast.success('Pengaturan lokasi disimpan');
         } catch (error) {
             loadingIndicator.hide();
             console.error(error);
