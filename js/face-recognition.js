@@ -283,10 +283,65 @@ const faceRecognition = {
         }
     },
 
-    confirmAttendance() {
+    calculateDistance(lat1, lng1, lat2, lng2) {
+        const R = 6371e3; // meter
+        const φ1 = lat1 * Math.PI / 180;
+        const φ2 = lat2 * Math.PI / 180;
+        const Δφ = (lat2 - lat1) * Math.PI / 180;
+        const Δλ = (lng2 - lng1) * Math.PI / 180;
+        const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                  Math.cos(φ1) * Math.cos(φ2) *
+                  Math.sin(Δλ/2) * Math.sin(Δλ/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    },
+
+    async confirmAttendance() {
         if (!this.photoCaptured || !this.locationVerified) {
             toast.error('Harap ambil foto dan verifikasi lokasi terlebih dahulu!');
             return;
+        }
+
+        // Ambil pengaturan lokasi toko dari backend
+        let locationSettings;
+        try {
+            const result = await api.request('getLocationSettings');
+            if (result.success) {
+                locationSettings = result.data;
+            } else {
+                throw new Error('Gagal mengambil pengaturan lokasi');
+            }
+        } catch (error) {
+            console.error('Location settings error:', error);
+            toast.warning('Tidak dapat memverifikasi lokasi toko, lanjutkan tanpa validasi radius');
+            locationSettings = { lat: 0, lng: 0, radius: 999999 };
+        }
+
+        const companyLat = locationSettings.lat;
+        const companyLng = locationSettings.lng;
+        const radius = locationSettings.radius;
+
+        // Validasi hanya jika koordinat toko sudah diatur
+        if (companyLat && companyLng && companyLat !== 0 && companyLng !== 0) {
+            const distance = this.calculateDistance(
+                this.position.coords.latitude,
+                this.position.coords.longitude,
+                companyLat,
+                companyLng
+            );
+
+            if (distance > radius) {
+                toast.error(`Anda berada di luar radius toko (${Math.round(distance)}m > ${radius}m). Absensi gagal!`);
+                return;
+            }
+
+            toast.success(`Lokasi valid (${Math.round(distance)}m dari toko)`);
+            
+            // Simpan jarak ke data lokasi
+            if (!this.attendanceData) this.attendanceData = {};
+            this.attendanceData.distance = distance;
+        } else {
+            toast.warning('Admin belum mengatur koordinat toko, melewati validasi lokasi');
         }
 
         // Save data with compressed photo (JPEG 0.8 quality)
@@ -296,7 +351,8 @@ const faceRecognition = {
             location: {
                 latitude: this.position.coords.latitude,
                 longitude: this.position.coords.longitude,
-                accuracy: this.position.coords.accuracy
+                accuracy: this.position.coords.accuracy,
+                distance: this.attendanceData.distance || 0
             },
             photo: this.canvas ? this.canvas.toDataURL('image/jpeg', 0.8) : null
         };
