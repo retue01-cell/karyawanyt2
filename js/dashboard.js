@@ -128,11 +128,11 @@ const dashboard = {
     updateStats() {
         const attendance = this.attendanceData;
 
-        // Calculate stats
+        // Calculate stats - gunakan status yang sesuai dengan backend ('Tepat', 'Terlambat', dll)
         const total = Math.max(26, attendance.length); // Assuming min 26 working days base
-        const present = attendance.filter(a => a.status === 'ontime').length;
-        const late = attendance.filter(a => a.status === 'late').length;
-        const absent = attendance.filter(a => a.status === 'absent').length;
+        const present = attendance.filter(a => a.status === 'Tepat' || a.status === 'Rajin' || a.status === 'Early In').length;
+        const late = attendance.filter(a => a.status === 'Terlambat').length;
+        const absent = attendance.filter(a => a.status === 'Tidak Hadir' || (!a.clockIn && a.status !== 'Libur' && a.status !== 'waiting')).length;
 
         // Update donut chart values
         const presentPercent = total > 0 ? Math.round((present / total) * 100) : 0;
