@@ -418,3 +418,24 @@
         justify-content: center;
     }
 }
+
+/* Map container styling */
+#location-map {
+    height: 250px;
+    width: 100%;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    background: #e5e7eb;
+}
+
+@media (max-width: 768px) {
+    #location-map {
+        height: 200px;
+    }
+}
+
+/* Leaflet popup styling agar sesuai tema */
+.leaflet-popup-content-wrapper {
+    border-radius: var(--border-radius-sm);
+    font-family: var(--font-family);
+}
