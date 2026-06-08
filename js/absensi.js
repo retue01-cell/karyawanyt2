@@ -109,11 +109,11 @@ const absensi = {
             }
 
             // Ensure null values are explicitly set (not undefined)
-            todayAttendance.clockIn = todayAttendance.clockIn || null;
-            todayAttendance.clockOut = todayAttendance.clockOut || null;
-            todayAttendance.breakStart = todayAttendance.breakStart || null;
-            todayAttendance.breakEnd = todayAttendance.breakEnd || null;
-            todayAttendance.overtimeStart = todayAttendance.overtimeStart || null;
+            todayAttendance.clockIn = (todayAttendance.clockIn === '' || todayAttendance.clockIn === undefined) ? null : todayAttendance.clockIn;
+            todayAttendance.clockOut = (todayAttendance.clockOut === '' || todayAttendance.clockOut === undefined) ? null : todayAttendance.clockOut;
+            todayAttendance.breakStart = (todayAttendance.breakStart === '' || todayAttendance.breakStart === undefined) ? null : todayAttendance.breakStart;
+            todayAttendance.breakEnd = (todayAttendance.breakEnd === '' || todayAttendance.breakEnd === undefined) ? null : todayAttendance.breakEnd;
+            todayAttendance.overtimeStart = (todayAttendance.overtimeStart === '' || todayAttendance.overtimeStart === undefined) ? null : todayAttendance.overtimeStart;
 
             this.attendanceData = todayAttendance;
 
@@ -315,6 +315,11 @@ const absensi = {
     },
 
     handleBreak() {
+        // CEK TAMBAHAN: Jika sudah clock out, tolak aksi
+        if (this.attendanceData.clockOut && this.attendanceData.clockOut !== '') {
+            toast.warning('Anda sudah clock out hari ini. Tidak dapat memulai istirahat.');
+            return;
+        }
         if (!this.attendanceData.clockIn || this.attendanceData.breakStart) return;
 
         // Navigate to face recognition
@@ -327,6 +332,11 @@ const absensi = {
     },
 
     handleAfterBreak() {
+        // CEK TAMBAHAN: Jika sudah clock out, tolak aksi
+        if (this.attendanceData.clockOut && this.attendanceData.clockOut !== '') {
+            toast.warning('Anda sudah clock out hari ini. Tidak dapat menyelesaikan istirahat.');
+            return;
+        }
         if (!this.attendanceData.breakStart || this.attendanceData.breakEnd) return;
 
         // Navigate to face recognition
@@ -339,6 +349,11 @@ const absensi = {
     },
 
     handleOvertime() {
+        // CEK TAMBAHAN: Jika sudah clock out, tolak aksi
+        if (this.attendanceData.clockOut && this.attendanceData.clockOut !== '') {
+            toast.warning('Anda sudah clock out hari ini. Tidak dapat memulai lembur.');
+            return;
+        }
         if (!this.attendanceData.clockIn) return;
 
         // Navigate to face recognition
@@ -351,7 +366,12 @@ const absensi = {
     },
 
     handleClockOut() {
-        if (!this.attendanceData.clockIn || this.attendanceData.clockOut) return;
+        // CEK TAMBAHAN: Jika sudah clock out, tolak aksi
+        if (this.attendanceData.clockOut && this.attendanceData.clockOut !== '') {
+            toast.warning('Anda sudah clock out hari ini.');
+            return;
+        }
+        if (!this.attendanceData.clockIn) return;
 
         // Navigate to face recognition
         router.navigate('face-recognition');
@@ -364,6 +384,12 @@ const absensi = {
 
     // Process attendance after face recognition verification
     async processWithVerification(action, verificationData) {
+        // CEK TAMBAHAN: Validasi ulang status clockOut sebelum memproses aksi apapun
+        if (this.attendanceData.clockOut && this.attendanceData.clockOut !== '') {
+            toast.warning('Anda sudah clock out hari ini. Tidak dapat melakukan aksi ini.');
+            return;
+        }
+
         const now = new Date();
         const timeStr = dateTime.formatTime(now);
 
@@ -405,6 +431,11 @@ const absensi = {
         await this.saveAttendance();
         this.updateUI();
         this.renderTimeline();
+
+        // Refresh shift info setelah clock out untuk konsistensi dashboard
+        if (action === 'clock-out' && window.dashboard) {
+            await window.dashboard.refreshShiftInfo();
+        }
 
         // Clean up temp data
         storage.remove('temp_attendance');
