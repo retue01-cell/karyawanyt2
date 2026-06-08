@@ -374,6 +374,11 @@ const absensi = {
     },
 
     handleOvertime() {
+        // Cek flag storage terlebih dahulu untuk mencegah double klik meski processing belum set
+        if (storage.get('temp_overtime_started')) {
+            toast.warning('Anda sudah memulai lembur hari ini.');
+            return;
+        }
         if (this.processing) return;
         // CEK TAMBAHAN: Jika sudah clock out, tolak aksi
         if (this.attendanceData.clockOut && this.attendanceData.clockOut !== '') {
@@ -388,6 +393,13 @@ const absensi = {
         if (!this.attendanceData.clockIn) return;
 
         this.processing = true;
+        
+        // Disable tombol overtime secara manual segera untuk mencegah klik kedua
+        const btnOvertime = document.getElementById('btn-overtime');
+        if (btnOvertime) {
+            btnOvertime.disabled = true;
+        }
+        
         // Navigate to face recognition
         router.navigate('face-recognition');
         setTimeout(() => {
@@ -448,6 +460,8 @@ const absensi = {
                 break;
             case 'overtime':
                 this.attendanceData.overtimeStart = timeStr;
+                // Simpan flag ke storage untuk mencegah double klik bahkan jika data belum tersimpan ke server
+                storage.set('temp_overtime_started', true);
                 toast.info(`Mulai lembur: ${timeStr}`);
                 break;
             case 'clock-out':
@@ -714,6 +728,8 @@ const absensi = {
         }
         this.currentState = 'waiting';
         this.attendanceData = {};
+        // Hapus flag overtime saat reset
+        storage.remove('temp_overtime_started');
     }
 };
 
