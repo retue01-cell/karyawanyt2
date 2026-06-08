@@ -126,6 +126,10 @@ const router = {
                 }
                 break;
             case 'absensi':
+                // Reset flag initialized agar bisa diinisialisasi ulang saat navigasi ke halaman absensi
+                if (window.absensi && typeof window.absensi.reset === 'function') {
+                    window.absensi.reset();
+                }
                 if (window.initAbsensi) window.initAbsensi();
                 break;
             case 'face-recognition':
