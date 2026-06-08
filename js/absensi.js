@@ -380,6 +380,11 @@ const absensi = {
             toast.warning('Anda sudah clock out hari ini. Tidak dapat memulai lembur.');
             return;
         }
+        // CEK TAMBAHAN: Jika sudah lembur, tolak aksi
+        if (this.attendanceData.overtimeStart && this.attendanceData.overtimeStart !== '') {
+            toast.warning('Anda sudah memulai lembur hari ini.');
+            return;
+        }
         if (!this.attendanceData.clockIn) return;
 
         this.processing = true;
@@ -452,12 +457,10 @@ const absensi = {
                 break;
         }
 
-        // Save verification data
-        this.attendanceData.verification = {
-            timestamp: verificationData.timestamp,
-            location: verificationData.location,
-            photo: verificationData.photo
-        };
+        // Save verification data - gunakan field name yang dikenali backend
+        this.attendanceData.verificationPhoto = verificationData.photo || null;
+        this.attendanceData.verificationLocation = verificationData.location ? JSON.stringify(verificationData.location) : '';
+        this.attendanceData.verificationTimestamp = verificationData.timestamp || new Date().toISOString();
 
         await this.saveAttendance();
         this.updateUI();
