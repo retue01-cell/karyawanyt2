@@ -196,20 +196,40 @@ const auth = {
             const employeeMenu = document.getElementById('employee-menu');
             const adminMenu = document.getElementById('admin-menu-nav');
             const bottomNav = document.getElementById('bottom-nav');
+            const toggleBtn = document.getElementById('sidebar-toggle-mobile');
+            const body = document.body;
 
             if (this.currentUser && this.currentUser.role === 'admin') {
+                // Set admin-mode class on body for mobile sidebar
+                body.classList.add('admin-mode');
+                body.classList.remove('employee-mode');
+                
                 // Show admin menu, hide employee menu
                 if (employeeMenu) employeeMenu.classList.add('hidden');
                 if (adminMenu) adminMenu.classList.remove('hidden');
+                
+                // Hide bottom nav for admin
                 if (bottomNav) bottomNav.style.display = 'none';
+                
+                // Show hamburger toggle button for admin
+                if (toggleBtn) toggleBtn.style.display = 'flex';
 
                 // Navigate to admin dashboard
                 router.navigate('admin-dashboard');
             } else {
+                // Set employee-mode class on body
+                body.classList.add('employee-mode');
+                body.classList.remove('admin-mode');
+                
                 // Show employee menu, hide admin menu
                 if (employeeMenu) employeeMenu.classList.remove('hidden');
                 if (adminMenu) adminMenu.classList.add('hidden');
+                
+                // Show bottom nav for employee on mobile
                 if (bottomNav) bottomNav.style.display = window.innerWidth <= 768 ? 'flex' : 'none';
+                
+                // Hide hamburger toggle button for employee
+                if (toggleBtn) toggleBtn.style.display = 'none';
 
                 // Navigate to employee dashboard
                 router.navigate('dashboard');
