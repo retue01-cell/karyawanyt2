@@ -292,6 +292,16 @@ const adminEmployees = {
             await departmentManager.populateSelects('dept-list');
             console.log('[showAddModal] Selesai populate dept-list, cache:', departmentManager.cache);
             
+            // Set default leave balance from settings
+            try {
+                const settings = await api.getSettings();
+                const defaultBalance = settings.data?.default_leave_balance || 12;
+                const leaveInput = document.getElementById('emp-leave-balance');
+                if (leaveInput) leaveInput.value = defaultBalance;
+            } catch (e) {
+                console.error('Error loading default leave balance:', e);
+            }
+            
             modal.style.display = 'flex';
             document.body.style.overflow = 'hidden';
             this.isSubmitting = false;
@@ -339,6 +349,7 @@ const adminEmployees = {
         const shift = document.getElementById('emp-shift').value;
         const status = document.getElementById('emp-status').value;
         const joinDate = document.getElementById('emp-join-date').value;
+        const leaveBalance = document.getElementById('emp-leave-balance').value || 12;
 
         if (!name || !email || !password || !confirmPassword || !department || !position || !shift || !status || !joinDate) {
             toast.error('Semua field harus diisi!');
