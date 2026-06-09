@@ -134,12 +134,18 @@ const settings = {
             if (locationCheckbox) locationCheckbox.checked = locationTracking;
 
             // Load pengaturan tampilan login
+            const loginLogoUrl = document.getElementById('login-logo-url');
+            const loginCompanyName = document.getElementById('login-company-name-input');
+            const loginTagline = document.getElementById('login-tagline');
             const logoShape = document.getElementById('logo-shape');
             const logoShadow = document.getElementById('logo-shadow');
             const loginAnimation = document.getElementById('login-animation');
             const loginLogoSize = document.getElementById('login-logo-size');
             const sidebarLogoSize = document.getElementById('sidebar-logo-size');
 
+            if (loginLogoUrl) loginLogoUrl.value = allSettings.login_logo_url || '';
+            if (loginCompanyName) loginCompanyName.value = allSettings.login_company_name || '';
+            if (loginTagline) loginTagline.value = allSettings.login_tagline || '';
             if (logoShape) logoShape.value = allSettings.login_logo_shape || 'rounded-full';
             if (logoShadow) logoShadow.value = allSettings.login_logo_shadow || 'true';
             if (loginAnimation) loginAnimation.value = allSettings.login_animation_effect || 'float';
@@ -381,6 +387,9 @@ const settings = {
 
     async saveLoginDisplaySettings(e) {
         e.preventDefault();
+        const logoUrl = document.getElementById('login-logo-url').value;
+        const companyName = document.getElementById('login-company-name-input').value;
+        const tagline = document.getElementById('login-tagline').value;
         const shape = document.getElementById('logo-shape').value;
         const shadow = document.getElementById('logo-shadow').value;
         const animation = document.getElementById('login-animation').value;
@@ -390,6 +399,9 @@ const settings = {
         try {
             loadingIndicator.show('Menyimpan pengaturan tampilan...');
             const results = await Promise.all([
+                api.saveSetting('login_logo_url', logoUrl),
+                api.saveSetting('login_company_name', companyName),
+                api.saveSetting('login_tagline', tagline),
                 api.saveSetting('login_logo_shape', shape),
                 api.saveSetting('login_logo_shadow', shadow),
                 api.saveSetting('login_animation_effect', animation),
@@ -398,7 +410,9 @@ const settings = {
             ]);
             if (results.some(r => !r || !r.success)) throw new Error('Gagal menyimpan');
 
+            // Refresh data perusahaan agar semua pengguna mendapat update
             if (window.refreshCompanyData) await window.refreshCompanyData();
+            
             loadingIndicator.hide();
             toast.success('Pengaturan tampilan berhasil disimpan!');
         } catch (error) {
