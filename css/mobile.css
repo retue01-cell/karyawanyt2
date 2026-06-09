@@ -600,7 +600,7 @@
         height: 300px !important;
     }
     
-    /* Bottom Navigation */
+    /* Bottom Navigation - Horizontal scroll untuk karyawan */
     .bottom-nav {
         display: flex;
         position: fixed;
@@ -609,14 +609,25 @@
         right: 0;
         background: var(--color-white);
         border-top: 1px solid var(--border-color);
-        padding: var(--spacing-xs) 0;
+        padding: 0.5rem;
         z-index: 100;
-        justify-content: space-around;
+        overflow-x: auto;
+        justify-content: flex-start;
+        gap: 0.5rem;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        white-space: nowrap;
+        flex-wrap: nowrap;
     }
     
     /* Admin mode di mobile: sembunyikan bottom nav, tampilkan sidebar sebagai drawer */
     body.admin-mode .bottom-nav {
         display: none !important;
+    }
+    
+    /* Employee mode: tampilkan bottom nav */
+    body.employee-mode .bottom-nav {
+        display: flex !important;
     }
     
     body.admin-mode .sidebar {
@@ -660,14 +671,16 @@
     }
     
     .bottom-nav-item {
-        display: flex;
+        display: inline-flex;
         flex-direction: column;
         align-items: center;
         gap: 2px;
-        padding: var(--spacing-xs) var(--spacing);
+        padding: var(--spacing-xs) var(--spacing-sm);
         color: var(--text-muted);
         font-size: 10px;
         transition: color var(--transition-fast);
+        flex: 0 0 auto;
+        min-width: 70px;
     }
     
     .bottom-nav-item.active {
