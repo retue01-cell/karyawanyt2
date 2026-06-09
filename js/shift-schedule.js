@@ -87,6 +87,7 @@ const shiftSchedule = {
         // Assume 45px per date column, 180px for employee column
         const minWidth = 180 + (daysInMonth * 45);
         table.style.minWidth = minWidth + 'px';
+        console.log(`Table min-width set to ${minWidth}px for ${daysInMonth} days`);
     },
 
     getFilteredEmployees() {
