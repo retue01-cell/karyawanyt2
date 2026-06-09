@@ -119,6 +119,9 @@ const auth = {
                 return;
             }
 
+            // Hapus currentPage dari storage untuk mencegah override navigasi
+            storage.remove('currentPage');
+            
             this.currentUser = user;
             storage.set('session', user);
 
@@ -169,6 +172,9 @@ const auth = {
     },
 
     showApp() {
+        // Hapus currentPage yang tersimpan untuk mencegah override router
+        storage.remove('currentPage');
+        
         const loginContainer = document.getElementById('login-container');
         const appContainer = document.getElementById('app-container');
 
