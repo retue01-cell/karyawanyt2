@@ -29,7 +29,21 @@
     
     /* Exception for shift schedule page - allow horizontal scroll for table */
     #page-shift-schedule .page-content {
-        overflow-x: visible;
+        overflow-x: visible !important;
+    }
+    
+    #page-shift-schedule .shift-schedule-container {
+        overflow-x: visible !important;
+    }
+    
+    #page-shift-schedule .shift-schedule-table-wrapper {
+        overflow-x: scroll !important;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    #page-shift-schedule .shift-schedule-table-container {
+        overflow-x: scroll !important;
+        -webkit-overflow-scrolling: touch;
     }
 }
 
