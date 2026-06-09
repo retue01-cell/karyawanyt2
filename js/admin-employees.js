@@ -427,7 +427,15 @@ const adminEmployees = {
     viewEmployee(id) {
         const emp = this.employees.find(e => e.id == id);
         if (emp) {
-            const leaveBalance = emp.leaveBalance !== undefined ? emp.leaveBalance : 12;
+            // Perbaikan: cek null, undefined, atau string kosong
+            let leaveBalance = 12;
+            if (emp.leaveBalance !== undefined && emp.leaveBalance !== null && emp.leaveBalance !== '') {
+                leaveBalance = parseInt(emp.leaveBalance, 10);
+            } else {
+                // Ambil dari pengaturan default jika tidak ada
+                const defaultBalance = storage.get('default_leave_balance', 12);
+                leaveBalance = defaultBalance;
+            }
             alert(`Detail Karyawan:\n\nNama: ${emp.name}\nEmail: ${emp.email}\nDepartemen: ${emp.department}\nJabatan: ${emp.position}\nShift: ${emp.shift}\nStatus: ${this.getStatusLabel(emp.status)}\nBergabung: ${emp.joinDate}\nSisa Cuti: ${leaveBalance} hari`);
         }
     },
@@ -445,6 +453,13 @@ const adminEmployees = {
         document.getElementById('edit-emp-shift').value = emp.shift;
         document.getElementById('edit-emp-status').value = emp.status;
         document.getElementById('edit-emp-join-date').value = emp.joinDate || '';
+        // Set nilai leaveBalance
+        const leaveBalanceInput = document.getElementById('edit-emp-leave-balance');
+        if (leaveBalanceInput) {
+            leaveBalanceInput.value = (emp.leaveBalance !== undefined && emp.leaveBalance !== null && emp.leaveBalance !== '') 
+                ? emp.leaveBalance 
+                : 12;
+        }
         // Kosongkan field password
         document.getElementById('edit-emp-password').value = '';
         document.getElementById('edit-emp-confirm-password').value = '';
@@ -490,6 +505,8 @@ const adminEmployees = {
         const joinDate = document.getElementById('edit-emp-join-date').value;
         const newPassword = document.getElementById('edit-emp-password').value.trim();
         const confirmPassword = document.getElementById('edit-emp-confirm-password').value.trim();
+        // Ambil nilai leaveBalance dari modal edit
+        const leaveBalance = document.getElementById('edit-emp-leave-balance').value;
 
         if (newPassword && newPassword.length < 4) {
             toast.error('Password minimal 4 karakter');
@@ -500,7 +517,7 @@ const adminEmployees = {
             return;
         }
 
-        const updateData = { name, email, department, position, shift, status, joinDate };
+        const updateData = { name, email, department, position, shift, status, joinDate, leaveBalance };
         if (newPassword) {
             updateData.password = newPassword;
         }
