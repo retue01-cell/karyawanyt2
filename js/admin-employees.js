@@ -427,7 +427,8 @@ const adminEmployees = {
     viewEmployee(id) {
         const emp = this.employees.find(e => e.id == id);
         if (emp) {
-            alert(`Detail Karyawan:\n\nNama: ${emp.name}\nEmail: ${emp.email}\nDepartemen: ${emp.department}\nJabatan: ${emp.position}\nShift: ${emp.shift}\nStatus: ${this.getStatusLabel(emp.status)}\nBergabung: ${emp.joinDate}`);
+            const leaveBalance = emp.leaveBalance !== undefined ? emp.leaveBalance : 12;
+            alert(`Detail Karyawan:\n\nNama: ${emp.name}\nEmail: ${emp.email}\nDepartemen: ${emp.department}\nJabatan: ${emp.position}\nShift: ${emp.shift}\nStatus: ${this.getStatusLabel(emp.status)}\nBergabung: ${emp.joinDate}\nSisa Cuti: ${leaveBalance} hari`);
         }
     },
 
