@@ -315,11 +315,12 @@
     left: var(--spacing);
     color: var(--text-muted);
     font-size: var(--font-size);
+    z-index: 1;
 }
 
 .input-wrapper input {
     width: 100%;
-    padding: var(--spacing) var(--spacing) var(--spacing) 45px;
+    padding: var(--spacing) 45px var(--spacing) 45px;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     background: var(--color-white) !important;
@@ -337,12 +338,20 @@
 .toggle-password {
     position: absolute;
     right: var(--spacing);
-    color: var(--text-muted);
+    top: 50%;
+    transform: translateY(-50%);
     background: none;
     border: none;
     cursor: pointer;
-    padding: var(--spacing-xs);
+    color: var(--text-muted);
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: color var(--transition-fast);
+    z-index: 2;
 }
 
 .toggle-password:hover {
