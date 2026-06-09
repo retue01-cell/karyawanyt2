@@ -26,6 +26,11 @@
         max-width: 100vw;
         overflow-x: hidden;
     }
+    
+    /* Exception for shift schedule page - allow horizontal scroll for table */
+    #page-shift-schedule .page-content {
+        overflow-x: visible;
+    }
 }
 
 /* Small phones */
