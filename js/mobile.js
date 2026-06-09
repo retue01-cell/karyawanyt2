@@ -24,10 +24,25 @@ const mobile = {
         const wasMobile = this.isMobile;
         this.checkMobile();
         
-        // Toggle bottom nav
+        // Get current user role
+        const isAdmin = auth.currentUser?.role === 'admin';
+        
+        // Toggle bottom nav - but not for admin
         const bottomNav = document.getElementById('bottom-nav');
         if (bottomNav) {
-            bottomNav.style.display = this.isMobile ? 'flex' : 'none';
+            if (isAdmin) {
+                // Admin: always hide bottom nav on mobile
+                bottomNav.style.display = 'none';
+            } else {
+                // Employee: show on mobile, hide on desktop
+                bottomNav.style.display = this.isMobile ? 'flex' : 'none';
+            }
+        }
+        
+        // Update sidebar visibility for non-admin users
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar && !isAdmin) {
+            sidebar.style.display = this.isMobile ? 'none' : 'block';
         }
         
         // Update tables to cards on mobile
@@ -88,12 +103,43 @@ const mobile = {
                 item.classList.add('active');
             }
         });
+    },
+    
+    // Initialize sidebar toggle for admin on mobile
+    initAdminSidebarToggle() {
+        const toggleBtn = document.getElementById('sidebar-toggle-mobile');
+        const sidebar = document.getElementById('sidebar');
+        if (!toggleBtn || !sidebar) return;
+        
+        toggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            sidebar.classList.toggle('open');
+        });
+        
+        // Close sidebar when clicking outside
+        document.addEventListener('click', (e) => {
+            if (sidebar.classList.contains('open') && 
+                !sidebar.contains(e.target) && 
+                e.target !== toggleBtn &&
+                !toggleBtn.contains(e.target)) {
+                sidebar.classList.remove('open');
+            }
+        });
+        
+        // Close sidebar when clicking a nav link
+        const navLinks = sidebar.querySelectorAll('.nav-link');
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                sidebar.classList.remove('open');
+            });
+        });
     }
 };
 
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
     mobile.init();
+    mobile.initAdminSidebarToggle();
 });
 
 // Expose
