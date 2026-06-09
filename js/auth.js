@@ -91,10 +91,11 @@ const auth = {
                     loginTime: new Date().toISOString()
                 };
                 
-                // VALIDASI ROLE: Pastikan role yang dipilih sesuai dengan role di database
-                if (user.role !== role) {
+                // VALIDASI ROLE: Normalisasi 'karyawan' menjadi 'employee'
+                const isRoleValid = (user.role === role) || (user.role === 'karyawan' && role === 'employee');
+                if (!isRoleValid) {
                     const roleName = role === 'admin' ? 'Admin' : 'Karyawan';
-                    const actualRoleName = user.role === 'admin' ? 'Admin' : 'Karyawan';
+                    const actualRoleName = user.role === 'admin' ? 'Admin' : (user.role === 'karyawan' ? 'Karyawan' : user.role);
                     toast.error(`Anda memilih login sebagai ${roleName}, tetapi akun ini memiliki role ${actualRoleName}. Silakan pilih role yang sesuai.`);
                     submitBtn.classList.remove('loading');
                     submitBtn.disabled = false;
