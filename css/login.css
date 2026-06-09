@@ -96,6 +96,9 @@
     width: 200px;
     height: 200px;
     margin: 0 auto var(--spacing-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .logo-ring {
@@ -149,7 +152,7 @@
     align-items: center;
     justify-content: center;
     box-shadow: none;
-    animation: pulse-core 2s ease-in-out infinite;
+    z-index: 2;
     transition: width 0.2s, height 0.2s;
 }
 
@@ -206,13 +209,16 @@
 
 /* Pastikan container logo-core tidak memiliki transform yang mengganggu */
 .logo-core {
-    position: relative;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto var(--spacing-lg);
     background: transparent;
     transition: width 0.2s, height 0.2s;
+    z-index: 2;
 }
 
 .logo-core img {
