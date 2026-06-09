@@ -11,15 +11,13 @@
 }
 
 /* FORCE SCROLL HORIZONTAL - Shift Schedule - Override all parent restrictions */
-#page-shift-schedule,
-#page-shift-schedule .shift-schedule-container {
+#page-shift-schedule {
     overflow-x: visible !important;
     width: 100% !important;
     max-width: 100% !important;
 }
 
-#page-shift-schedule .shift-schedule-table-wrapper,
-#page-shift-schedule .shift-schedule-table-container {
+#page-shift-schedule .shift-schedule-table-wrapper {
     overflow-x: auto !important;
     overflow-y: visible !important;
     width: 100% !important;
@@ -162,7 +160,7 @@
     background: var(--bg-secondary);
     border-radius: var(--border-radius-lg);
     box-shadow: var(--shadow);
-    overflow-x: auto;
+    overflow-x: auto !important;
     overflow-y: visible;
     position: relative;
     width: 100%;
@@ -171,8 +169,7 @@
 }
 
 .shift-schedule-table-container {
-    overflow-x: auto;
-    overflow-y: visible;
+    overflow-x: visible !important;
     max-height: 70vh;
     width: 100%;
     -webkit-overflow-scrolling: touch;
@@ -209,7 +206,8 @@
     z-index: 10;
 }
 
-.shift-schedule-table th.sticky-col {
+.shift-schedule-table th.sticky-col,
+.shift-schedule-table td.sticky-col {
     position: sticky;
     left: 0;
     z-index: 20;
@@ -241,6 +239,29 @@
     min-width: 180px;
     max-width: 200px;
     background-clip: padding-box; /* Prevent transparency */
+}
+
+/* Support for sticky-column class name used by JavaScript generator */
+.shift-schedule-table th.sticky-column,
+.shift-schedule-table td.sticky-column {
+    position: -webkit-sticky;
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    min-width: 180px;
+    max-width: 200px;
+    background-clip: padding-box;
+}
+
+.shift-schedule-table th.sticky-column {
+    background: var(--bg-tertiary);
+    border-right: 2px solid var(--border-color);
+}
+
+.shift-schedule-table td.sticky-column {
+    background: var(--bg-secondary);
+    border-right: 2px solid var(--border-color);
+    text-align: left;
 }
 
 /* Employee Cell */
@@ -367,7 +388,8 @@
     background: var(--bg-hover);
 }
 
-.shift-schedule-table tbody tr:hover td.sticky-col {
+.shift-schedule-table tbody tr:hover td.sticky-col,
+.shift-schedule-table tbody tr:hover td.sticky-column {
     background: var(--bg-hover);
 }
 
@@ -621,7 +643,9 @@
     }
     
     .shift-schedule-table th.sticky-col,
-    .shift-schedule-table td.sticky-col {
+    .shift-schedule-table td.sticky-col,
+    .shift-schedule-table th.sticky-column,
+    .shift-schedule-table td.sticky-column {
         min-width: 120px;
         max-width: 120px;
     }
