@@ -90,6 +90,16 @@ const auth = {
                     avatar: result.data.avatar || '',
                     loginTime: new Date().toISOString()
                 };
+                
+                // VALIDASI ROLE: Pastikan role yang dipilih sesuai dengan role di database
+                if (user.role !== role) {
+                    const roleName = role === 'admin' ? 'Admin' : 'Karyawan';
+                    const actualRoleName = user.role === 'admin' ? 'Admin' : 'Karyawan';
+                    toast.error(`Anda memilih login sebagai ${roleName}, tetapi akun ini memiliki role ${actualRoleName}. Silakan pilih role yang sesuai.`);
+                    submitBtn.classList.remove('loading');
+                    submitBtn.disabled = false;
+                    return;
+                }
             } else if (result.success && !result.data && !API_BASE_URL) {
                 // Local-only fallback (no backend configured) - for testing only
                 const displayName = email.split('@')[0] || 'User';
