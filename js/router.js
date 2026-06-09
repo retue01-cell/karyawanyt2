@@ -7,7 +7,7 @@ const router = {
     currentPage: 'dashboard',
     routes: ['dashboard', 'absensi', 'face-recognition', 'izin', 'jurnal', 'cuti', 
              'admin-dashboard', 'employees', 'attendance-reports', 'jurnal-reports', 
-             'leave-reports', 'shift-schedule', 'settings'],
+             'leave-reports', 'shift-schedule', 'settings', 'account-settings'],
     
     init() {
         // Handle navigation clicks
@@ -164,6 +164,9 @@ const router = {
                 break;
             case 'settings':
                 if (window.initSettings) window.initSettings();
+                break;
+            case 'account-settings':
+                if (window.initAccountSettings) window.initAccountSettings();
                 break;
         }
         
