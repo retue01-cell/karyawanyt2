@@ -326,7 +326,7 @@
 @media (max-width: 768px) {
     /* Hide sidebar completely on mobile - using bottom nav instead */
     .sidebar {
-        display: none !important;
+        display: none;
     }
     
     /* Main content full width */
@@ -602,7 +602,7 @@
     
     /* Bottom Navigation */
     .bottom-nav {
-        display: flex !important;
+        display: flex;
         position: fixed;
         bottom: 0;
         left: 0;
@@ -612,6 +612,51 @@
         padding: var(--spacing-xs) 0;
         z-index: 100;
         justify-content: space-around;
+    }
+    
+    /* Admin mode di mobile: sembunyikan bottom nav, tampilkan sidebar sebagai drawer */
+    body.admin-mode .bottom-nav {
+        display: none !important;
+    }
+    
+    body.admin-mode .sidebar {
+        display: block !important;
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 280px;
+        height: 100vh;
+        z-index: 1000;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        background: var(--bg-primary);
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    }
+    
+    body.admin-mode .sidebar.open {
+        transform: translateX(0);
+    }
+    
+    body.admin-mode .main-content {
+        margin-left: 0;
+    }
+    
+    /* Tombol hamburger untuk admin di mobile */
+    .sidebar-toggle-mobile {
+        display: none;
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: var(--text-primary);
+        cursor: pointer;
+        padding: 4px 8px;
+        margin-right: 8px;
+    }
+    
+    body.admin-mode .sidebar-toggle-mobile {
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     
     .bottom-nav-item {
