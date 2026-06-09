@@ -210,6 +210,14 @@ const auth = {
             const loginForm = document.getElementById('login-form');
             if (loginForm) loginForm.reset();
             
+            // Refresh company data for login page display
+            if (window.refreshCompanyData) {
+                window.refreshCompanyData().then(() => {
+                    if (window.updateCompanyUI) window.updateCompanyUI();
+                    if (window.applyLoginDisplaySettings) window.applyLoginDisplaySettings();
+                });
+            }
+            
             // Apply login display settings when showing login page
             if (window.applyLoginDisplaySettings) {
                 window.applyLoginDisplaySettings();
