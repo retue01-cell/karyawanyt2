@@ -28,22 +28,21 @@
     }
     
     /* Exception for shift schedule page - allow horizontal scroll for table */
-    #page-shift-schedule .page-content {
+    #page-shift-schedule .page-content,
+    #page-shift-schedule .shift-schedule-container,
+    #page-shift-schedule .shift-schedule-table-wrapper,
+    #page-shift-schedule .shift-schedule-table-container {
         overflow-x: visible !important;
+        -webkit-overflow-scrolling: touch;
     }
     
-    #page-shift-schedule .shift-schedule-container {
-        overflow-x: visible !important;
-    }
-    
+    /* Force scroll on the wrapper and container for shift schedule */
     #page-shift-schedule .shift-schedule-table-wrapper {
         overflow-x: scroll !important;
-        -webkit-overflow-scrolling: touch;
     }
     
     #page-shift-schedule .shift-schedule-table-container {
         overflow-x: scroll !important;
-        -webkit-overflow-scrolling: touch;
     }
 }
 
