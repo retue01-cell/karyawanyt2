@@ -44,6 +44,14 @@ const api = {
         if (!API_BASE_URL) return { success: true, data: {} };
         return this.request('getEmployeeProfile', { userId });
     },
+    async updateEmployeeEmail(userId, newEmail, password) {
+        if (!API_BASE_URL) return { success: false, error: 'Backend required' };
+        return this.request('updateEmployeeEmail', { userId, newEmail, password });
+    },
+    async updateEmployeeLeaveBalance(userId, leaveBalance) {
+        if (!API_BASE_URL) return { success: false, error: 'Backend required' };
+        return this.request('updateEmployeeLeaveBalance', { userId, leaveBalance });
+    },
 
     // ========== ATTENDANCE ==========
     async getAttendance(userId) {
