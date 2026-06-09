@@ -549,6 +549,13 @@ document.addEventListener('DOMContentLoaded', () => {
     updateCompanyUI();
     applyLoginDisplaySettings();
 
+    // Refresh company data from server for login page display
+    refreshCompanyData().then(() => {
+        // After data refresh, update UI again with latest data
+        updateCompanyUI();
+        applyLoginDisplaySettings();
+    });
+
     // Update time display
     const timeEl = document.getElementById('current-time');
     if (timeEl) {
