@@ -79,11 +79,19 @@ const auth = {
             let user;
             if (result.success && result.data) {
                 // Backend mode - user from API (Employees or Users sheet)
+                // Normalisasi role dari backend agar konsisten dengan frontend
+                let rawRole = result.data.role || role;
+                // Trim spasi dan ubah ke lowercase untuk menangani variasi input
+                let normalizedRole = rawRole.trim().toLowerCase();
+                if (normalizedRole === 'karyawan') {
+                    normalizedRole = 'employee';
+                }
+                
                 user = {
                     id: result.data.id,
                     email: result.data.email,
                     name: result.data.name,
-                    role: result.data.role || role,
+                    role: normalizedRole,
                     department: result.data.department || '',
                     position: result.data.position || '',
                     shift: result.data.shift || '',
@@ -91,11 +99,10 @@ const auth = {
                     loginTime: new Date().toISOString()
                 };
                 
-                // VALIDASI ROLE: Normalisasi 'karyawan' menjadi 'employee'
-                const isRoleValid = (user.role === role) || (user.role === 'karyawan' && role === 'employee');
-                if (!isRoleValid) {
+                // VALIDASI ROLE: Bandingkan role yang dipilih dengan role yang sudah dinormalisasi
+                if (normalizedRole !== role) {
                     const roleName = role === 'admin' ? 'Admin' : 'Karyawan';
-                    const actualRoleName = user.role === 'admin' ? 'Admin' : (user.role === 'karyawan' ? 'Karyawan' : user.role);
+                    const actualRoleName = normalizedRole === 'admin' ? 'Admin' : 'Karyawan';
                     toast.error(`Anda memilih login sebagai ${roleName}, tetapi akun ini memiliki role ${actualRoleName}. Silakan pilih role yang sesuai.`);
                     submitBtn.classList.remove('loading');
                     submitBtn.disabled = false;
