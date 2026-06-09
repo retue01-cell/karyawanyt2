@@ -7,6 +7,24 @@
     max-width: 100%;
     padding: var(--spacing-md);
     overflow-x: visible !important;
+    width: 100%;
+}
+
+/* FORCE SCROLL HORIZONTAL - Shift Schedule - Override all parent restrictions */
+#page-shift-schedule,
+#page-shift-schedule .shift-schedule-container {
+    overflow-x: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+#page-shift-schedule .shift-schedule-table-wrapper,
+#page-shift-schedule .shift-schedule-table-container {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    width: 100% !important;
+    display: block !important;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* Header */
@@ -163,12 +181,13 @@
 
 /* Table - minimum width to trigger horizontal scroll on small screens */
 .shift-schedule-table {
-    min-width: 800px;  /* Base value, will be adjusted dynamically by JS */
-    width: auto;
-    border-collapse: separate;
-    border-spacing: 0;
+    min-width: 800px !important;  /* Base value, will be adjusted dynamically by JS */
+    width: auto !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
     font-size: var(--font-size-sm);
-    white-space: nowrap; /* Prevent text wrapping in cells */
+    white-space: nowrap !important; /* Prevent text wrapping in cells */
+    display: table !important;
 }
 
 .shift-schedule-table th,
@@ -529,17 +548,20 @@
 /* Mobile Responsive */
 @media (max-width: 1200px) {
     .shift-schedule-table {
-        min-width: 1000px; /* Wider than container to trigger scroll */
+        min-width: 1000px !important; /* Wider than container to trigger scroll */
     }
 }
 
 @media (max-width: 992px) {
     .shift-schedule-table {
-        min-width: 1100px;
+        min-width: 1200px !important;
     }
 }
 
 @media (max-width: 768px) {
+    .shift-schedule-table {
+        min-width: 1400px !important;
+    }
     .shift-schedule-header {
         flex-direction: column;
         align-items: flex-start;
@@ -588,7 +610,7 @@
     }
     
     .shift-schedule-table {
-        min-width: 1200px; /* For 31 days, each column ~45px + employee column */
+        min-width: 1400px !important; /* For 31 days, each column ~50px + employee column */
     }
     
     .shift-schedule-table th,
