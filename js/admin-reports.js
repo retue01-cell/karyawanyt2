@@ -152,10 +152,30 @@ const adminReports = {
         // Jurnal data (tidak diubah)
         this.jurnalData = this.rawJournals.map(j => {
             const emp = empMap.get(String(j.userId)) || { name: 'Unknown', department: '-' };
-            let journalDate = j.date;
+            
+            // Perbaikan parsing tanggal
+            let journalDate = '';
+            if (j.date) {
+                // Coba sebagai objek Date
+                if (typeof j.date === 'object' && j.date instanceof Date) {
+                    journalDate = j.date.toISOString().split('T')[0];
+                } 
+                // Coba sebagai string YYYY-MM-DD
+                else if (typeof j.date === 'string' && j.date.match(/^\d{4}-\d{2}-\d{2}/)) {
+                    journalDate = j.date;
+                }
+                // Coba sebagai angka (timestamp) - validasi apakah masuk akal ( > 1e9)
+                else if (typeof j.date === 'number' && j.date > 1000000000) {
+                    journalDate = new Date(j.date).toISOString().split('T')[0];
+                }
+                // Jika tidak valid, gunakan updatedAt
+                else if (j.updatedAt) {
+                    journalDate = j.updatedAt.split('T')[0];
+                }
+            }
             if (!journalDate && j.updatedAt) journalDate = j.updatedAt.split('T')[0];
             if (!journalDate && j.createdAt) journalDate = j.createdAt.split('T')[0];
-            if (!journalDate) journalDate = '';
+            
             return {
                 id: j.id, userId: j.userId, date: journalDate,
                 name: emp.name, department: emp.department,
@@ -165,7 +185,7 @@ const adminReports = {
                 status: (j.tasks && j.tasks !== '-') ? 'filled' : 'empty',
                 updatedAt: j.updatedAt
             };
-        });
+        }).filter(j => j.date !== ''); // filter yang tidak punya tanggal valid
         this.jurnalData.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
         // Build leaveData (cuti + izin) dengan monthYear
