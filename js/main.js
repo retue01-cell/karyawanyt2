@@ -359,14 +359,15 @@ function initializeData() {
 
 // Update company name in UI
 function updateCompanyUI() {
-    const company = storage.get('company', { name: 'Portal Karyawan', logo: '' });
+    const company = storage.get('company', { name: 'Portal Karyawan', logo: '', tagline: '' });
     const companyName = company.name || 'Portal Karyawan';
     const companyLogo = company.logo || '';
+    const tagline = company.tagline || 'Kelola kehadiran & produktivitas dengan mudah';
 
     // Update title
     document.title = companyName;
 
-    // Update teks nama perusahaan
+    // Update teks nama perusahaan di halaman login
     const loginCompanyEl = document.getElementById('login-company-name');
     if (loginCompanyEl) loginCompanyEl.textContent = companyName;
 
@@ -378,6 +379,10 @@ function updateCompanyUI() {
         sidebarBrandEl.textContent = companyName;
         sidebarBrandEl.title = companyName;
     }
+
+    // Update tagline di halaman login
+    const taglineEl = document.querySelector('.tagline');
+    if (taglineEl) taglineEl.textContent = tagline;
 
     // Update LOGO di sidebar
     const sidebarLogoImg = document.getElementById('sidebar-logo-img');
@@ -488,7 +493,8 @@ async function refreshCompanyData() {
         if (result && result.success && result.data) {
             const company = {
                 name: result.data.company_name || 'Portal Karyawan',
-                logo: result.data.company_logo || '',
+                logo: result.data.login_logo_url || result.data.company_logo || '',
+                tagline: result.data.login_tagline || 'Kelola kehadiran & produktivitas dengan mudah',
                 address: result.data.company_address || '',
                 phone: result.data.company_phone || '',
                 email: result.data.company_email || '',
@@ -504,6 +510,7 @@ async function refreshCompanyData() {
             storage.set('company_phone', company.phone);
             storage.set('company_email', company.email);
             storage.set('company_hours', company.hours);
+            storage.set('login_tagline', company.tagline);
             // Simpan pengaturan tampilan login
             storage.set('login_logo_shape', company.logoShape);
             storage.set('login_logo_shadow', company.logoShadow);
