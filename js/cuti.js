@@ -27,15 +27,40 @@ const cuti = {
         try {
             const currentUser = auth.getCurrentUser();
             const userId = currentUser?.id || 'demo-user';
+            
+            // 1. Ambil data cuti (pengajuan)
             const result = auth.isAdmin() ? await api.getAllLeaves() : await api.getLeaves(userId);
             this.leaves = result.data || [];
+            
+            // 2. Ambil profil karyawan untuk mendapatkan sisa cuti terbaru dari server
+            const profileResult = await api.getEmployeeProfile(userId);
+            if (profileResult.success && profileResult.data) {
+                let balance = profileResult.data.leaveBalance;
+                // Handle jika balance null/undefined/kosong
+                if (balance === undefined || balance === null || balance === '') {
+                    // Ambil dari pengaturan default
+                    const settings = await api.getSettings();
+                    balance = settings.data?.default_leave_balance || 12;
+                } else {
+                    balance = parseInt(balance, 10);
+                }
+                this.leaveBalance = balance;
+                storage.set('leaveBalance', this.leaveBalance);
+            } else {
+                // Fallback ke storage
+                const savedBalance = storage.get('leaveBalance');
+                if (savedBalance !== null) this.leaveBalance = savedBalance;
+                else this.leaveBalance = 12;
+            }
+            
+            this.updateBalanceDisplay();
         } catch (error) {
             console.error('Error loading leaves:', error);
             this.leaves = storage.get('leaves', []);
+            const savedBalance = storage.get('leaveBalance');
+            this.leaveBalance = (savedBalance !== null) ? savedBalance : 12;
+            this.updateBalanceDisplay();
         }
-        const savedBalance = storage.get('leaveBalance');
-        if (savedBalance !== null) this.leaveBalance = savedBalance;
-        this.updateBalanceDisplay();
     },
 
     initForm() {
