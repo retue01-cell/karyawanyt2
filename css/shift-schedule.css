@@ -6,6 +6,7 @@
 .shift-schedule-container {
     max-width: 100%;
     padding: var(--spacing-md);
+    overflow-x: visible;
 }
 
 /* Header */
@@ -144,22 +145,26 @@
     border-radius: var(--border-radius-lg);
     box-shadow: var(--shadow);
     overflow-x: auto;
+    overflow-y: visible;
     position: relative;
     width: 100%;
     margin-bottom: var(--spacing-lg);
+    -webkit-overflow-scrolling: touch;
 }
 
 .shift-schedule-table-container {
     overflow-x: auto;
+    overflow-y: visible;
     max-height: 70vh;
     width: 100%;
     -webkit-overflow-scrolling: touch;
+    position: relative;
 }
 
-/* Table */
+/* Table - minimum width to trigger horizontal scroll on small screens */
 .shift-schedule-table {
-    min-width: 800px;
-    width: 100%;
+    min-width: 1400px;  /* Sufficient for employee column + 31 date columns */
+    width: auto;
     border-collapse: separate;
     border-spacing: 0;
     font-size: var(--font-size-sm);
@@ -201,6 +206,18 @@
     background: var(--bg-secondary);
     border-right: 2px solid var(--border-color);
     text-align: left;
+}
+
+/* Ensure sticky columns work correctly with horizontal scroll */
+.shift-schedule-table th.sticky-col,
+.shift-schedule-table td.sticky-col {
+    position: -webkit-sticky;
+    position: sticky;
+    left: 0;
+    background-color: var(--bg-secondary);
+    z-index: 10;
+    min-width: 180px;
+    max-width: 200px;
 }
 
 /* Employee Cell */
@@ -506,6 +523,12 @@
 }
 
 /* Mobile Responsive */
+@media (max-width: 1200px) {
+    .shift-schedule-table {
+        min-width: 1400px; /* Wider than container to trigger scroll */
+    }
+}
+
 @media (max-width: 768px) {
     .shift-schedule-header {
         flex-direction: column;
@@ -541,6 +564,21 @@
     
     .legend-items {
         width: 100%;
+    }
+    
+    /* Ensure horizontal scroll on mobile for schedule table */
+    .shift-schedule-table-wrapper {
+        overflow-x: scroll;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .shift-schedule-table-container {
+        overflow-x: scroll;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .shift-schedule-table {
+        min-width: 1400px; /* For 31 days, each column ~45px + employee column */
     }
     
     .shift-schedule-table th,
