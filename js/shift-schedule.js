@@ -79,6 +79,16 @@ const shiftSchedule = {
     getDaysInMonth(month, year) { return new Date(year, month + 1, 0).getDate(); },
     getDayName(dayIndex) { return ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'][dayIndex]; },
 
+    // Adjust table width dynamically based on number of days in month
+    adjustTableWidth() {
+        const table = document.querySelector('.shift-schedule-table');
+        if (!table) return;
+        const daysInMonth = this.getDaysInMonth(this.currentMonth, this.currentYear);
+        // Assume 45px per date column, 180px for employee column
+        const minWidth = 180 + (daysInMonth * 45);
+        table.style.minWidth = minWidth + 'px';
+    },
+
     getFilteredEmployees() {
         return this.employees.filter(emp => {
             const matchDept = !this.filters.department || emp.department === this.filters.department;
@@ -177,6 +187,9 @@ const shiftSchedule = {
             }
             tbody.appendChild(tr);
         });
+        
+        // Adjust table width after rendering
+        this.adjustTableWidth();
     },
 
     // Fungsi baru: update lokal + simpan ke database langsung (sinkron dengan Portal Karyawan.xlsx)
