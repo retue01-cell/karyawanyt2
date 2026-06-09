@@ -644,6 +644,13 @@ img {
     flex: 1;
     padding: var(--spacing-lg);
     overflow-y: auto;
+    overflow-x: visible;
+}
+
+/* Shift Schedule page - allow horizontal scroll for table */
+#page-shift-schedule .page-content,
+#page-shift-schedule .shift-schedule-container {
+    overflow-x: visible;
 }
 
 .page {
