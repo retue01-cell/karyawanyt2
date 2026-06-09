@@ -151,6 +151,11 @@ const settings = {
             if (loginAnimation) loginAnimation.value = allSettings.login_animation_effect || 'float';
             if (loginLogoSize) loginLogoSize.value = allSettings.login_logo_size || '120';
             if (sidebarLogoSize) sidebarLogoSize.value = allSettings.sidebar_logo_size || '32';
+
+            // Default leave balance
+            const defaultLeaveBalance = allSettings.default_leave_balance || '12';
+            const defaultBalanceInput = document.getElementById('default-leave-balance');
+            if (defaultBalanceInput) defaultBalanceInput.value = defaultLeaveBalance;
         } catch (error) {
             console.error('[Settings] Load error:', error);
             this.showError(error.message);
@@ -233,6 +238,12 @@ const settings = {
         const loginDisplayForm = document.getElementById('login-display-form');
         if (loginDisplayForm) {
             loginDisplayForm.addEventListener('submit', (e) => this.saveLoginDisplaySettings(e));
+        }
+
+        // Default leave balance button
+        const saveDefaultLeaveBtn = document.getElementById('btn-save-default-leave');
+        if (saveDefaultLeaveBtn) {
+            saveDefaultLeaveBtn.addEventListener('click', () => this.saveDefaultLeaveBalance());
         }
     },
 
@@ -521,6 +532,28 @@ const settings = {
             if (m === '>') return '&gt;';
             return m;
         });
+    },
+
+    async saveDefaultLeaveBalance() {
+        const value = document.getElementById('default-leave-balance').value;
+        if (!value) {
+            toast.error('Masukkan nilai cuti');
+            return;
+        }
+        try {
+            loadingIndicator.show('Menyimpan default cuti...');
+            const result = await api.saveSetting('default_leave_balance', value);
+            if (result.success) {
+                toast.success('Default cuti disimpan');
+            } else {
+                toast.error(result.error || 'Gagal menyimpan');
+            }
+        } catch (error) {
+            console.error('Save default leave error:', error);
+            toast.error('Terjadi kesalahan');
+        } finally {
+            loadingIndicator.hide();
+        }
     }
 };
 
