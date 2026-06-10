@@ -342,7 +342,7 @@ const faceRecognition = {
             setTimeout(() => {
                 try {
                     const map = L.map(mapContainer).setView([position.coords.latitude, position.coords.longitude], 15);
-                    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                    const tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
                         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
                         subdomains: 'abcd',
                         maxZoom: 19
@@ -364,8 +364,29 @@ const faceRecognition = {
                     // Simpan referensi map jika diperlukan
                     this.map = map;
                     
-                    // Force resize setelah sedikit delay
-                    setTimeout(() => map.invalidateSize(), 200);
+                    // Panggil invalidateSize beberapa kali untuk memastikan peta ter-render dengan benar
+                    // 1. Segera setelah inisialisasi
+                    map.invalidateSize();
+                    
+                    // 2. Setelah tile layer selesai dimuat
+                    tileLayer.on('load', () => {
+                        map.invalidateSize();
+                        console.log('Map invalidateSize dipanggil setelah tile layer loaded');
+                    });
+                    
+                    // 3. Fallback dengan delay tambahan
+                    setTimeout(() => {
+                        map.invalidateSize();
+                        console.log('Map invalidateSize dipanggil dengan timeout 300ms');
+                    }, 300);
+                    
+                    // 4. Tambahan delay lebih lama untuk kasus render lambat
+                    setTimeout(() => {
+                        map.invalidateSize();
+                        console.log('Map invalidateSize dipanggil dengan timeout 500ms');
+                    }, 500);
+                    
+                    console.log('Map berhasil diinisialisasi dan invalidateSize dipanggil');
                 } catch (err) {
                     console.error('Error creating map:', err);
                     this.initStaticMap(position); // Fallback ke static map
