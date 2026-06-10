@@ -13,8 +13,12 @@ const faceRecognition = {
     position: null,
     countdownTimer: null,
     countdownSeconds: 3,
+    map: null,
 
     init(action) {
+        // Hancurkan sesi sebelumnya terlebih dahulu
+        this.cleanup();
+        
         this.currentAction = action;
         this.photoCaptured = false;
         this.locationVerified = false;
@@ -298,11 +302,24 @@ const faceRecognition = {
         const mapContainer = document.getElementById('location-map');
         if (!mapContainer) return;
 
+        // === PERBAIKAN 1: Hancurkan map sebelumnya ===
+        if (this.map) {
+            try {
+                this.map.remove();
+            } catch(e) {
+                console.warn('Gagal menghapus map lama:', e);
+            }
+            this.map = null;
+        }
+
         // Bersihkan container
         mapContainer.innerHTML = '';
         
-        // Buat peta Leaflet
-        const map = L.map(mapContainer).setView([position.coords.latitude, position.coords.longitude], 15);
+        // Buat peta Leaflet (tambahkan opsi zoom control untuk debugging)
+        const map = L.map(mapContainer, {
+            zoomControl: true,
+            fadeAnimation: false  // hindari efek fade yang bisa ganggu
+        }).setView([position.coords.latitude, position.coords.longitude], 15);
         
         // Tile layer (peta dasar) dari CartoDB
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -334,10 +351,17 @@ const faceRecognition = {
         // Simpan instance map untuk keperluan lain (opsional)
         this.map = map;
         
-        // Fix rendering di mobile
+        // === PERBAIKAN 2: invalidateSize dengan delay lebih andal ===
         setTimeout(() => {
-            map.invalidateSize();
-        }, 100);
+            if (this.map) {
+                this.map.invalidateSize();
+            }
+        }, 200);
+        
+        // Tambahkan event listener untuk resize window
+        window.addEventListener('resize', () => {
+            if (this.map) this.map.invalidateSize();
+        });
     },
 
     initMapFallback() {
@@ -446,6 +470,13 @@ const faceRecognition = {
         if (this.countdownTimer) {
             clearInterval(this.countdownTimer);
             this.countdownTimer = null;
+        }
+        // === PERBAIKAN 3: Hancurkan map saat cleanup ===
+        if (this.map) {
+            try {
+                this.map.remove();
+            } catch(e) {}
+            this.map = null;
         }
     }
 };
