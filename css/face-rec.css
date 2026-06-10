@@ -423,14 +423,16 @@
 #location-map {
     height: 250px;
     width: 100%;
+    min-height: 200px;
     border-radius: var(--border-radius);
     overflow: hidden;
-    background: #e5e7eb;
+    background: #e5e7eb; /* warna fallback */
 }
 
 @media (max-width: 768px) {
     #location-map {
         height: 200px;
+        min-height: 180px;
     }
 }
 
