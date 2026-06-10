@@ -13,10 +13,18 @@ const faceRecognition = {
     position: null,
     countdownTimer: null,
     countdownSeconds: 3,
+    isInitializing: false,
     map: null,
 
     init(action) {
-        // Hancurkan sesi sebelumnya terlebih dahulu
+        // Cegah inisialisasi ganda bersamaan
+        if (this.isInitializing) {
+            console.warn('Face recognition already initializing, skip');
+            return;
+        }
+        this.isInitializing = true;
+        
+        // Bersihkan sesi sebelumnya
         this.cleanup();
         
         this.currentAction = action;
@@ -24,18 +32,17 @@ const faceRecognition = {
         this.locationVerified = false;
         this.position = null;
         this.countdownTimer = null;
-
+        
         // Update UI based on action
         this.updateActionTitle(action);
-
-        // Initialize camera
-        this.initCamera();
-
-        // Initialize location
-        this.initLocation();
-
-        // Bind buttons
-        this.bindButtons();
+        
+        // Beri waktu sedikit untuk DOM stabil
+        setTimeout(() => {
+            this.initCamera();
+            this.initLocation();
+            this.bindButtons();
+            this.isInitializing = false;
+        }, 100);
     },
 
     updateActionTitle(action) {
@@ -58,13 +65,30 @@ const faceRecognition = {
     },
 
     async initCamera() {
+        // Ambil ulang elemen setelah cleanup (bisa jadi DOM berubah)
         this.video = document.getElementById('camera-video');
         this.canvas = document.getElementById('camera-canvas');
 
-        if (!this.video) return;
+        if (!this.video) {
+            console.error('Video element not found');
+            toast.error('Elemen kamera tidak ditemukan');
+            this.isInitializing = false;
+            return;
+        }
+
+        // Hapus stream lama jika masih menempel
+        if (this.video.srcObject) {
+            const oldStream = this.video.srcObject;
+            if (oldStream && oldStream.getTracks) {
+                oldStream.getTracks().forEach(track => track.stop());
+            }
+            this.video.srcObject = null;
+        }
+
+        // Tampilkan video (hilangkan style none)
+        this.video.style.display = 'block';
 
         try {
-            // Request camera access
             this.stream = await navigator.mediaDevices.getUserMedia({
                 video: {
                     facingMode: 'user',
@@ -76,17 +100,27 @@ const faceRecognition = {
 
             this.video.srcObject = this.stream;
 
-            // Enable capture button when video is ready
             this.video.onloadedmetadata = () => {
                 const captureBtn = document.getElementById('btn-capture');
                 if (captureBtn) {
                     captureBtn.disabled = false;
                 }
+                this.video.play().catch(e => console.warn('Video play error:', e));
+            };
+
+            this.video.onerror = (err) => {
+                console.error('Video error:', err);
+                toast.error('Gagal memuat kamera');
+                const captureBtn = document.getElementById('btn-capture');
+                if (captureBtn) captureBtn.disabled = true;
             };
 
         } catch (error) {
             console.error('Camera error:', error);
             toast.error('Tidak dapat mengakses kamera. Pastikan Anda memberikan izin kamera.');
+            const captureBtn = document.getElementById('btn-capture');
+            if (captureBtn) captureBtn.disabled = true;
+            this.isInitializing = false;
         }
     },
 
@@ -174,24 +208,18 @@ const faceRecognition = {
         const captureBtn = document.getElementById('btn-capture');
         const retakeBtn = document.getElementById('btn-retake');
         const confirmBtn = document.getElementById('btn-confirm-attendance');
-
-        if (captureBtn) {
-            const newCaptureBtn = captureBtn.cloneNode(true);
-            captureBtn.parentNode.replaceChild(newCaptureBtn, captureBtn);
-            newCaptureBtn.addEventListener('click', (e) => { e.preventDefault(); this.capturePhoto(); });
-        }
-
-        if (retakeBtn) {
-            const newRetakeBtn = retakeBtn.cloneNode(true);
-            retakeBtn.parentNode.replaceChild(newRetakeBtn, retakeBtn);
-            newRetakeBtn.addEventListener('click', (e) => { e.preventDefault(); this.retakePhoto(); });
-        }
-
-        if (confirmBtn) {
-            const newConfirmBtn = confirmBtn.cloneNode(true);
-            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-            newConfirmBtn.addEventListener('click', (e) => { e.preventDefault(); this.confirmAttendance(); });
-        }
+        
+        const bindSafe = (element, handler) => {
+            if (!element) return;
+            const newEl = element.cloneNode(true);
+            element.parentNode?.replaceChild(newEl, element);
+            newEl.addEventListener('click', (e) => { e.preventDefault(); handler(); });
+            return newEl;
+        };
+        
+        bindSafe(captureBtn, () => this.capturePhoto());
+        bindSafe(retakeBtn, () => this.retakePhoto());
+        bindSafe(confirmBtn, () => this.confirmAttendance());
     },
 
     capturePhoto() {
@@ -273,8 +301,18 @@ const faceRecognition = {
 
     stopCamera() {
         if (this.stream) {
-            this.stream.getTracks().forEach(track => track.stop());
+            this.stream.getTracks().forEach(track => {
+                if (track.readyState === 'live') track.stop();
+            });
             this.stream = null;
+        }
+        
+        // Bersihkan video element juga
+        if (this.video) {
+            if (this.video.srcObject) {
+                this.video.srcObject = null;
+            }
+            this.video.pause();
         }
     },
 
@@ -466,11 +504,55 @@ const faceRecognition = {
 
     // Cleanup when leaving page
     cleanup() {
-        this.stopCamera();
+        // Hentikan semua track stream
+        if (this.stream) {
+            this.stream.getTracks().forEach(track => {
+                if (track.readyState === 'live') track.stop();
+            });
+            this.stream = null;
+        }
+        
+        // Bersihkan video element
+        if (this.video) {
+            if (this.video.srcObject) {
+                this.video.srcObject = null;
+            }
+            this.video.pause();
+            this.video.src = '';
+            this.video.load();
+        }
+        
+        // Reset container kamera ke struktur awal (tanpa video)
+        const previewContainer = document.getElementById('camera-preview');
+        if (previewContainer) {
+            previewContainer.innerHTML = `
+                <video id="camera-video" autoplay playsinline style="display: none;"></video>
+                <canvas id="camera-canvas" style="display: none;"></canvas>
+                <div class="face-overlay" id="face-overlay">
+                    <div class="face-frame">
+                        <div class="face-corner top-left"></div>
+                        <div class="face-corner top-right"></div>
+                        <div class="face-corner bottom-left"></div>
+                        <div class="face-corner bottom-right"></div>
+                    </div>
+                    <div class="face-guide">
+                        <i class="fas fa-camera"></i>
+                        <p>Posisikan wajah di dalam frame</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Reset referensi
+        this.video = null;
+        this.canvas = null;
+        
+        // Hentikan timer countdown jika ada
         if (this.countdownTimer) {
             clearInterval(this.countdownTimer);
             this.countdownTimer = null;
         }
+        
         // === PERBAIKAN 3: Hancurkan map saat cleanup ===
         if (this.map) {
             try {
@@ -478,6 +560,8 @@ const faceRecognition = {
             } catch(e) {}
             this.map = null;
         }
+        
+        this.isInitializing = false;
     }
 };
 
@@ -486,10 +570,24 @@ window.initFaceRecognition = (action) => {
     faceRecognition.init(action);
 };
 
-// Cleanup on page change
+// Event visibilitychange untuk menghemat resource saat tab tidak aktif
 document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        faceRecognition.cleanup();
+    if (document.hidden && window.faceRecognition) {
+        // Hentikan stream kamera
+        if (window.faceRecognition.stream) {
+            window.faceRecognition.stream.getTracks().forEach(track => track.stop());
+            window.faceRecognition.stream = null;
+        }
+        if (window.faceRecognition.video) {
+            window.faceRecognition.video.srcObject = null;
+        }
+        // Cleanup map
+        if (window.faceRecognition.map) {
+            try {
+                window.faceRecognition.map.remove();
+            } catch(e) {}
+            window.faceRecognition.map = null;
+        }
     }
 });
 
