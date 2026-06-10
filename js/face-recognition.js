@@ -27,6 +27,9 @@ const faceRecognition = {
         // Bersihkan sesi sebelumnya
         this.cleanup();
         
+        // Reset UI ke keadaan awal
+        this.resetUI();
+        
         this.currentAction = action;
         this.photoCaptured = false;
         this.locationVerified = false;
@@ -261,11 +264,40 @@ const faceRecognition = {
     },
 
     retakePhoto() {
-        this.photoCaptured = false;
+        // Matikan stream lama
+        this.cleanup();
+        // Reset UI ke awal
+        this.resetUI();
+        // Mulai ulang kamera
+        setTimeout(() => {
+            this.initCamera();
+            this.initLocation(); // lokasi tetap bisa diambil ulang
+            this.bindButtons();
+        }, 100);
+    },
 
-        // Reset preview
+    resetUI() {
+        // Reset tombol
+        const captureBtn = document.getElementById('btn-capture');
+        const retakeBtn = document.getElementById('btn-retake');
+        const confirmBtn = document.getElementById('btn-confirm-attendance');
+        
+        if (captureBtn) {
+            captureBtn.style.display = 'flex';
+            captureBtn.disabled = true; // akan diaktifkan setelah video ready
+        }
+        if (retakeBtn) {
+            retakeBtn.style.display = 'none';
+            retakeBtn.disabled = false;
+        }
+        if (confirmBtn) {
+            confirmBtn.disabled = true;
+        }
+        
+        // Reset preview container ke struktur awal
         const preview = document.getElementById('camera-preview');
         if (preview) {
+            // Hapus semua child, lalu buat ulang struktur
             preview.innerHTML = `
                 <video id="camera-video" autoplay playsinline></video>
                 <canvas id="camera-canvas" style="display: none;"></canvas>
@@ -283,20 +315,16 @@ const faceRecognition = {
                 </div>
             `;
         }
-
-        // Update buttons
-        const captureBtn = document.getElementById('btn-capture');
-        const retakeBtn = document.getElementById('btn-retake');
-
-        if (captureBtn) {
-            captureBtn.style.display = 'flex';
-            captureBtn.disabled = true;
-        }
-        if (retakeBtn) retakeBtn.style.display = 'none';
-
-        // Reinitialize camera
-        this.initCamera();
-        this.checkCanSubmit();
+        
+        // Hapus status verifikasi jika ada
+        const statusDiv = document.getElementById('verification-status');
+        if (statusDiv) statusDiv.classList.remove('show');
+        
+        // Reset flag
+        this.photoCaptured = false;
+        this.locationVerified = false;
+        this.position = null;
+        this.currentPhoto = null;
     },
 
     stopCamera() {
@@ -519,41 +547,9 @@ const faceRecognition = {
             }
             this.video.pause();
             this.video.src = '';
-            this.video.load();
         }
         
-        // Reset container kamera ke struktur awal (tanpa video)
-        const previewContainer = document.getElementById('camera-preview');
-        if (previewContainer) {
-            previewContainer.innerHTML = `
-                <video id="camera-video" autoplay playsinline style="display: none;"></video>
-                <canvas id="camera-canvas" style="display: none;"></canvas>
-                <div class="face-overlay" id="face-overlay">
-                    <div class="face-frame">
-                        <div class="face-corner top-left"></div>
-                        <div class="face-corner top-right"></div>
-                        <div class="face-corner bottom-left"></div>
-                        <div class="face-corner bottom-right"></div>
-                    </div>
-                    <div class="face-guide">
-                        <i class="fas fa-camera"></i>
-                        <p>Posisikan wajah di dalam frame</p>
-                    </div>
-                </div>
-            `;
-        }
-        
-        // Reset referensi
-        this.video = null;
-        this.canvas = null;
-        
-        // Hentikan timer countdown jika ada
-        if (this.countdownTimer) {
-            clearInterval(this.countdownTimer);
-            this.countdownTimer = null;
-        }
-        
-        // === PERBAIKAN 3: Hancurkan map saat cleanup ===
+        // Hancurkan map jika ada
         if (this.map) {
             try {
                 this.map.remove();
@@ -561,6 +557,13 @@ const faceRecognition = {
             this.map = null;
         }
         
+        // Hentikan timer countdown jika ada
+        if (this.countdownTimer) {
+            clearInterval(this.countdownTimer);
+            this.countdownTimer = null;
+        }
+        
+        // Jangan reset tombol di sini, karena sudah ditangani resetUI()
         this.isInitializing = false;
     }
 };
