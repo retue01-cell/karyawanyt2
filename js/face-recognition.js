@@ -89,6 +89,7 @@ const faceRecognition = {
     initLocation() {
         if (!navigator.geolocation) {
             toast.error('Browser Anda tidak mendukung geolokasi');
+            this.initMapFallback('Browser tidak mendukung geolokasi');
             return;
         }
 
@@ -98,6 +99,7 @@ const faceRecognition = {
 
         navigator.geolocation.getCurrentPosition(
             (position) => {
+                console.log('Lokasi berhasil didapatkan', position);
                 this.position = position;
                 this.locationVerified = true;
 
@@ -138,22 +140,27 @@ const faceRecognition = {
                 this.checkCanSubmit();
             },
             (error) => {
-                console.error('Location error:', error);
-
+                console.error('Geolocation error:', error);
+                
+                let reason = 'Gagal mendapatkan lokasi.';
+                if (error.code === 1) reason = 'Izin lokasi ditolak. Berikan izin untuk melanjutkan.';
+                if (error.code === 2) reason = 'Posisi tidak tersedia. Coba lagi nanti.';
+                if (error.code === 3) reason = 'Waktu permintaan lokasi habis. Periksa sinyal GPS.';
+                
                 // Fallback untuk testing di desktop/localhost
                 this.position = {
                     coords: { latitude: -6.200000, longitude: 106.816666, accuracy: 100 } // Jakarta default
                 };
-                this.locationVerified = true;
+                this.locationVerified = false; // Jangan set true jika lokasi gagal
 
                 if (statusEl) {
                     statusEl.innerHTML = '<i class="fas fa-exclamation-circle" style="color:var(--color-warning);"></i> Simulasi Lokasi';
                 }
-                toast.warning('Menggunakan lokasi simulasi karena GPS gagal.');
+                toast.warning(reason);
                 
-                // Tampilkan fallback map
+                // Tampilkan fallback map dengan pesan yang jelas
                 if (mapEl) {
-                    this.initMapFallback();
+                    this.initMapFallback(reason);
                 }
                 
                 this.checkCanSubmit();
@@ -297,57 +304,78 @@ const faceRecognition = {
     initMap(position) {
         const mapContainer = document.getElementById('location-map');
         if (!mapContainer) return;
+        
+        // Cek apakah Leaflet berhasil dimuat
+        if (typeof L === 'undefined') {
+            console.error('Leaflet library not loaded!');
+            this.initMapFallback('Leaflet gagal dimuat, periksa koneksi internet.');
+            return;
+        }
 
+        // Pastikan container memiliki height > 0
+        if (mapContainer.clientHeight === 0) {
+            mapContainer.style.height = '200px'; // fallback
+        }
+        
         // Bersihkan container
         mapContainer.innerHTML = '';
         
-        // Buat peta Leaflet
-        const map = L.map(mapContainer).setView([position.coords.latitude, position.coords.longitude], 15);
-        
-        // Tile layer (peta dasar) dari CartoDB
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-            subdomains: 'abcd',
-            maxZoom: 19
-        }).addTo(map);
-        
-        // Marker lokasi user
-        const userMarker = L.marker([position.coords.latitude, position.coords.longitude], {
-            title: 'Lokasi Anda'
-        }).addTo(map);
-        
-        userMarker.bindPopup(`
-            <strong>📍 Lokasi Anda</strong><br>
-            ${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}<br>
-            Akurasi: ±${Math.round(position.coords.accuracy)} m
-        `).openPopup();
-        
-        // Lingkaran akurasi GPS
-        L.circle([position.coords.latitude, position.coords.longitude], {
-            radius: position.coords.accuracy,
-            color: '#3B82F6',
-            fillColor: '#3B82F6',
-            fillOpacity: 0.1,
-            weight: 2
-        }).addTo(map);
-        
-        // Simpan instance map untuk keperluan lain (opsional)
-        this.map = map;
-        
-        // Fix rendering di mobile
+        // Beri sedikit delay untuk memastikan rendering
         setTimeout(() => {
-            map.invalidateSize();
+            try {
+                // Buat peta Leaflet
+                const map = L.map(mapContainer).setView([position.coords.latitude, position.coords.longitude], 15);
+                
+                // Tile layer (peta dasar) dari CartoDB
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                    subdomains: 'abcd',
+                    maxZoom: 19
+                }).addTo(map);
+                
+                // Marker lokasi user
+                const userMarker = L.marker([position.coords.latitude, position.coords.longitude], {
+                    title: 'Lokasi Anda'
+                }).addTo(map);
+                
+                userMarker.bindPopup(`
+                    <strong>📍 Lokasi Anda</strong><br>
+                    ${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}<br>
+                    Akurasi: ±${Math.round(position.coords.accuracy)} m
+                `).openPopup();
+                
+                // Lingkaran akurasi GPS
+                L.circle([position.coords.latitude, position.coords.longitude], {
+                    radius: position.coords.accuracy,
+                    color: '#3B82F6',
+                    fillColor: '#3B82F6',
+                    fillOpacity: 0.1,
+                    weight: 2
+                }).addTo(map);
+                
+                // Simpan instance map untuk keperluan lain (opsional)
+                this.map = map;
+                
+                // Fix rendering di mobile
+                setTimeout(() => {
+                    map.invalidateSize();
+                }, 100);
+            } catch (err) {
+                console.error('Gagal membuat peta:', err);
+                this.initMapFallback('Gagal memuat peta: ' + err.message);
+            }
         }, 100);
     },
 
-    initMapFallback() {
+    initMapFallback(reason = 'Lokasi gagal diakses atau tidak tersedia') {
         const mapContainer = document.getElementById('location-map');
         if (!mapContainer) return;
         mapContainer.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #e5e7eb; color: #6b7280; flex-direction: column;">
+            <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #e5e7eb; color: #6b7280; flex-direction: column; text-align: center; padding: 20px;">
                 <i class="fas fa-map-marker-alt fa-2x" style="margin-bottom: 8px;"></i>
-                <p style="font-size: 14px;">Tidak dapat menampilkan peta</p>
-                <p style="font-size: 12px;">Lokasi gagal diakses atau tidak tersedia</p>
+                <p style="font-size: 14px; margin: 0;">Tidak dapat menampilkan peta</p>
+                <p style="font-size: 12px; margin-top: 4px;">${reason}</p>
+                <button class="btn-sm" style="margin-top: 12px;" onclick="location.reload()">Coba Lagi</button>
             </div>
         `;
     },
