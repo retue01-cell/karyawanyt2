@@ -285,31 +285,60 @@ const adminReports = {
         }
         const [year, month] = monthStr.split('-');
         const monthAttendance = this.rawAttendance.filter(a => a.date && a.date.startsWith(monthStr));
+        
+        // Filter cuti & izin yang disetujui
+        const approvedLeaves = this.rawLeaves.filter(l => l.status === 'approved');
+        const approvedIzin = this.rawIzin.filter(i => i.status === 'approved');
+        
         return this.rawEmployees.map(emp => {
-            const empAtt = monthAttendance.filter(a => String(a.userId) === String(emp.id));
+            const empId = String(emp.id);
+            const empAtt = monthAttendance.filter(a => String(a.userId) === empId);
             let present = 0, late = 0;
             empAtt.forEach(a => {
                 if (a.clockIn) {
                     present++;
-                    // Gunakan status yang sesuai dengan backend: 'Terlambat' atau 'late'
                     if (a.status && (a.status.toLowerCase() === 'terlambat' || a.status.toLowerCase() === 'late')) late++;
                 }
             });
-            const empLeaves = this.rawLeaves.filter(l => String(l.userId) === String(emp.id) && l.status === 'approved');
-            const empIzin = this.rawIzin.filter(i => String(i.userId) === String(emp.id) && i.status === 'approved');
-            let leaveDays = 0;
-            empLeaves.forEach(l => {
-                const start = new Date(l.startDate);
-                const end = new Date(l.endDate);
-                const monthStart = new Date(year, parseInt(month) - 1, 1);
-                const monthEnd = new Date(year, parseInt(month), 0);
-                if (start <= monthEnd && end >= monthStart) leaveDays += parseInt(l.duration) || 1;
+            
+            // Hitung jumlah hari cuti dan izin yang disetujui dalam bulan ini
+            let cutiCount = 0, izinCount = 0;
+            const monthStart = new Date(year, parseInt(month)-1, 1);
+            const monthEnd = new Date(year, parseInt(month), 0);
+            
+            approvedLeaves.forEach(l => {
+                if (String(l.userId) === empId) {
+                    const start = new Date(l.startDate);
+                    const end = new Date(l.endDate);
+                    if (start <= monthEnd && end >= monthStart) {
+                        const overlapStart = new Date(Math.max(start, monthStart));
+                        const overlapEnd = new Date(Math.min(end, monthEnd));
+                        const days = Math.ceil((overlapEnd - overlapStart) / (1000*60*60*24)) + 1;
+                        cutiCount += days;
+                    }
+                }
             });
-            empIzin.forEach(i => {
-                const izinDate = new Date(i.date);
-                if (izinDate.getFullYear() == year && izinDate.getMonth() == parseInt(month) - 1) leaveDays += parseInt(i.duration) || 1;
+            
+            approvedIzin.forEach(i => {
+                if (String(i.userId) === empId) {
+                    const izinDate = new Date(i.date);
+                    if (izinDate >= monthStart && izinDate <= monthEnd) {
+                        izinCount += parseInt(i.duration) || 1;
+                    }
+                }
             });
-            return { name: emp.name, department: emp.department, present, late, absent: leaveDays, total: present + leaveDays };
+            
+            const totalAbsent = cutiCount + izinCount;
+            return {
+                name: emp.name,
+                department: emp.department,
+                present,
+                late,
+                cuti: cutiCount,
+                izin: izinCount,
+                absent: totalAbsent,
+                total: present + totalAbsent
+            };
         });
     },
 
@@ -433,20 +462,24 @@ const adminReports = {
         if (!tbody) return;
         const data = this.getFilteredAttendance();
         if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px;">Tidak ada data</div></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:40px;">Tidak ada data</div></tr>';
             return;
         }
         tbody.innerHTML = data.map(row => `
             <tr>
-                <td><div class="employee-info"><div class="employee-details"><span class="employee-name">${this.escapeHtml(row.name)}</span></div></div></td>
+                <td><div class="employee-info"><div class="employee-details"><span class="employee-name">${this.escapeHtml(row.name)}</span></div></div></div>
                 <td>${this.escapeHtml(row.department)}</div>
                 <td class="text-center" style="color:var(--color-success); font-weight:600;">${row.present}</div>
                 <td class="text-center" style="color:var(--color-warning); font-weight:600;">${row.late}</div>
+                <td class="text-center" style="color:var(--color-info); font-weight:600;">${row.cuti}</div>
+                <td class="text-center" style="color:var(--color-info); font-weight:600;">${row.izin}</div>
                 <td class="text-center" style="color:var(--color-danger); font-weight:600;">${row.absent}</div>
                 <td class="text-center">${row.total}</div>
                 <td><button class="btn-action view" onclick="adminReports.viewAttendanceDetail('${this.escapeHtml(row.name)}')"><i class="fas fa-eye"></i></button></div>
             </tr>
         `).join('');
+        
+        // Update mobile cards
         const mobile = document.getElementById('attendance-mobile-cards');
         if (mobile) {
             mobile.innerHTML = data.map(row => `
@@ -454,6 +487,8 @@ const adminReports = {
                     <div class="mobile-card-header"><span class="mobile-card-title">${this.escapeHtml(row.name)}</span><span>${this.escapeHtml(row.department)}</span></div>
                     <div class="mobile-card-row"><span class="mobile-card-label">Hadir</span><span>${row.present}</span></div>
                     <div class="mobile-card-row"><span class="mobile-card-label">Telat</span><span>${row.late}</span></div>
+                    <div class="mobile-card-row"><span class="mobile-card-label">Cuti</span><span>${row.cuti}</span></div>
+                    <div class="mobile-card-row"><span class="mobile-card-label">Izin</span><span>${row.izin}</span></div>
                     <div class="mobile-card-row"><span class="mobile-card-label">Absen</span><span>${row.absent}</span></div>
                     <button class="btn-primary btn-sm" onclick="adminReports.viewAttendanceDetail('${this.escapeHtml(row.name)}')">Lihat Detail</button>
                 </div>
@@ -578,6 +613,31 @@ const adminReports = {
             selectedMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
         }
         const [year, month] = selectedMonth.split('-');
+        
+        // Kumpulkan cuti & izin yang disetujui untuk karyawan ini pada bulan tersebut
+        const approvedLeaves = this.rawLeaves.filter(l => l.status === 'approved' && String(l.userId) === String(emp.id));
+        const approvedIzin = this.rawIzin.filter(i => i.status === 'approved' && String(i.userId) === String(emp.id));
+        
+        const leaveStatusMap = {};
+        approvedLeaves.forEach(leave => {
+            const start = new Date(leave.startDate);
+            const end = new Date(leave.endDate);
+            let current = new Date(start);
+            while (current <= end) {
+                const dateStr = current.toISOString().split('T')[0];
+                if (dateStr.startsWith(selectedMonth)) {
+                    leaveStatusMap[dateStr] = { type: 'cuti', label: leave.typeLabel || 'Cuti' };
+                }
+                current.setDate(current.getDate() + 1);
+            }
+        });
+        approvedIzin.forEach(izin => {
+            const dateStr = izin.date;
+            if (dateStr && dateStr.startsWith(selectedMonth)) {
+                leaveStatusMap[dateStr] = { type: 'izin', label: izin.typeLabel || 'Izin' };
+            }
+        });
+        
         const daysInMonth = new Date(parseInt(year), parseInt(month), 0).getDate();
         const attendanceRecords = this.rawAttendance.filter(a => String(a.userId) === String(emp.id) && a.date && a.date.startsWith(selectedMonth));
         const recordsMap = {};
@@ -587,54 +647,48 @@ const adminReports = {
         for (let d = 1; d <= daysInMonth; d++) {
             const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
             const rec = recordsMap[dateStr];
-            let statusHtml = '<span class="badge-status warning">Tidak Hadir</span>';
+            let statusHtml = '';
             let photoHtml = '-';
             
-            if (rec && rec.clockIn) {
-                // Gunakan mapping status sesuai backend
+            if (leaveStatusMap[dateStr]) {
+                const statusClass = 'info';
+                statusHtml = `<span class="badge-status ${statusClass}">${leaveStatusMap[dateStr].label}</span>`;
+            } else if (rec && rec.clockIn) {
                 const statusClass = this.getStatusClass(rec.status);
                 const statusLabel = rec.status || 'Hadir';
                 statusHtml = `<span class="badge-status ${statusClass}">${statusLabel}</span>`;
-
-                // Cek apakah ada foto verifikasi
-                if (rec.verificationPhoto && rec.verificationPhoto.startsWith('data:image')) {
-                    photoHtml = `<button class="btn-action view" onclick="adminReports.viewPhoto(\'${rec.verificationPhoto.replace(/\'/g, "\\\\\\\'")}\')" title="Lihat Bukti Foto"><i class="fas fa-camera"></i></button>`;
-                } else if (rec.verificationPhoto) {
-                    // Mungkin berupa URL atau data yang sudah tercompress, coba tetap ditampilkan
-                    photoHtml = `<button class="btn-action view" onclick="adminReports.viewPhoto(\'${rec.verificationPhoto.replace(/\'/g, "\\\\\\\'")}\')" title="Lihat Bukti Foto"><i class="fas fa-image"></i></button>`;
+                if (rec.verificationPhoto) {
+                    photoHtml = `<button class="btn-action view" onclick="adminReports.viewPhoto('${rec.verificationPhoto.replace(/\'/g, "\\\'")}')" title="Lihat Bukti Foto"><i class="fas fa-camera"></i></button>`;
                 }
-            } else if (rec && (rec.status === 'Libur' || rec.status === 'libur')) {
-                statusHtml = '<span class="badge-status secondary">Libur</span>';
-            } else if (rec && rec.isBlocked && rec.status) {
-                // Status untuk cuti/izin yang memblokir absensi
-                const statusClass = this.getStatusClass(rec.status);
-                statusHtml = `<span class="badge-status ${statusClass}">${rec.status}</span>`;
+            } else {
+                // Tidak ada clock in dan tidak ada cuti/izin -> Alpha
+                statusHtml = '<span class="badge-status danger">Alpha</span>';
             }
             
             tableRows += `
                 <tr>
-                    <td class="text-center">${d}</td>
-                    <td class="text-center">${dateStr}</td>
-                    <td class="text-center">${rec ? rec.clockIn || '-' : '-'}</td>
-                    <td class="text-center">${rec ? rec.clockOut || '-' : '-'}</td>
-                    <td class="text-center">${statusHtml}</td>
-                    <td class="text-center">${photoHtml}</td>
+                    <td class="text-center" style="padding: 8px; border: 1px solid #e2e8f0;">${d}</div>
+                    <td class="text-center" style="padding: 8px; border: 1px solid #e2e8f0;">${dateStr}</div>
+                    <td class="text-center" style="padding: 8px; border: 1px solid #e2e8f0;">${rec ? rec.clockIn || '-' : '-'}</div>
+                    <td class="text-center" style="padding: 8px; border: 1px solid #e2e8f0;">${rec ? rec.clockOut || '-' : '-'}</div>
+                    <td class="text-center" style="padding: 8px; border: 1px solid #e2e8f0;">${statusHtml}</div>
+                    <td class="text-center" style="padding: 8px; border: 1px solid #e2e8f0;">${photoHtml}</div>
                 </tr>
             `;
         }
         
         const formattedMonth = `${month}-${year}`;
         const modalContent = `
-            <div style="max-height:60vh;overflow-y:auto;">
-                <h4>Riwayat Absensi ${emp.name} - Bulan ${formattedMonth}</h4>
-                <table class="history-table" style="width:100%;font-size:12px;border-collapse:collapse;">
+            <div style="max-height:60vh; overflow-y:auto;">
+                <h4 style="margin-bottom:16px;">Riwayat Absensi ${emp.name} - Bulan ${formattedMonth}</h4>
+                <table style="width:100%; border-collapse: collapse; font-size:12px;">
                     <thead>
-                        <tr>
-                            <th>Tanggal</th>
-                            <th>Clock In</th>
-                            <th>Clock Out</th>
-                            <th>Status</th>
-                            <th>Bukti Foto</th>
+                        <tr style="background: #f1f5f9;">
+                            <th style="padding: 8px; border: 1px solid #e2e8f0;">Tanggal</th>
+                            <th style="padding: 8px; border: 1px solid #e2e8f0;">Clock In</th>
+                            <th style="padding: 8px; border: 1px solid #e2e8f0;">Clock Out</th>
+                            <th style="padding: 8px; border: 1px solid #e2e8f0;">Status</th>
+                            <th style="padding: 8px; border: 1px solid #e2e8f0;">Bukti Foto</th>
                         </tr>
                     </thead>
                     <tbody>${tableRows}</tbody>
