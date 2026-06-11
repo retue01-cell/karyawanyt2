@@ -116,14 +116,17 @@ const settings = {
             const earlyThreshold = (allSettings.early_in_threshold !== undefined && allSettings.early_in_threshold !== null) ? allSettings.early_in_threshold : '60';
             const diligentThreshold = (allSettings.diligent_threshold !== undefined && allSettings.diligent_threshold !== null) ? allSettings.diligent_threshold : '30';
             const lateTolerance = (allSettings.late_tolerance !== undefined && allSettings.late_tolerance !== null) ? allSettings.late_tolerance : 15;
+            const outsideTolerance = (allSettings.outside_tolerance !== undefined && allSettings.outside_tolerance !== null) ? allSettings.outside_tolerance : 120;
             
             const earlyInput = document.getElementById('setting-early-threshold');
             const diligentInput = document.getElementById('setting-diligent-threshold');
             const toleranceInput = document.getElementById('setting-late-tolerance');
+            const outsideInput = document.getElementById('setting-outside-tolerance');
             
             if (earlyInput) earlyInput.value = earlyThreshold;
             if (diligentInput) diligentInput.value = diligentThreshold;
             if (toleranceInput) toleranceInput.value = lateTolerance;
+            if (outsideInput) outsideInput.value = outsideTolerance;
 
             const faceRecognition = (allSettings.face_recognition === 'true' || allSettings.face_recognition === true || allSettings.face_recognition === 'TRUE');
             const faceCheckbox = document.getElementById('setting-face-recognition');
@@ -351,6 +354,7 @@ const settings = {
         const earlyThreshold = document.getElementById('setting-early-threshold').value;
         const diligentThreshold = document.getElementById('setting-diligent-threshold').value;
         const lateTolerance = document.getElementById('setting-late-tolerance').value;
+        const outsideTolerance = document.getElementById('setting-outside-tolerance').value;
         const faceRecognition = document.getElementById('setting-face-recognition').checked;
         const locationTracking = document.getElementById('setting-location-tracking').checked;
         try {
@@ -359,6 +363,7 @@ const settings = {
                 api.saveSetting('early_in_threshold', earlyThreshold),
                 api.saveSetting('diligent_threshold', diligentThreshold),
                 api.saveSetting('late_tolerance', lateTolerance),
+                api.saveSetting('outside_tolerance', outsideTolerance),
                 api.saveSetting('face_recognition', String(faceRecognition)),
                 api.saveSetting('location_tracking', String(locationTracking))
             ]);
