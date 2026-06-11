@@ -177,29 +177,52 @@ const absensi = {
             return;
         }
 
+        // Mapping status ke badge
+        const getStatusBadge = (status) => {
+            if (!status) return '<span class="badge-status secondary">Waiting</span>';
+            
+            const s = status.toLowerCase();
+            const map = {
+                'on time': { class: 'success', label: 'On Time' },
+                'tepat': { class: 'success', label: 'Tepat Waktu' },
+                'tepat waktu': { class: 'success', label: 'Tepat Waktu' },
+                'ontime': { class: 'success', label: 'On Time' },
+                'early in': { class: 'info', label: 'Early In' },
+                'rajin': { class: 'success', label: 'Rajin' },
+                'terlambat': { class: 'warning', label: 'Terlambat' },
+                'late': { class: 'warning', label: 'Terlambat' },
+                'late & early out': { class: 'danger', label: 'Late & Early Out' },
+                'early out': { class: 'warning', label: 'Early Out' },
+                'outside': { class: 'danger', label: 'Outside' },
+                'lembur': { class: 'warning', label: 'Lembur' },
+                'incomplete': { class: 'secondary', label: 'Incomplete' },
+                'alpha': { class: 'danger', label: 'Alpha' },
+                'cuti': { class: 'info', label: 'Cuti' },
+                'cuti tahunan': { class: 'info', label: 'Cuti' },
+                'cuti sakit': { class: 'info', label: 'Cuti Sakit' },
+                'sakit': { class: 'info', label: 'Sakit' },
+                'izin': { class: 'info', label: 'Izin' },
+                'izin penting': { class: 'info', label: 'Izin Penting' },
+                'keadaan darurat': { class: 'info', label: 'Keadaan Darurat' },
+                'dinas luar': { class: 'info', label: 'Dinas Luar' },
+                'libur': { class: 'secondary', label: 'Libur' },
+                'waiting': { class: 'secondary', label: 'Menunggu' }
+            };
+            
+            for (const [key, val] of Object.entries(map)) {
+                if (s === key) {
+                    return `<span class="badge-status ${val.class}">${val.label}</span>`;
+                }
+            }
+            // Fallback: tampilkan status asli
+            return `<span class="badge-status secondary">${status}</span>`;
+        };
+
         tbody.innerHTML = historyData.slice(0, 10).map(record => {
             // Calculate duration using the shared utility function
             let duration = '--';
             if (record.clockIn && record.clockOut) {
                 duration = dateTime.calculateDuration(record.clockIn, record.clockOut);
-            }
-
-            // Status Badge
-            let statusBadge = '<span class="badge-status">Waiting</span>';
-            if (record.status && record.status.toLowerCase() === 'ontime') {
-                statusBadge = '<span class="badge-status success">Tepat Waktu</span>';
-            } else if (record.status && record.status.toLowerCase() === 'tepat') {
-                statusBadge = '<span class="badge-status success">Tepat Waktu</span>';
-            } else if (record.status && record.status.toLowerCase() === 'early in') {
-                statusBadge = '<span class="badge-status info">Early In</span>';
-            } else if (record.status && record.status.toLowerCase() === 'rajin') {
-                statusBadge = '<span class="badge-status success">Rajin</span>';
-            } else if (record.status && (record.status.toLowerCase() === 'terlambat' || record.status.toLowerCase() === 'late')) {
-                statusBadge = '<span class="badge-status warning">Terlambat</span>';
-            } else if (record.status && record.status.toLowerCase() === 'outside') {
-                statusBadge = '<span class="badge-status danger">Outside</span>';
-            } else if (record.status && record.status.toLowerCase() === 'lembur') {
-                statusBadge = '<span class="badge-status warning">Lembur</span>';
             }
 
             // Format date to local standard UI string
@@ -214,7 +237,7 @@ const absensi = {
                     <td>${record.clockIn || '--:--'}</td>
                     <td>${record.clockOut || '--:--'}</td>
                     <td>${duration}</td>
-                    <td>${statusBadge}</td>
+                    <td>${getStatusBadge(record.status)}</td>
                 </tr>
             `;
         }).join('');
