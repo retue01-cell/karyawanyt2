@@ -58,6 +58,14 @@ const shiftSchedule = {
             }
             storage.set('shift_schedule', this.scheduleData);
             
+            // Ambil data cuti/izin yang disetujui untuk bulan ini
+            const leavesResult = await api.getApprovedLeavesForMonth(yearMonth);
+            if (leavesResult.success && leavesResult.data) {
+                this.approvedLeaves = leavesResult.data;
+            } else {
+                this.approvedLeaves = {};
+            }
+            
             console.log('Shift Schedule: Data loaded successfully for', yearMonth, this.scheduleData[yearMonth]);
         } catch (error) {
             console.error('Error loading schedule:', error);
@@ -68,6 +76,7 @@ const shiftSchedule = {
             if (!this.scheduleData[yearMonth]) {
                 this.scheduleData[yearMonth] = {};
             }
+            this.approvedLeaves = {};
         }
         
         const periodInput = document.getElementById('schedule-period');
@@ -84,10 +93,41 @@ const shiftSchedule = {
         const table = document.querySelector('.shift-schedule-table');
         if (!table) return;
         const daysInMonth = this.getDaysInMonth(this.currentMonth, this.currentYear);
-        // Assume 45px per date column, 180px for employee column
-        const minWidth = 180 + (daysInMonth * 45);
+        // Assume 50px per date column, 200px for employee column
+        const minWidth = 200 + (daysInMonth * 50);
         table.style.minWidth = minWidth + 'px';
-        console.log(`Table min-width set to ${minWidth}px for ${daysInMonth} days`);
+        table.style.width = 'auto';
+        console.log(`[ShiftSchedule] Table min-width set to ${minWidth}px for ${daysInMonth} days`);
+        
+        // Force wrapper to scroll
+        const wrapper = document.querySelector('.shift-schedule-table-wrapper');
+        if (wrapper) {
+            wrapper.style.overflowX = 'auto';
+            wrapper.style.webkitOverflowScrolling = 'touch';
+        }
+        const container = document.querySelector('.shift-schedule-table-container');
+        if (container) {
+            container.style.overflowX = 'auto';
+        }
+    },
+
+    // Debug function to check if scroll is working
+    checkScroll() {
+        const container = document.querySelector('.shift-schedule-table-container');
+        const table = document.querySelector('.shift-schedule-table');
+        if (container && table) {
+            const containerWidth = container.clientWidth;
+            const tableWidth = table.scrollWidth;
+            console.log(`[ShiftSchedule] Container width: ${containerWidth}, Table width: ${tableWidth}, Can scroll: ${tableWidth > containerWidth}`);
+            if (tableWidth > containerWidth) {
+                container.style.overflowX = 'auto';
+            } else {
+                console.warn('[ShiftSchedule] Table width is not greater than container, adjusting min-width');
+                const days = this.getDaysInMonth(this.currentMonth, this.currentYear);
+                const newMinWidth = 200 + (days * 50);
+                table.style.minWidth = newMinWidth + 'px';
+            }
+        }
     },
 
     getFilteredEmployees() {
@@ -343,6 +383,8 @@ const shiftSchedule = {
                 await this.loadData();
                 this.renderTable(); 
                 this.updateSummary();
+                this.adjustTableWidth(); // Ensure table width is adjusted after month change
+                this.checkScroll(); // Debug: verify scroll is working
             } finally {
                 this.hideLoading();
             }
