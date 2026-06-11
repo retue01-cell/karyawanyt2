@@ -284,15 +284,20 @@ const adminReports = {
             monthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
         }
         const [year, month] = monthStr.split('-');
-        const monthAttendance = this.rawAttendance.filter(a => a.date && a.date.startsWith(monthStr));
+        const yearNum = parseInt(year, 10);
+        const monthNum = parseInt(month, 10);
         
-        // Filter cuti & izin yang disetujui
+        // Total hari dalam bulan
+        const totalDaysInMonth = new Date(yearNum, monthNum, 0).getDate();
+        
+        const monthAttendance = this.rawAttendance.filter(a => a.date && a.date.startsWith(monthStr));
         const approvedLeaves = this.rawLeaves.filter(l => l.status === 'approved');
         const approvedIzin = this.rawIzin.filter(i => i.status === 'approved');
         
         return this.rawEmployees.map(emp => {
             const empId = String(emp.id);
             const empAtt = monthAttendance.filter(a => String(a.userId) === empId);
+            
             let present = 0, late = 0;
             empAtt.forEach(a => {
                 if (a.clockIn) {
@@ -301,10 +306,10 @@ const adminReports = {
                 }
             });
             
-            // Hitung jumlah hari cuti dan izin yang disetujui dalam bulan ini
+            // Hitung cuti & izin yang disetujui dalam bulan ini
             let cutiCount = 0, izinCount = 0;
-            const monthStart = new Date(year, parseInt(month)-1, 1);
-            const monthEnd = new Date(year, parseInt(month), 0);
+            const monthStart = new Date(yearNum, monthNum - 1, 1);
+            const monthEnd = new Date(yearNum, monthNum, 0);
             
             approvedLeaves.forEach(l => {
                 if (String(l.userId) === empId) {
@@ -313,7 +318,7 @@ const adminReports = {
                     if (start <= monthEnd && end >= monthStart) {
                         const overlapStart = new Date(Math.max(start, monthStart));
                         const overlapEnd = new Date(Math.min(end, monthEnd));
-                        const days = Math.ceil((overlapEnd - overlapStart) / (1000*60*60*24)) + 1;
+                        const days = Math.ceil((overlapEnd - overlapStart) / (1000 * 60 * 60 * 24)) + 1;
                         cutiCount += days;
                     }
                 }
@@ -328,16 +333,17 @@ const adminReports = {
                 }
             });
             
-            const totalAbsent = cutiCount + izinCount;
+            const alpha = totalDaysInMonth - (present + cutiCount + izinCount);
+            
             return {
                 name: emp.name,
                 department: emp.department,
-                present,
-                late,
+                present: present,
+                late: late,
                 cuti: cutiCount,
                 izin: izinCount,
-                absent: totalAbsent,
-                total: present + totalAbsent
+                absent: alpha,
+                total: totalDaysInMonth
             };
         });
     },
@@ -462,20 +468,20 @@ const adminReports = {
         if (!tbody) return;
         const data = this.getFilteredAttendance();
         if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:40px;">Tidak ada data</div></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:40px;">Tidak ada data</td></tr>';
             return;
         }
         tbody.innerHTML = data.map(row => `
             <tr>
-                <td><div class="employee-info"><div class="employee-details"><span class="employee-name">${this.escapeHtml(row.name)}</span></div></div></div>
-                <td>${this.escapeHtml(row.department)}</div>
-                <td class="text-center" style="color:var(--color-success); font-weight:600;">${row.present}</div>
-                <td class="text-center" style="color:var(--color-warning); font-weight:600;">${row.late}</div>
-                <td class="text-center" style="color:var(--color-info); font-weight:600;">${row.cuti}</div>
-                <td class="text-center" style="color:var(--color-info); font-weight:600;">${row.izin}</div>
-                <td class="text-center" style="color:var(--color-danger); font-weight:600;">${row.absent}</div>
-                <td class="text-center">${row.total}</div>
-                <td><button class="btn-action view" onclick="adminReports.viewAttendanceDetail('${this.escapeHtml(row.name)}')"><i class="fas fa-eye"></i></button></div>
+                <td><div class="employee-info"><div class="employee-details"><span class="employee-name">${this.escapeHtml(row.name)}</span></div></div></td>
+                <td>${this.escapeHtml(row.department)}</td>
+                <td class="text-center" style="color:var(--color-success); font-weight:600;">${row.present}</td>
+                <td class="text-center" style="color:var(--color-warning); font-weight:600;">${row.late}</td>
+                <td class="text-center" style="color:var(--color-info); font-weight:600;">${row.cuti}</td>
+                <td class="text-center" style="color:var(--color-info); font-weight:600;">${row.izin}</td>
+                <td class="text-center" style="color:var(--color-danger); font-weight:600;">${row.absent}</td>
+                <td class="text-center">${row.total}</td>
+                <td class="text-center"><button class="btn-action view" onclick="adminReports.viewAttendanceDetail('${this.escapeHtml(row.name)}')"><i class="fas fa-eye"></i></button></td>
             </tr>
         `).join('');
         
@@ -489,7 +495,8 @@ const adminReports = {
                     <div class="mobile-card-row"><span class="mobile-card-label">Telat</span><span>${row.late}</span></div>
                     <div class="mobile-card-row"><span class="mobile-card-label">Cuti</span><span>${row.cuti}</span></div>
                     <div class="mobile-card-row"><span class="mobile-card-label">Izin</span><span>${row.izin}</span></div>
-                    <div class="mobile-card-row"><span class="mobile-card-label">Absen</span><span>${row.absent}</span></div>
+                    <div class="mobile-card-row"><span class="mobile-card-label">Alpha</span><span>${row.absent}</span></div>
+                    <div class="mobile-card-row"><span class="mobile-card-label">Total</span><span>${row.total}</span></div>
                     <button class="btn-primary btn-sm" onclick="adminReports.viewAttendanceDetail('${this.escapeHtml(row.name)}')">Lihat Detail</button>
                 </div>
             `).join('');
@@ -613,6 +620,8 @@ const adminReports = {
             selectedMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
         }
         const [year, month] = selectedMonth.split('-');
+        const yearNum = parseInt(year, 10);
+        const monthNum = parseInt(month, 10);
         
         // Kumpulkan cuti & izin yang disetujui untuk karyawan ini pada bulan tersebut
         const approvedLeaves = this.rawLeaves.filter(l => l.status === 'approved' && String(l.userId) === String(emp.id));
@@ -638,57 +647,60 @@ const adminReports = {
             }
         });
         
-        const daysInMonth = new Date(parseInt(year), parseInt(month), 0).getDate();
+        const daysInMonth = new Date(yearNum, monthNum, 0).getDate();
         const attendanceRecords = this.rawAttendance.filter(a => String(a.userId) === String(emp.id) && a.date && a.date.startsWith(selectedMonth));
         const recordsMap = {};
         attendanceRecords.forEach(rec => { recordsMap[rec.date] = rec; });
         
         let tableRows = '';
         for (let d = 1; d <= daysInMonth; d++) {
-            const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const dateStr = `${year}-${String(monthNum).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
             const rec = recordsMap[dateStr];
             let statusHtml = '';
             let photoHtml = '-';
-            
+
             if (leaveStatusMap[dateStr]) {
-                const statusClass = 'info';
-                statusHtml = `<span class="badge-status ${statusClass}">${leaveStatusMap[dateStr].label}</span>`;
+                statusHtml = `<span class="badge-status info">${leaveStatusMap[dateStr].label}</span>`;
             } else if (rec && rec.clockIn) {
                 const statusClass = this.getStatusClass(rec.status);
                 const statusLabel = rec.status || 'Hadir';
                 statusHtml = `<span class="badge-status ${statusClass}">${statusLabel}</span>`;
                 if (rec.verificationPhoto) {
-                    photoHtml = `<button class="btn-action view" onclick="adminReports.viewPhoto('${rec.verificationPhoto.replace(/\'/g, "\\'")}')" title="Lihat Bukti Foto"><i class="fas fa-camera"></i></button>`;
+                    photoHtml = `<button class="btn-action view" onclick="adminReports.viewPhoto('${rec.verificationPhoto.replace(/\\'/g, "\\\\'")}')\" title=\"Lihat Bukti Foto\"><i class="fas fa-camera"></i></button>`;
                 }
             } else {
                 // Tidak ada clock in dan tidak ada cuti/izin -> Alpha
                 statusHtml = '<span class="badge-status danger">Alpha</span>';
             }
-            
+
+            const clockIn = rec?.clockIn || '-';
+            const clockOut = rec?.clockOut || '-';
+
             tableRows += `
                 <tr>
-                    <td class="text-center" style="padding: 8px; border: 1px solid #e2e8f0;">${d}</div>
-                    <td class="text-center" style="padding: 8px; border: 1px solid #e2e8f0;">${dateStr}</div>
-                    <td class="text-center" style="padding: 8px; border: 1px solid #e2e8f0;">${rec ? rec.clockIn || '-' : '-'}</div>
-                    <td class="text-center" style="padding: 8px; border: 1px solid #e2e8f0;">${rec ? rec.clockOut || '-' : '-'}</div>
-                    <td class="text-center" style="padding: 8px; border: 1px solid #e2e8f0;">${statusHtml}</div>
-                    <td class="text-center" style="padding: 8px; border: 1px solid #e2e8f0;">${photoHtml}</div>
+                    <td style="padding: 8px; border: 1px solid #e2e8f0; text-align: center;">${d}</td>
+                    <td style="padding: 8px; border: 1px solid #e2e8f0; text-align: center;">${dateStr}</td>
+                    <td style="padding: 8px; border: 1px solid #e2e8f0; text-align: center;">${clockIn}</td>
+                    <td style="padding: 8px; border: 1px solid #e2e8f0; text-align: center;">${clockOut}</td>
+                    <td style="padding: 8px; border: 1px solid #e2e8f0; text-align: center;">${statusHtml}</td>
+                    <td style="padding: 8px; border: 1px solid #e2e8f0; text-align: center;">${photoHtml}</td>
                 </tr>
             `;
         }
-        
-        const formattedMonth = `${month}-${year}`;
+
+        const formattedMonth = `${monthNum}-${yearNum}`;
         const modalContent = `
             <div style="max-height:60vh; overflow-y:auto;">
                 <h4 style="margin-bottom:16px;">Riwayat Absensi ${emp.name} - Bulan ${formattedMonth}</h4>
-                <table style="width:100%; border-collapse: collapse; font-size:12px;">
+                <table style="width:100%; border-collapse: collapse; font-size:13px;">
                     <thead>
                         <tr style="background: #f1f5f9;">
-                            <th style="padding: 8px; border: 1px solid #e2e8f0;">Tanggal</th>
-                            <th style="padding: 8px; border: 1px solid #e2e8f0;">Clock In</th>
-                            <th style="padding: 8px; border: 1px solid #e2e8f0;">Clock Out</th>
-                            <th style="padding: 8px; border: 1px solid #e2e8f0;">Status</th>
-                            <th style="padding: 8px; border: 1px solid #e2e8f0;">Bukti Foto</th>
+                            <th style="padding: 10px 8px; border: 1px solid #e2e8f0; text-align: center;">No</th>
+                            <th style="padding: 10px 8px; border: 1px solid #e2e8f0; text-align: center;">Tanggal</th>
+                            <th style="padding: 10px 8px; border: 1px solid #e2e8f0; text-align: center;">Clock In</th>
+                            <th style="padding: 10px 8px; border: 1px solid #e2e8f0; text-align: center;">Clock Out</th>
+                            <th style="padding: 10px 8px; border: 1px solid #e2e8f0; text-align: center;">Status</th>
+                            <th style="padding: 10px 8px; border: 1px solid #e2e8f0; text-align: center;">Bukti Foto</th>
                         </tr>
                     </thead>
                     <tbody>${tableRows}</tbody>
