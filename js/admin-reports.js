@@ -658,7 +658,7 @@ const adminReports = {
                 const statusLabel = rec.status || 'Hadir';
                 statusHtml = `<span class="badge-status ${statusClass}">${statusLabel}</span>`;
                 if (rec.verificationPhoto) {
-                    photoHtml = `<button class="btn-action view" onclick="adminReports.viewPhoto('${rec.verificationPhoto.replace(/\'/g, "\\\'")}')" title="Lihat Bukti Foto"><i class="fas fa-camera"></i></button>`;
+                    photoHtml = `<button class="btn-action view" onclick="adminReports.viewPhoto('${rec.verificationPhoto.replace(/\'/g, "\\'")}')" title="Lihat Bukti Foto"><i class="fas fa-camera"></i></button>`;
                 }
             } else {
                 // Tidak ada clock in dan tidak ada cuti/izin -> Alpha
