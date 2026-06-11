@@ -701,8 +701,24 @@ const adminReports = {
         
         const leaveStatusMap = {};
         approvedLeaves.forEach(leave => {
-            const start = new Date(leave.startDate);
-            const end = new Date(leave.endDate);
+            // Normalisasi startDate
+            let startDateStr = leave.startDate;
+            if (startDateStr instanceof Date) {
+                startDateStr = startDateStr.toISOString().split('T')[0];
+            } else if (typeof startDateStr === 'string' && startDateStr.includes('T')) {
+                startDateStr = startDateStr.split('T')[0];
+            }
+            
+            // Normalisasi endDate
+            let endDateStr = leave.endDate;
+            if (endDateStr instanceof Date) {
+                endDateStr = endDateStr.toISOString().split('T')[0];
+            } else if (typeof endDateStr === 'string' && endDateStr.includes('T')) {
+                endDateStr = endDateStr.split('T')[0];
+            }
+            
+            const start = new Date(startDateStr);
+            const end = new Date(endDateStr);
             let current = new Date(start);
             while (current <= end) {
                 const dateStr = current.toISOString().split('T')[0];
@@ -713,7 +729,13 @@ const adminReports = {
             }
         });
         approvedIzin.forEach(izin => {
-            const dateStr = izin.date;
+            let dateStr = izin.date;
+            // Normalisasi tanggal izin
+            if (dateStr instanceof Date) {
+                dateStr = dateStr.toISOString().split('T')[0];
+            } else if (typeof dateStr === 'string' && dateStr.includes('T')) {
+                dateStr = dateStr.split('T')[0];
+            }
             if (dateStr && dateStr.startsWith(selectedMonth)) {
                 leaveStatusMap[dateStr] = { type: 'izin', label: izin.typeLabel || 'Izin' };
             }
