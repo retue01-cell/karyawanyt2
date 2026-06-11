@@ -117,7 +117,7 @@ const izin = {
         const formData = storage.get('temp_izin_form');
         if (!formData) { toast.error('Data form tidak ditemukan'); return; }
 
-        const typeLabels = { sick: 'Sakit', permission: 'Izin Penting', emergency: 'Keadaan Darurat' };
+        const typeLabels = { sick: 'Sakit', permission: 'Izin Penting', emergency: 'Keadaan Darurat', out_of_office: 'Dinas Luar' };
         const currentUser = auth.getCurrentUser();
 
         const izinEntry = {
