@@ -145,9 +145,8 @@ const dateTime = {
     },
 
     getLocalDate() {
-        // Returns YYYY-MM-DD for the local timezone, not UTC
-        const today = new Date();
-        return new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+        // Menggunakan timezone Asia/Jakarta untuk konsistensi dengan backend
+        return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
     },
 
     getGreeting() {
