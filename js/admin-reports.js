@@ -247,8 +247,35 @@ const adminReports = {
         return map[type] || type;
     },
     getIzinTypeLabel(type) {
-        const map = { sick: 'Sakit', permission: 'Izin Penting', emergency: 'Keadaan Darurat' };
+        const map = { sick: 'Sakit', permission: 'Izin Penting', emergency: 'Keadaan Darurat', out_of_office: 'Dinas Luar' };
         return map[type] || type;
+    },
+    getStatusClass(status) {
+        const map = {
+            'On Time': 'success',
+            'Tepat': 'success',
+            'Terlambat': 'warning',
+            'Late': 'warning',
+            'Early In': 'success',
+            'Rajin': 'success',
+            'Early Out': 'warning',
+            'Late & Early Out': 'danger',
+            'Incomplete': 'secondary',
+            'Outside': 'info',
+            'Lembur': 'info',
+            'Cuti': 'info',
+            'Cuti Tahunan': 'info',
+            'Cuti Sakit': 'info',
+            'Sakit': 'info',
+            'Izin': 'info',
+            'Izin Penting': 'info',
+            'Keadaan Darurat': 'info',
+            'Dinas Luar': 'info',
+            'Alpha': 'danger',
+            'Libur': 'secondary',
+            'Tidak Hadir': 'warning'
+        };
+        return map[status] || 'secondary';
     },
 
     buildAttendanceDataForMonth(monthStr) {
@@ -564,21 +591,24 @@ const adminReports = {
             let photoHtml = '-';
             
             if (rec && rec.clockIn) {
-                // Sesuaikan dengan status backend: 'Tepat', 'Rajin', 'Early In' = Hadir/Success
-                const isPresent = rec.status === 'Tepat' || rec.status === 'Rajin' || rec.status === 'Early In' || rec.status === 'ontime';
-                const statusClass = isPresent ? 'success' : (rec.status === 'Terlambat' || rec.status === 'late' ? 'warning' : 'secondary');
-                const statusLabel = isPresent ? 'Hadir' : rec.status;
+                // Gunakan mapping status sesuai backend
+                const statusClass = this.getStatusClass(rec.status);
+                const statusLabel = rec.status || 'Hadir';
                 statusHtml = `<span class="badge-status ${statusClass}">${statusLabel}</span>`;
-                
+
                 // Cek apakah ada foto verifikasi
                 if (rec.verificationPhoto && rec.verificationPhoto.startsWith('data:image')) {
-                    photoHtml = `<button class="btn-action view" onclick="adminReports.viewPhoto('${rec.verificationPhoto.replace(/'/g, "\\'")}')" title="Lihat Bukti Foto"><i class="fas fa-camera"></i></button>`;
+                    photoHtml = `<button class="btn-action view" onclick="adminReports.viewPhoto(\'${rec.verificationPhoto.replace(/\'/g, "\\\\\\\'")}\')" title="Lihat Bukti Foto"><i class="fas fa-camera"></i></button>`;
                 } else if (rec.verificationPhoto) {
                     // Mungkin berupa URL atau data yang sudah tercompress, coba tetap ditampilkan
-                    photoHtml = `<button class="btn-action view" onclick="adminReports.viewPhoto('${rec.verificationPhoto.replace(/'/g, "\\'")}')" title="Lihat Bukti Foto"><i class="fas fa-image"></i></button>`;
+                    photoHtml = `<button class="btn-action view" onclick="adminReports.viewPhoto(\'${rec.verificationPhoto.replace(/\'/g, "\\\\\\\'")}\')" title="Lihat Bukti Foto"><i class="fas fa-image"></i></button>`;
                 }
-            } else if (rec && rec.status === 'libur') {
+            } else if (rec && (rec.status === 'Libur' || rec.status === 'libur')) {
                 statusHtml = '<span class="badge-status secondary">Libur</span>';
+            } else if (rec && rec.isBlocked && rec.status) {
+                // Status untuk cuti/izin yang memblokir absensi
+                const statusClass = this.getStatusClass(rec.status);
+                statusHtml = `<span class="badge-status ${statusClass}">${rec.status}</span>`;
             }
             
             tableRows += `
