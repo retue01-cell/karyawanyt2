@@ -39,12 +39,19 @@ const izin = {
 
     initForm() {
         const form = document.getElementById('izin-form');
+        const submitBtn = document.getElementById('btn-submit-izin');
+
+        // Jika tombol verifikasi masih ada, ubah teks dan fungsinya
         const verifyBtn = document.getElementById('btn-verify-izin');
+        if (verifyBtn) {
+            verifyBtn.textContent = 'Kirim Pengajuan';
+            verifyBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Kirim Pengajuan';
+            verifyBtn.removeEventListener('click', this.startVerification);
+            verifyBtn.addEventListener('click', () => this.handleSubmit());
+        }
+
         const fileInput = document.getElementById('izin-document');
         const fileUpload = document.getElementById('file-upload');
-
-        if (form) form.addEventListener('submit', (e) => { e.preventDefault(); this.startVerification(); });
-        if (verifyBtn) verifyBtn.addEventListener('click', () => this.startVerification());
 
         if (fileUpload && fileInput) {
             fileUpload.addEventListener('click', () => fileInput.click());
@@ -98,55 +105,61 @@ const izin = {
         if (fileInput) fileInput.value = '';
     },
 
-    startVerification() {
+    async handleSubmit() {
         const type = document.getElementById('izin-type')?.value;
         const date = document.getElementById('izin-date')?.value;
         const duration = document.getElementById('izin-duration')?.value;
         const reason = document.getElementById('izin-reason')?.value;
+
         if (!type || !date || !duration || !reason) {
             toast.error('Harap isi semua field yang wajib diisi!');
             return;
         }
-        this.tempFormData = { type, date, duration, reason };
-        storage.set('temp_izin_form', this.tempFormData);
-        router.navigate('face-recognition');
-        setTimeout(() => { if (window.faceRecognition) window.faceRecognition.init('izin'); }, 100);
+
+        await this.submitIzin(type, date, duration, reason);
     },
 
-    async submitWithVerification(verificationData) {
-        const formData = storage.get('temp_izin_form');
-        if (!formData) { toast.error('Data form tidak ditemukan'); return; }
-
-        const typeLabels = { sick: 'Sakit', permission: 'Izin Penting', emergency: 'Keadaan Darurat', out_of_office: 'Dinas Luar' };
+    async submitIzin(type, date, duration, reason) {
+        const typeLabels = {
+            sick: 'Sakit',
+            permission: 'Izin Penting',
+            emergency: 'Keadaan Darurat',
+            out_of_office: 'Dinas Luar'
+        };
         const currentUser = auth.getCurrentUser();
 
         const izinEntry = {
             userId: currentUser?.id || 'demo-user',
-            type: formData.type,
-            typeLabel: typeLabels[formData.type] || formData.type,
-            date: formData.date,
-            duration: parseInt(formData.duration),
-            reason: formData.reason,
+            type: type,
+            typeLabel: typeLabels[type] || type,
+            date: date,
+            duration: parseInt(duration),
+            reason: reason,
             hasAttachment: !!this.currentFile,
-            verificationPhoto: verificationData.photo || '',
-            verificationLocation: verificationData.location || '',
-            verificationTimestamp: verificationData.timestamp || ''
+            verificationPhoto: null,
+            verificationLocation: null,
+            verificationTimestamp: null
         };
 
+        loadingIndicator.show('Mengirim pengajuan izin...');
         try {
             const result = await api.submitIzin(izinEntry);
-            if (result.success) this.izinData.unshift(result.data);
-        } catch (error) { console.error('Error submitting izin:', error); }
-
-        storage.remove('temp_izin_form');
-        storage.remove('temp_attendance');
-        this.currentFile = null;
-
-        toast.success('Pengajuan izin berhasil dikirim!');
-        document.getElementById('izin-form')?.reset();
-        this.removeFile();
-        this.renderIzinList();
-        this.updateStats();
+            if (result.success) {
+                this.izinData.unshift(result.data);
+                toast.success('Pengajuan izin berhasil dikirim!');
+                document.getElementById('izin-form')?.reset();
+                this.removeFile();
+                this.renderIzinList();
+                this.updateStats();
+            } else {
+                toast.error(result.error || 'Gagal mengirim pengajuan izin');
+            }
+        } catch (error) {
+            console.error('Error submitting izin:', error);
+            toast.error('Terjadi kesalahan');
+        } finally {
+            loadingIndicator.hide();
+        }
     },
 
     updateStats() {
