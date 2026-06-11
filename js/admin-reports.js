@@ -11,6 +11,7 @@ const adminReports = {
     rawJournals: [],
     jurnalData: [],
     leaveData: [],
+    currentDetailEmployee: null,
 
     filters: {
         attendance: { month: '', dept: '', status: '' },
@@ -683,6 +684,7 @@ const adminReports = {
     },
 
     viewAttendanceDetail(name) {
+        this.currentDetailEmployee = name;
         const emp = this.rawEmployees.find(e => e.name === name);
         if (!emp) { toast.error('Karyawan tidak ditemukan'); return; }
         
@@ -965,6 +967,16 @@ const adminReports = {
                 toast.success('Pengajuan disetujui!');
                 await this.loadData();
                 this.renderLeaveReports();
+                
+                // Tutup modal detail jika sedang terbuka
+                if (this.currentDetailEmployee) {
+                    const modal = document.getElementById('dynamic-modal');
+                    if (modal && modal.style.display === 'flex') {
+                        window.modal.close();
+                        toast.info('Data telah diperbarui. Silakan buka detail absensi kembali.');
+                        this.currentDetailEmployee = null;
+                    }
+                }
             } else toast.error(result.error || 'Gagal menyetujui');
         } catch (error) { toast.error('Terjadi kesalahan'); }
     },
@@ -979,6 +991,16 @@ const adminReports = {
                 toast.info('Pengajuan ditolak');
                 await this.loadData();
                 this.renderLeaveReports();
+                
+                // Tutup modal detail jika sedang terbuka
+                if (this.currentDetailEmployee) {
+                    const modal = document.getElementById('dynamic-modal');
+                    if (modal && modal.style.display === 'flex') {
+                        window.modal.close();
+                        toast.info('Data telah diperbarui. Silakan buka detail absensi kembali.');
+                        this.currentDetailEmployee = null;
+                    }
+                }
             } else toast.error(result.error || 'Gagal menolak');
         } catch (error) { toast.error('Terjadi kesalahan'); }
     },
