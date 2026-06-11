@@ -775,8 +775,19 @@ const adminReports = {
     },
 
     viewPhoto(photoUrl) {
-        // Buka foto di tab baru agar modal detail absensi tidak tertutup
-        window.open(photoUrl, '_blank');
+        // Tampilkan foto dalam modal di layer depan
+        if (window.modal && typeof window.modal.show === 'function') {
+            window.modal.show('Bukti Foto', `
+                <div style="text-align: center;">
+                    <img src="${photoUrl}" style="max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 8px;">
+                </div>
+            `, [
+                { label: 'Tutup', class: 'btn-secondary', onClick: () => window.modal.close() }
+            ]);
+        } else {
+            // Fallback jika modal tidak tersedia (misal error loading)
+            window.open(photoUrl, '_blank');
+        }
     },
 
     _showModal(title, content) {
