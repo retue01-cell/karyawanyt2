@@ -287,8 +287,18 @@ const adminReports = {
         const yearNum = parseInt(year, 10);
         const monthNum = parseInt(month, 10);
         
-        // Total hari dalam bulan
-        const totalDaysInMonth = new Date(yearNum, monthNum, 0).getDate();
+        // Tentukan batas hari terakhir yang dihitung
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth() + 1;
+        const currentDay = today.getDate();
+        
+        let lastDayToCount;
+        if (yearNum === currentYear && monthNum === currentMonth) {
+            lastDayToCount = currentDay; // hanya sampai hari ini
+        } else {
+            lastDayToCount = new Date(yearNum, monthNum, 0).getDate(); // akhir bulan
+        }
         
         const monthAttendance = this.rawAttendance.filter(a => a.date && a.date.startsWith(monthStr));
         const approvedLeaves = this.rawLeaves.filter(l => l.status === 'approved');
@@ -296,44 +306,50 @@ const adminReports = {
         
         return this.rawEmployees.map(emp => {
             const empId = String(emp.id);
-            const empAtt = monthAttendance.filter(a => String(a.userId) === empId);
-            
             let present = 0, late = 0;
-            empAtt.forEach(a => {
-                if (a.clockIn) {
-                    present++;
-                    if (a.status && (a.status.toLowerCase() === 'terlambat' || a.status.toLowerCase() === 'late')) late++;
-                }
-            });
-            
-            // Hitung cuti & izin yang disetujui dalam bulan ini
             let cutiCount = 0, izinCount = 0;
-            const monthStart = new Date(yearNum, monthNum - 1, 1);
-            const monthEnd = new Date(yearNum, monthNum, 0);
             
-            approvedLeaves.forEach(l => {
-                if (String(l.userId) === empId) {
-                    const start = new Date(l.startDate);
-                    const end = new Date(l.endDate);
-                    if (start <= monthEnd && end >= monthStart) {
-                        const overlapStart = new Date(Math.max(start, monthStart));
-                        const overlapEnd = new Date(Math.min(end, monthEnd));
-                        const days = Math.ceil((overlapEnd - overlapStart) / (1000 * 60 * 60 * 24)) + 1;
-                        cutiCount += days;
+            // Loop setiap hari dari tanggal 1 sampai lastDayToCount
+            for (let d = 1; d <= lastDayToCount; d++) {
+                const dateStr = `${year}-${String(monthNum).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                
+                // Cek absensi
+                const attendance = monthAttendance.find(a => String(a.userId) === empId && a.date === dateStr);
+                if (attendance && attendance.clockIn) {
+                    present++;
+                    if (attendance.status && (attendance.status.toLowerCase() === 'terlambat' || attendance.status.toLowerCase() === 'late')) {
+                        late++;
+                    }
+                    continue;
+                }
+                
+                // Cek cuti
+                let isLeave = false;
+                for (const leave of approvedLeaves) {
+                    if (String(leave.userId) === empId) {
+                        const start = new Date(leave.startDate);
+                        const end = new Date(leave.endDate);
+                        const currentDate = new Date(dateStr);
+                        if (currentDate >= start && currentDate <= end) {
+                            cutiCount++;
+                            isLeave = true;
+                            break;
+                        }
                     }
                 }
-            });
-            
-            approvedIzin.forEach(i => {
-                if (String(i.userId) === empId) {
-                    const izinDate = new Date(i.date);
-                    if (izinDate >= monthStart && izinDate <= monthEnd) {
-                        izinCount += parseInt(i.duration) || 1;
+                if (isLeave) continue;
+                
+                // Cek izin
+                for (const izin of approvedIzin) {
+                    if (String(izin.userId) === empId && izin.date === dateStr) {
+                        izinCount++;
+                        isLeave = true;
+                        break;
                     }
                 }
-            });
+            }
             
-            const alpha = totalDaysInMonth - (present + cutiCount + izinCount);
+            const alpha = lastDayToCount - (present + cutiCount + izinCount);
             
             return {
                 name: emp.name,
@@ -343,7 +359,7 @@ const adminReports = {
                 cuti: cutiCount,
                 izin: izinCount,
                 absent: alpha,
-                total: totalDaysInMonth
+                total: lastDayToCount
             };
         });
     },
@@ -653,13 +669,18 @@ const adminReports = {
         attendanceRecords.forEach(rec => { recordsMap[rec.date] = rec; });
         
         let tableRows = '';
+        const todayStr = new Date().toISOString().split('T')[0];
         for (let d = 1; d <= daysInMonth; d++) {
             const dateStr = `${year}-${String(monthNum).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
             const rec = recordsMap[dateStr];
             let statusHtml = '';
             let photoHtml = '-';
 
-            if (leaveStatusMap[dateStr]) {
+            // Jika tanggal di masa depan, tampilkan "-"
+            if (dateStr > todayStr) {
+                statusHtml = '<span class="badge-status secondary">-</span>';
+                photoHtml = '-';
+            } else if (leaveStatusMap[dateStr]) {
                 statusHtml = `<span class="badge-status info">${leaveStatusMap[dateStr].label}</span>`;
             } else if (rec && rec.clockIn) {
                 const statusClass = this.getStatusClass(rec.status);
@@ -754,11 +775,8 @@ const adminReports = {
     },
 
     viewPhoto(photoUrl) {
-        if (window.modal && typeof window.modal.show === 'function') {
-            window.modal.show('Foto', `<img src="${photoUrl}" style="max-width:100%; max-height:70vh;">`, [{ label: 'Tutup', class: 'btn-secondary', onClick: () => window.modal.close() }]);
-        } else {
-            window.open(photoUrl, '_blank');
-        }
+        // Buka foto di tab baru agar modal detail absensi tidak tertutup
+        window.open(photoUrl, '_blank');
     },
 
     _showModal(title, content) {
