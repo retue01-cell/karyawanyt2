@@ -775,19 +775,86 @@ const adminReports = {
     },
 
     viewPhoto(photoUrl) {
-        // Tampilkan foto dalam modal di layer depan
-        if (window.modal && typeof window.modal.show === 'function') {
-            window.modal.show('Bukti Foto', `
-                <div style="text-align: center;">
-                    <img src="${photoUrl}" style="max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 8px;">
-                </div>
-            `, [
-                { label: 'Tutup', class: 'btn-secondary', onClick: () => window.modal.close() }
-            ]);
-        } else {
-            // Fallback jika modal tidak tersedia (misal error loading)
-            window.open(photoUrl, '_blank');
-        }
+        // Hapus modal foto lama jika sudah ada (mencegah double modal)
+        const existingModal = document.getElementById('photo-viewer-modal');
+        if (existingModal) existingModal.remove();
+        
+        // Buat elemen overlay modal
+        const modalOverlay = document.createElement('div');
+        modalOverlay.id = 'photo-viewer-modal';
+        modalOverlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 10001;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        `;
+        
+        // Container untuk foto
+        const modalContainer = document.createElement('div');
+        modalContainer.style.cssText = `
+            max-width: 90vw;
+            max-height: 90vh;
+            background: transparent;
+            cursor: default;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        `;
+        
+        // Tombol close (X) di pojok kanan atas
+        const closeBtn = document.createElement('button');
+        closeBtn.innerHTML = '&times;';
+        closeBtn.style.cssText = `
+            background: rgba(0,0,0,0.6);
+            color: white;
+            border: none;
+            font-size: 28px;
+            font-weight: bold;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        `;
+        closeBtn.onmouseover = () => closeBtn.style.background = 'rgba(0,0,0,0.9)';
+        closeBtn.onmouseout = () => closeBtn.style.background = 'rgba(0,0,0,0.6)';
+        
+        // Gambar
+        const img = document.createElement('img');
+        img.src = photoUrl;
+        img.style.cssText = `
+            max-width: 100%;
+            max-height: 80vh;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            background: white;
+            padding: 4px;
+        `;
+        
+        modalContainer.appendChild(closeBtn);
+        modalContainer.appendChild(img);
+        modalOverlay.appendChild(modalContainer);
+        
+        // Tutup modal jika klik overlay (area luar gambar) atau tombol close
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay || e.target === closeBtn) {
+                modalOverlay.remove();
+            }
+        });
+        
+        document.body.appendChild(modalOverlay);
     },
 
     _showModal(title, content) {
