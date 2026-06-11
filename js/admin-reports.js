@@ -295,9 +295,9 @@ const adminReports = {
         
         let lastDayToCount;
         if (yearNum === currentYear && monthNum === currentMonth) {
-            lastDayToCount = currentDay; // hanya sampai hari ini
+            lastDayToCount = currentDay;
         } else {
-            lastDayToCount = new Date(yearNum, monthNum, 0).getDate(); // akhir bulan
+            lastDayToCount = new Date(yearNum, monthNum, 0).getDate();
         }
         
         const monthAttendance = this.rawAttendance.filter(a => a.date && a.date.startsWith(monthStr));
@@ -306,15 +306,70 @@ const adminReports = {
         
         return this.rawEmployees.map(emp => {
             const empId = String(emp.id);
-            let present = 0, late = 0;
-            let cutiCount = 0, izinCount = 0;
             
-            // Loop setiap hari dari tanggal 1 sampai lastDayToCount
-            for (let d = 1; d <= lastDayToCount; d++) {
+            // Ambil joinDate karyawan
+            let joinYear = null, joinMonth = null, joinDay = null;
+            if (emp.joinDate) {
+                let joinDateObj;
+                if (typeof emp.joinDate === 'string') {
+                    joinDateObj = new Date(emp.joinDate);
+                    if (!isNaN(joinDateObj.getTime())) {
+                        joinYear = joinDateObj.getFullYear();
+                        joinMonth = joinDateObj.getMonth() + 1;
+                        joinDay = joinDateObj.getDate();
+                    }
+                } else if (emp.joinDate instanceof Date) {
+                    joinYear = emp.joinDate.getFullYear();
+                    joinMonth = emp.joinDate.getMonth() + 1;
+                    joinDay = emp.joinDate.getDate();
+                }
+            }
+            
+            // Jika tidak ada joinDate, anggap bergabung sejak awal bulan
+            let startDay = 1;
+            
+            // Kasus: karyawan belum bergabung di bulan ini (joinDate setelah bulan yang dipilih)
+            if (joinYear !== null && joinMonth !== null) {
+                if (joinYear > yearNum || (joinYear === yearNum && joinMonth > monthNum)) {
+                    // Belum bergabung, tidak ada hari yang dihitung
+                    return {
+                        name: emp.name,
+                        department: emp.department,
+                        present: 0,
+                        late: 0,
+                        cuti: 0,
+                        izin: 0,
+                        absent: 0,
+                        total: 0
+                    };
+                }
+                // Jika joinDate di bulan yang sama, startDay = tanggal bergabung
+                if (joinYear === yearNum && joinMonth === monthNum) {
+                    startDay = joinDay;
+                }
+            }
+            
+            // Jika startDay melebihi lastDayToCount (misal joinDate setelah hari ini), tidak ada hari yang dihitung
+            if (startDay > lastDayToCount) {
+                return {
+                    name: emp.name,
+                    department: emp.department,
+                    present: 0,
+                    late: 0,
+                    cuti: 0,
+                    izin: 0,
+                    absent: 0,
+                    total: 0
+                };
+            }
+            
+            let present = 0, late = 0, cutiCount = 0, izinCount = 0;
+            
+            // Loop dari startDay sampai lastDayToCount
+            for (let d = startDay; d <= lastDayToCount; d++) {
                 const dateStr = `${year}-${String(monthNum).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                
-                // Cek absensi
                 const attendance = monthAttendance.find(a => String(a.userId) === empId && a.date === dateStr);
+                
                 if (attendance && attendance.clockIn) {
                     present++;
                     if (attendance.status && (attendance.status.toLowerCase() === 'terlambat' || attendance.status.toLowerCase() === 'late')) {
@@ -327,10 +382,10 @@ const adminReports = {
                 let isLeave = false;
                 for (const leave of approvedLeaves) {
                     if (String(leave.userId) === empId) {
-                        const start = new Date(leave.startDate);
-                        const end = new Date(leave.endDate);
+                        const leaveStart = new Date(leave.startDate);
+                        const leaveEnd = new Date(leave.endDate);
                         const currentDate = new Date(dateStr);
-                        if (currentDate >= start && currentDate <= end) {
+                        if (currentDate >= leaveStart && currentDate <= leaveEnd) {
                             cutiCount++;
                             isLeave = true;
                             break;
@@ -349,7 +404,8 @@ const adminReports = {
                 }
             }
             
-            const alpha = lastDayToCount - (present + cutiCount + izinCount);
+            const totalDays = lastDayToCount - startDay + 1;
+            const alpha = totalDays - (present + cutiCount + izinCount);
             
             return {
                 name: emp.name,
@@ -359,7 +415,7 @@ const adminReports = {
                 cuti: cutiCount,
                 izin: izinCount,
                 absent: alpha,
-                total: lastDayToCount
+                total: totalDays
             };
         });
     },
