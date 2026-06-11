@@ -5,6 +5,7 @@
 
 const adminEmployees = {
     employees: [],
+    shifts: [],
     currentPage: 1,
     perPage: 10,
     filters: {
@@ -26,16 +27,70 @@ const adminEmployees = {
         try {
             await this.loadEmployees();               // 1. Ambil data
             await departmentManager.populateSelects('dept-filter'); // 2. Isi dropdown departemen
-            this.bindEvents();                       // 3. Bind event
-            this.renderTable();                      // 4. Render tabel
-            this.renderMobileCards();                // 5. Render card mobile
-            this.updatePaginationInfo();             // 6. Update paginasi
+            await this.loadShifts();                  // 3. Muat data shift
+            this.bindEvents();                       // 4. Bind event
+            this.renderTable();                      // 5. Render tabel
+            this.renderMobileCards();                // 6. Render card mobile
+            this.updatePaginationInfo();             // 7. Update paginasi
         } catch (error) {
             console.error('Error init employees:', error);
             toast.error('Gagal memuat data karyawan');
         } finally {
             loadingIndicator.hide();                 // Tutup loading setelah SEMUA selesai
         }
+    },
+
+    async loadShifts() {
+        try {
+            // Ambil dari storage terlebih dahulu
+            let shifts = storage.get('shifts');
+            if (!shifts || shifts.length === 0) {
+                // Jika kosong, fetch dari API
+                const result = await api.getShifts();
+                if (result.success && result.data) {
+                    shifts = result.data;
+                    storage.set('shifts', shifts);
+                } else {
+                    shifts = [
+                        { id: 1, name: 'Pagi', startTime: '08:00', endTime: '17:00' },
+                        { id: 2, name: 'Siang', startTime: '14:00', endTime: '23:00' },
+                        { id: 3, name: 'Malam', startTime: '23:00', endTime: '08:00' }
+                    ];
+                }
+            }
+            this.shifts = shifts;
+            return shifts;
+        } catch (error) {
+            console.error('Error loading shifts:', error);
+            this.shifts = [
+                { id: 1, name: 'Pagi', startTime: '08:00', endTime: '17:00' },
+                { id: 2, name: 'Siang', startTime: '14:00', endTime: '23:00' },
+                { id: 3, name: 'Malam', startTime: '23:00', endTime: '08:00' }
+            ];
+            return this.shifts;
+        }
+    },
+
+    async populateShiftDropdown(selectId, selectedValue = '') {
+        const select = document.getElementById(selectId);
+        if (!select) return;
+        
+        // Pastikan data shift tersedia
+        if (!this.shifts || this.shifts.length === 0) {
+            await this.loadShifts();
+        }
+        
+        // Format option: Nama Shift (startTime - endTime)
+        const options = this.shifts.map(shift => {
+            const start = shift.startTime ? shift.startTime.substring(0, 5) : '--:--';
+            const end = shift.endTime ? shift.endTime.substring(0, 5) : '--:--';
+            const label = `${shift.name} (${start} - ${end})`;
+            const value = shift.name; // value tetap nama shift untuk kompatibilitas backend
+            const selected = (value === selectedValue) ? 'selected' : '';
+            return `<option value="${value}" ${selected}>${label}</option>`;
+        }).join('');
+        
+        select.innerHTML = options;
     },
 
     async loadEmployees() {
@@ -288,9 +343,10 @@ const adminEmployees = {
         const modal = document.getElementById('modal-add-employee');
         if (modal) {
             // Populate department datalist dynamically BEFORE showing modal
-            console.log('[showAddModal] Memulai populate dept-list');
             await departmentManager.populateSelects('dept-list');
-            console.log('[showAddModal] Selesai populate dept-list, cache:', departmentManager.cache);
+            
+            // Populate shift dropdown dengan format jam
+            await this.populateShiftDropdown('emp-shift');
             
             // Set default leave balance from settings
             try {
@@ -450,10 +506,11 @@ const adminEmployees = {
         document.getElementById('edit-emp-name').value = emp.name;
         document.getElementById('edit-emp-email').value = emp.email;
         document.getElementById('edit-emp-position').value = emp.position;
-        document.getElementById('edit-emp-shift').value = emp.shift;
+        // Shift dropdown akan di-populate dengan format jam, lalu set value berdasarkan emp.shift
+        await this.populateShiftDropdown('edit-emp-shift', emp.shift);
         document.getElementById('edit-emp-status').value = emp.status;
         document.getElementById('edit-emp-join-date').value = emp.joinDate || '';
-        // Set nilai leaveBalance
+        // Set leaveBalance
         const leaveBalanceInput = document.getElementById('edit-emp-leave-balance');
         if (leaveBalanceInput) {
             leaveBalanceInput.value = (emp.leaveBalance !== undefined && emp.leaveBalance !== null && emp.leaveBalance !== '') 
@@ -465,15 +522,12 @@ const adminEmployees = {
         document.getElementById('edit-emp-confirm-password').value = '';
         
         // Populate department datalist dynamically and set current value AFTER populating
-        console.log('[editEmployee] Memulai populate dept-list-edit untuk:', emp.department);
         await departmentManager.populateSelects('dept-list-edit', emp.department);
-        console.log('[editEmployee] Selesai populate, cache:', departmentManager.cache);
         
         // Set nilai departemen setelah datalist terisi
         const deptInput = document.getElementById('edit-emp-department');
         if (deptInput && emp.department) {
             deptInput.value = emp.department;
-            console.log('[editEmployee] Nilai departemen diset ke:', emp.department);
         }
         
         const modal = document.getElementById('modal-edit-employee');
