@@ -11,10 +11,8 @@ const absensi = {
     processing: false,
 
     async init() {
-        if (this.isInitialized) {
-            console.log('Absensi sudah diinisialisasi, skip duplicate init');
-            return;
-        }
+        // Selalu muat ulang data setiap kali halaman absensi dibuka
+        // untuk memastikan sinkronisasi dengan server
         console.log('Initializing absensi page...');
         loadingIndicator.show('Memuat data absensi...');
         try {
@@ -26,7 +24,7 @@ const absensi = {
             this.initButtons();
             this.renderTimeline();
             this.updateUI();
-            this.isInitialized = true;
+            // isInitialized tidak lagi digunakan agar data selalu fresh
 
             // Debug button state
             setTimeout(() => {
@@ -777,7 +775,6 @@ const absensi = {
 
     // Reset method untuk membersihkan state saat logout atau navigasi keluar
     reset() {
-        this.isInitialized = false;
         this.processing = false;
         if (this.liveClockInterval) {
             clearInterval(this.liveClockInterval);
@@ -787,6 +784,7 @@ const absensi = {
         this.attendanceData = {};
         // Hapus flag overtime saat reset
         storage.remove('temp_overtime_started');
+        // isInitialized tidak lagi digunakan, tapi biarkan field ini ada untuk kompatibilitas
     }
 };
 
