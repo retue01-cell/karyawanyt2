@@ -700,44 +700,49 @@ const adminReports = {
         const approvedIzin = this.rawIzin.filter(i => i.status === 'approved' && String(i.userId) === String(emp.id));
         
         const leaveStatusMap = {};
+        
+        // Helper untuk normalisasi tanggal ke YYYY-MM-DD
+        const normalizeDate = (input) => {
+            if (!input) return '';
+            if (input instanceof Date) {
+                return input.toISOString().split('T')[0];
+            }
+            if (typeof input === 'string') {
+                if (input.match(/^\d{4}-\d{2}-\d{2}$/)) return input;
+                return input.split('T')[0];
+            }
+            return '';
+        };
+
         approvedLeaves.forEach(leave => {
-            // Normalisasi startDate
-            let startDateStr = leave.startDate;
-            if (startDateStr instanceof Date) {
-                startDateStr = startDateStr.toISOString().split('T')[0];
-            } else if (typeof startDateStr === 'string' && startDateStr.includes('T')) {
-                startDateStr = startDateStr.split('T')[0];
-            }
+            const startStr = normalizeDate(leave.startDate);
+            const endStr = normalizeDate(leave.endDate);
+            if (!startStr || !endStr) return;
             
-            // Normalisasi endDate
-            let endDateStr = leave.endDate;
-            if (endDateStr instanceof Date) {
-                endDateStr = endDateStr.toISOString().split('T')[0];
-            } else if (typeof endDateStr === 'string' && endDateStr.includes('T')) {
-                endDateStr = endDateStr.split('T')[0];
-            }
-            
-            const start = new Date(startDateStr);
-            const end = new Date(endDateStr);
+            const start = new Date(startStr);
+            const end = new Date(endStr);
             let current = new Date(start);
+            
             while (current <= end) {
                 const dateStr = current.toISOString().split('T')[0];
-                if (dateStr.startsWith(selectedMonth)) {
-                    leaveStatusMap[dateStr] = { type: 'cuti', label: leave.typeLabel || 'Cuti' };
+                // Bandingkan tahun-bulan (7 karakter pertama)
+                if (dateStr.substring(0, 7) === selectedMonth) {
+                    leaveStatusMap[dateStr] = { 
+                        type: 'cuti', 
+                        label: leave.typeLabel || 'Cuti' 
+                    };
                 }
                 current.setDate(current.getDate() + 1);
             }
         });
+
         approvedIzin.forEach(izin => {
-            let dateStr = izin.date;
-            // Normalisasi tanggal izin
-            if (dateStr instanceof Date) {
-                dateStr = dateStr.toISOString().split('T')[0];
-            } else if (typeof dateStr === 'string' && dateStr.includes('T')) {
-                dateStr = dateStr.split('T')[0];
-            }
-            if (dateStr && dateStr.startsWith(selectedMonth)) {
-                leaveStatusMap[dateStr] = { type: 'izin', label: izin.typeLabel || 'Izin' };
+            let dateStr = normalizeDate(izin.date);
+            if (dateStr && dateStr.substring(0, 7) === selectedMonth) {
+                leaveStatusMap[dateStr] = { 
+                    type: 'izin', 
+                    label: izin.typeLabel || 'Izin' 
+                };
             }
         });
         
