@@ -99,7 +99,8 @@ const api = {
                 }
             };
         }
-        return this.request('getTodayAttendance', { userId });
+        // Kirimkan tanggal dari frontend (yang sudah konsisten timezone Asia/Jakarta)
+        return this.request('getTodayAttendance', { userId, date: dateTime.getLocalDate() });
     },
     async saveAttendance(data) {
         if (!API_BASE_URL) {
