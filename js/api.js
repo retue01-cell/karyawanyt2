@@ -410,6 +410,11 @@ const api = {
         }
         return this.request('saveShiftScheduleItem', { userId, date, shift });
     },
+    // Tambahan: ambil cuti/izin yang disetujui untuk bulan tertentu
+    async getApprovedLeavesForMonth(yearMonth) {
+        if (!API_BASE_URL) return { success: true, data: {} };
+        return this.request('getApprovedLeavesForMonth', { yearMonth });
+    },
 
     // ========== LOCAL FALLBACK ==========
     _localLogin(email, password) {
