@@ -46,8 +46,7 @@ const izin = {
         if (verifyBtn) {
             verifyBtn.textContent = 'Kirim Pengajuan';
             verifyBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Kirim Pengajuan';
-            verifyBtn.removeEventListener('click', this.startVerification);
-            verifyBtn.addEventListener('click', () => this.handleSubmit());
+            verifyBtn.onclick = () => this.handleSubmit();
         }
 
         const fileInput = document.getElementById('izin-document');
