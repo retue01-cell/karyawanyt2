@@ -188,18 +188,29 @@ const dateTime = {
 
     normalizeTime(timeStr) {
         if (!timeStr) return '--:--';
-        // Ganti titik dengan titik dua (jika ada)
-        let normalized = String(timeStr).replace(/\./g, ':');
-        // Pisahkan jam dan menit
-        let parts = normalized.split(':');
-        if (parts.length >= 2) {
+        // Hapus karakter aneh seperti apostrof di awal
+        let str = String(timeStr).replace(/^'/, '').replace(/\./g, ':');
+        let parts = str.split(':');
+        if (parts.length === 2) {
             let hour = parts[0].padStart(2, '0');
-            let minute = parts[1].padStart(2, '0');
+            let minute = parts[1];
+            // Jika minute hanya 1 digit, asumsikan sebagai puluhan (contoh '2' = 20 menit)
+            if (minute.length === 1) {
+                minute = minute + '0';
+            }
+            // Jika minute 2 digit, biarkan
+            minute = minute.padStart(2, '0');
             return `${hour}:${minute}`;
         }
-        // Jika tidak ada pemisah, asumsikan format desimal (misal 22.1 dari Google Sheets)
-        // atau kembalikan apa adanya
-        return normalized;
+        // Fallback: coba parse sebagai angka desimal (misal 22.3333 dari Google Sheets time value)
+        if (!isNaN(parseFloat(str)) && str.includes('.')) {
+            let decimal = parseFloat(str);
+            let hour = Math.floor(decimal);
+            let minute = Math.round((decimal - hour) * 60);
+            minute = minute.toString().padStart(2, '0');
+            return `${hour.toString().padStart(2, '0')}:${minute}`;
+        }
+        return str;
     }
 };
 
