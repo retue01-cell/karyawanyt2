@@ -193,49 +193,80 @@ const dateTime = {
         // Hapus apostrof jika ada (dari hasil penyimpanan backend)
         if (str.startsWith("'")) str = str.substring(1);
         
-        // CASE 1: Format sudah HH:MM atau HH:M (mengandung titik dua)
-        if (str.includes(':')) {
-            let parts = str.split(':');
-            let h = parts[0].padStart(2, '0');
-            let m = parts[1];
-            // Jika hanya 1 digit menit, asumsikan itu puluhan (3 -> 30)
-            if (m.length === 1) {
-                m = m + '0';
-            }
-            return `${h}:${m.padStart(2, '0')}`;
+        // CASE 1: Format sudah HH:MM atau HH:MM:SS (mengandung titik dua)
+        let match = str.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+        if (match) {
+            let hour = match[1].padStart(2, '0');
+            let minute = match[2].padStart(2, '0');
+            return `${hour}:${minute}`;
         }
         
-        // CASE 2: Format desimal dari Google Sheets (contoh: 22.5, 22.3333, 22.25)
-        // Ini adalah angka float dimana bagian desimal mewakili fraksi jam
+        // CASE 2: Format titik sebagai pemisah jam.menit (contoh: "14.31" -> 14:31, "22.5" -> 22:05)
+        // Ini adalah format HH.MM dimana bagian setelah titik adalah menit langsung (bukan fraksi jam)
+        let dotMatch = str.match(/^(\d{1,2})\.(\d{1,2})$/);
+        if (dotMatch) {
+            let hour = parseInt(dotMatch[1], 10);
+            let minute = parseInt(dotMatch[2], 10);
+            
+            // Jika menit hanya 1 digit, tambahkan 0 di depan (contoh: 22.5 -> 22:05)
+            // Jika menit >= 60, batasi menjadi 59
+            if (minute >= 60) minute = 59;
+            
+            return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        }
+        
+        // CASE 3: Format desimal dari Google Sheets (fraksi jam)
         // 22.5 = 22 + 0.5*60 = 22:30
         // 22.3333 = 22 + 0.3333*60 ≈ 22:20
-        // 22.25 = 22 + 0.25*60 = 22:15
-        if (str.includes('.') && !str.includes(':')) {
-            let num = parseFloat(str);
-            if (!isNaN(num)) {
-                let hour = Math.floor(num);
-                let minuteDecimal = num - hour;
-                let minute = Math.round(minuteDecimal * 60);
-                
-                // Handle edge case dimana pembulatan menghasilkan 60 menit
-                if (minute === 60) {
-                    hour += 1;
-                    minute = 0;
-                }
-                
-                return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        // 22.1 = 22 + 0.1*60 = 22:06
+        let num = parseFloat(str);
+        if (!isNaN(num) && str.includes('.') && str.split('.')[1] && str.split('.')[1].length > 2) {
+            let hour = Math.floor(num);
+            let minuteDecimal = num - hour;
+            let minute = Math.round(minuteDecimal * 60);
+            
+            // Handle edge case dimana pembulatan menghasilkan 60 menit
+            if (minute === 60) {
+                hour += 1;
+                minute = 0;
             }
+            minute = Math.min(59, Math.max(0, minute));
+            
+            return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
         }
         
-        // CASE 3: Angka bulat (jarang terjadi untuk waktu)
-        let num = parseInt(str);
-        if (!isNaN(num)) {
-            return `${num.toString().padStart(2, '0')}:00`;
+        // CASE 4: Angka bulat (jarang terjadi untuk waktu)
+        let intNum = parseInt(str, 10);
+        if (!isNaN(intNum)) {
+            return `${intNum.toString().padStart(2, '0')}:00`;
         }
         
         // Fallback: kembalikan apa adanya
         return str;
-    }
+    },
+
+    // Fungsi baru untuk mendapatkan waktu saat ini dalam format HH:MM
+    getCurrentTimeHM() {
+        const now = new Date();
+        const hour = now.getHours().toString().padStart(2, '0');
+        const minute = now.getMinutes().toString().padStart(2, '0');
+        return `${hour}:${minute}`;
+    },
+
+    formatTime(date) {
+        const d = new Date(date);
+        const hour = d.getHours().toString().padStart(2, '0');
+        const minute = d.getMinutes().toString().padStart(2, '0');
+        return `${hour}:${minute}`;
+    },
+
+    getCurrentTime() {
+        const now = new Date();
+        const hour = now.getHours().toString().padStart(2, '0');
+        const minute = now.getMinutes().toString().padStart(2, '0');
+        const second = now.getSeconds().toString().padStart(2, '0');
+        return `${hour}:${minute}:${second}`;
+    },
 };
 
 // Form Utilities
@@ -620,7 +651,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const now = new Date();
             const time = timeEl.querySelector('.time');
             const date = timeEl.querySelector('.date');
-            if (time) time.textContent = dateTime.formatTime(now);
+            if (time) time.textContent = dateTime.getCurrentTimeHM();
             if (date) date.textContent = dateTime.formatDate(now);
         }, 1000);
     }
