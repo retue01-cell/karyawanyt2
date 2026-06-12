@@ -174,7 +174,7 @@ const absensi = {
         if (!tbody) return;
 
         if (historyData.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Belum ada riwayat absensi.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Belum ada riwayat absensi.</td></tr>';
             return;
         }
 
@@ -182,7 +182,7 @@ const absensi = {
         const getStatusBadge = (status) => {
             if (!status) return '<span class="badge-status secondary">Waiting</span>';
             
-            const s = status.toLowerCase();
+            const s = String(status || '').trim().toLowerCase();
             const map = {
                 'on time': { class: 'success', label: 'On Time' },
                 'tepat': { class: 'success', label: 'Tepat Waktu' },
@@ -226,10 +226,29 @@ const absensi = {
                 duration = dateTime.calculateDuration(record.clockIn, record.clockOut);
             }
 
-            // Format date to local standard UI string
-            const [y, m, d] = record.date.split('-');
-            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
-            const dateStr = `${d} ${months[parseInt(m) - 1] || m} ${y}`;
+            // PERBAIKAN 1: Pengolahan tanggal yang aman dari crash (Defensive Programming)
+            let dateStr = record.date || '-';
+            if (record.date && record.date.includes('-')) {
+                const parts = record.date.split('-');
+                if (parts.length === 3) {
+                    const [y, m, d] = parts;
+                    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+                    const monthIdx = parseInt(m, 10) - 1;
+                    if (monthIdx >= 0 && monthIdx < 12) {
+                        dateStr = `${d} ${months[monthIdx]} ${y}`;
+                    }
+                }
+            }
+
+            // PERBAIKAN 2: Penayangan foto bukti absensi menggunakan Modal Manager sistem yang sudah ada
+            let photoHtml = '<div class="no-photo-cell"><i class="fas fa-image"></i></div>';
+            if (record.verificationPhoto) {
+                photoHtml = `
+                    <img src="${record.verificationPhoto}" class="jurnal-thumbnail" 
+                         onclick="window.modal.show('Bukti Foto', '<div style=\\'text-align:center;\\'><img src=\\'${record.verificationPhoto}\\' style=\\'max-width:100%; max-height:400px; border-radius:8px;\\'></div>')" 
+                         title="Klik untuk memperbesar">
+                `;
+            }
 
             return `
                 <tr>
@@ -239,6 +258,7 @@ const absensi = {
                     <td>${dateTime.normalizeTime(record.clockOut) || '--:--'}</td>
                     <td>${duration}</td>
                     <td>${getStatusBadge(record.status)}</td>
+                    <td class="photo-cell">${photoHtml}</td>
                 </tr>
             `;
         }).join('');
