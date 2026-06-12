@@ -184,6 +184,22 @@ const dateTime = {
         const minutes = Math.floor((diff % (60 * 60 * 1000)) / (60 * 1000));
         
         return `${hours}j ${minutes}m`;
+    },
+
+    normalizeTime(timeStr) {
+        if (!timeStr) return '--:--';
+        // Ganti titik dengan titik dua (jika ada)
+        let normalized = String(timeStr).replace(/\./g, ':');
+        // Pisahkan jam dan menit
+        let parts = normalized.split(':');
+        if (parts.length >= 2) {
+            let hour = parts[0].padStart(2, '0');
+            let minute = parts[1].padStart(2, '0');
+            return `${hour}:${minute}`;
+        }
+        // Jika tidak ada pemisah, asumsikan format desimal (misal 22.1 dari Google Sheets)
+        // atau kembalikan apa adanya
+        return normalized;
     }
 };
 
