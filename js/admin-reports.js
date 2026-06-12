@@ -195,7 +195,7 @@ const adminReports = {
         this.rawLeaves.forEach(l => {
             const emp = empMap.get(String(l.userId));
             if (emp) {
-                let startDateStr = l.startDate;
+                let startDateStr = String(l.startDate || '');
                 if (startDateStr && startDateStr.includes('T')) startDateStr = startDateStr.split('T')[0];
                 const monthYear = startDateStr ? startDateStr.substring(0, 7) : '';
                 this.leaveData.push({
