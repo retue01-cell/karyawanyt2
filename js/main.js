@@ -160,13 +160,13 @@ const dateTime = {
     calculateDuration(start, end) {
         if (!start || !end) return '0j 0m';
         
-        // Konversi titik ke titik dua (format Indonesia ke format standar)
-        const cleanStart = String(start).replace(/\./g, ':');
-        const cleanEnd = String(end).replace(/\./g, ':');
+        // Normalisasi kedua waktu terlebih dahulu
+        const startNorm = this.normalizeTime(start);
+        const endNorm = this.normalizeTime(end);
         
         // Ambil hanya HH:MM (abaikan detik jika ada)
-        const startStr = cleanStart.substring(0, 5);
-        const endStr = cleanEnd.substring(0, 5);
+        const startStr = startNorm.substring(0, 5);
+        const endStr = endNorm.substring(0, 5);
         
         const startTime = new Date(`2000-01-01 ${startStr}`);
         const endTime = new Date(`2000-01-01 ${endStr}`);
@@ -188,28 +188,44 @@ const dateTime = {
 
     normalizeTime(timeStr) {
         if (!timeStr) return '--:--';
-        // Hapus karakter aneh seperti apostrof di awal
-        let str = String(timeStr).replace(/^'/, '').replace(/\./g, ':');
-        let parts = str.split(':');
-        if (parts.length === 2) {
-            let hour = parts[0].padStart(2, '0');
-            let minute = parts[1];
-            // Jika minute hanya 1 digit, asumsikan sebagai puluhan (contoh '2' = 20 menit)
-            if (minute.length === 1) {
-                minute = minute + '0';
-            }
-            // Jika minute 2 digit, biarkan
-            minute = minute.padStart(2, '0');
-            return `${hour}:${minute}`;
+        let str = String(timeStr).trim();
+        
+        // Hapus apostrof jika ada (dari hasil penyimpanan backend)
+        if (str.startsWith("'")) str = str.substring(1);
+        
+        // Ganti titik dengan titik dua
+        str = str.replace(/\./g, ':');
+        
+        // Format HH:MM dua digit (contoh: 22:30)
+        if (/^\d{1,2}:\d{2}$/.test(str)) {
+            let [h, m] = str.split(':');
+            return `${h.padStart(2, '0')}:${m.padStart(2, '0')}`;
         }
-        // Fallback: coba parse sebagai angka desimal (misal 22.3333 dari Google Sheets time value)
-        if (!isNaN(parseFloat(str)) && str.includes('.')) {
-            let decimal = parseFloat(str);
-            let hour = Math.floor(decimal);
-            let minute = Math.round((decimal - hour) * 60);
+        
+        // Format HH:M (satu digit menit) -> asumsikan sebagai puluhan (contoh 22:3 -> 22:30)
+        if (/^\d{1,2}:\d{1}$/.test(str)) {
+            let [h, m] = str.split(':');
+            m = m + '0'; // 3 -> 30
+            return `${h.padStart(2, '0')}:${m}`;
+        }
+        
+        // Format angka desimal dengan satu digit di belakang koma (22.3 -> 22:30)
+        if (/^\d+\.\d$/.test(str)) {
+            let [h, dec] = str.split('.');
+            let minute = (parseInt(dec) * 10).toString().padStart(2, '0');
+            return `${h.padStart(2, '0')}:${minute}`;
+        }
+        
+        // Format angka desimal umum (22.5 -> 22:30, 22.55 -> 22:33)
+        let num = parseFloat(str);
+        if (!isNaN(num)) {
+            let hour = Math.floor(num);
+            let minute = Math.round((num - hour) * 60);
             minute = minute.toString().padStart(2, '0');
             return `${hour.toString().padStart(2, '0')}:${minute}`;
         }
+        
+        // Fallback
         return str;
     }
 };
