@@ -187,45 +187,53 @@ const dateTime = {
     },
 
     normalizeTime(timeStr) {
-        if (!timeStr) return '--:--';
+        if (!timeStr && timeStr !== 0) return '--:--';
         let str = String(timeStr).trim();
         
         // Hapus apostrof jika ada (dari hasil penyimpanan backend)
         if (str.startsWith("'")) str = str.substring(1);
         
-        // Ganti titik dengan titik dua
-        str = str.replace(/\./g, ':');
-        
-        // Format HH:MM dua digit (contoh: 22:30)
-        if (/^\d{1,2}:\d{2}$/.test(str)) {
-            let [h, m] = str.split(':');
-            return `${h.padStart(2, '0')}:${m.padStart(2, '0')}`;
+        // CASE 1: Format sudah HH:MM atau HH:M (mengandung titik dua)
+        if (str.includes(':')) {
+            let parts = str.split(':');
+            let h = parts[0].padStart(2, '0');
+            let m = parts[1];
+            // Jika hanya 1 digit menit, asumsikan itu puluhan (3 -> 30)
+            if (m.length === 1) {
+                m = m + '0';
+            }
+            return `${h}:${m.padStart(2, '0')}`;
         }
         
-        // Format HH:M (satu digit menit) -> asumsikan sebagai puluhan (contoh 22:3 -> 22:30)
-        if (/^\d{1,2}:\d{1}$/.test(str)) {
-            let [h, m] = str.split(':');
-            m = m + '0'; // 3 -> 30
-            return `${h.padStart(2, '0')}:${m}`;
+        // CASE 2: Format desimal dari Google Sheets (contoh: 22.5, 22.3333, 22.25)
+        // Ini adalah angka float dimana bagian desimal mewakili fraksi jam
+        // 22.5 = 22 + 0.5*60 = 22:30
+        // 22.3333 = 22 + 0.3333*60 ≈ 22:20
+        // 22.25 = 22 + 0.25*60 = 22:15
+        if (str.includes('.') && !str.includes(':')) {
+            let num = parseFloat(str);
+            if (!isNaN(num)) {
+                let hour = Math.floor(num);
+                let minuteDecimal = num - hour;
+                let minute = Math.round(minuteDecimal * 60);
+                
+                // Handle edge case dimana pembulatan menghasilkan 60 menit
+                if (minute === 60) {
+                    hour += 1;
+                    minute = 0;
+                }
+                
+                return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+            }
         }
         
-        // Format angka desimal dengan satu digit di belakang koma (22.3 -> 22:30)
-        if (/^\d+\.\d$/.test(str)) {
-            let [h, dec] = str.split('.');
-            let minute = (parseInt(dec) * 10).toString().padStart(2, '0');
-            return `${h.padStart(2, '0')}:${minute}`;
-        }
-        
-        // Format angka desimal umum (22.5 -> 22:30, 22.55 -> 22:33)
-        let num = parseFloat(str);
+        // CASE 3: Angka bulat (jarang terjadi untuk waktu)
+        let num = parseInt(str);
         if (!isNaN(num)) {
-            let hour = Math.floor(num);
-            let minute = Math.round((num - hour) * 60);
-            minute = minute.toString().padStart(2, '0');
-            return `${hour.toString().padStart(2, '0')}:${minute}`;
+            return `${num.toString().padStart(2, '0')}:00`;
         }
         
-        // Fallback
+        // Fallback: kembalikan apa adanya
         return str;
     }
 };
