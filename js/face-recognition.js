@@ -150,7 +150,7 @@ const faceRecognition = {
 
     initLocation() {
         if (!navigator.geolocation) {
-            toast.error('Browser Anda tidak mendukung geolokasi');
+            console.warn('Geolocation not supported by browser');
             this.updateLocationStatusUI('not_supported', 'Browser tidak support GPS');
             return;
         }
@@ -162,8 +162,10 @@ const faceRecognition = {
         // Mulai update waktu realtime (setiap 1 detik)
         this.startLocationTimeUpdater();
 
+        console.log('Requesting geolocation...');
         navigator.geolocation.getCurrentPosition(
             (position) => {
+                console.log('Location obtained:', position.coords.latitude, position.coords.longitude);
                 this.position = position;
                 
                 // Validasi lokasi terhadap setting toko
@@ -200,9 +202,19 @@ const faceRecognition = {
                 this.checkCanSubmit();
             },
             (error) => {
-                console.error('Location error:', error);
+                console.error('Location error:', error.code, error.message);
                 this.locationVerified = false;
                 this.updateLocationStatusUI('error', 'Gagal dapat lokasi');
+                
+                let errorMsg = 'Gagal mendapatkan lokasi. ';
+                if (error.code === 1) {
+                    errorMsg += 'Mohon izinkan akses lokasi di browser Anda.';
+                } else if (error.code === 2) {
+                    errorMsg += 'Lokasi tidak tersedia.';
+                } else if (error.code === 3) {
+                    errorMsg += 'Request timeout. Coba lagi.';
+                }
+                console.warn(errorMsg);
                 
                 // Fallback untuk testing (opsional)
                 if (window.location.hostname === 'localhost') {
@@ -214,7 +226,7 @@ const faceRecognition = {
                     this.initMap(fallbackPos);
                 }
             },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
         );
     },
 
@@ -267,9 +279,24 @@ const faceRecognition = {
         this.locationUpdateInterval = setInterval(() => {
             const timeEl = document.getElementById('location-time');
             if (timeEl) {
-                timeEl.textContent = dateTime.normalizeTime(dateTime.getCurrentTime());
+                try {
+                    const now = new Date();
+                    const hour = String(now.getHours()).padStart(2, '0');
+                    const minute = String(now.getMinutes()).padStart(2, '0');
+                    timeEl.textContent = `${hour}:${minute}`;
+                } catch (e) {
+                    console.error('Error updating location time:', e);
+                }
             }
         }, 1000);
+        // Trigger sekali langsung agar tidak menunggu 1 detik
+        const timeEl = document.getElementById('location-time');
+        if (timeEl) {
+            const now = new Date();
+            const hour = String(now.getHours()).padStart(2, '0');
+            const minute = String(now.getMinutes()).padStart(2, '0');
+            timeEl.textContent = `${hour}:${minute}`;
+        }
     },
 
     bindButtons() {
