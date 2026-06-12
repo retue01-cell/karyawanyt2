@@ -235,8 +235,8 @@ const absensi = {
                 <tr>
                     <td>${dateStr}</td>
                     <td>${record.shift || '-'}</td>
-                    <td>${record.clockIn || '--:--'}</td>
-                    <td>${record.clockOut || '--:--'}</td>
+                    <td>${dateTime.normalizeTime(record.clockIn) || '--:--'}</td>
+                    <td>${dateTime.normalizeTime(record.clockOut) || '--:--'}</td>
                     <td>${duration}</td>
                     <td>${getStatusBadge(record.status)}</td>
                 </tr>
@@ -676,7 +676,7 @@ const absensi = {
             if (isClockedIn) {
                 btnClockIn.classList.add('completed');
                 const timeEl = document.getElementById('clock-in-time');
-                if (timeEl) timeEl.textContent = this.attendanceData.clockIn;
+                if (timeEl) timeEl.textContent = dateTime.normalizeTime(this.attendanceData.clockIn);
             } else if (isLibur) {
                 btnClockIn.classList.add('completed');
             } else {
@@ -689,7 +689,7 @@ const absensi = {
             btnBreak.disabled = !isClockedIn || isBreakStarted || isClockedOut;
             if (isBreakStarted) {
                 btnBreak.classList.add('completed');
-                document.getElementById('break-time').textContent = this.attendanceData.breakStart;
+                document.getElementById('break-time').textContent = dateTime.normalizeTime(this.attendanceData.breakStart);
             }
         }
 
@@ -698,7 +698,7 @@ const absensi = {
             btnAfterBreak.disabled = isClockedOut || !isBreakStarted || isBreakEnded || isOvertimeStarted;
             if (isBreakEnded) {
                 btnAfterBreak.classList.add('completed');
-                document.getElementById('after-break-time').textContent = this.attendanceData.breakEnd;
+                document.getElementById('after-break-time').textContent = dateTime.normalizeTime(this.attendanceData.breakEnd);
             }
         }
 
@@ -707,7 +707,7 @@ const absensi = {
             btnOvertime.disabled = isClockedOut || !isClockedIn || isOvertimeStarted;
             if (isOvertimeStarted) {
                 btnOvertime.classList.add('completed');
-                document.getElementById('overtime-time').textContent = this.attendanceData.overtimeStart;
+                document.getElementById('overtime-time').textContent = dateTime.normalizeTime(this.attendanceData.overtimeStart);
             }
         }
 
@@ -716,7 +716,7 @@ const absensi = {
             btnClockOut.disabled = !isClockedIn || isClockedOut;
             if (isClockedOut) {
                 btnClockOut.classList.add('completed');
-                document.getElementById('clock-out-time').textContent = this.attendanceData.clockOut;
+                document.getElementById('clock-out-time').textContent = dateTime.normalizeTime(this.attendanceData.clockOut);
             }
         }
     },
@@ -762,28 +762,28 @@ const absensi = {
                     if (this.attendanceData.clockIn) {
                         item.classList.remove('pending');
                         item.classList.add('completed');
-                        if (timeEl) timeEl.textContent = this.attendanceData.clockIn;
+                        if (timeEl) timeEl.textContent = dateTime.normalizeTime(this.attendanceData.clockIn);
                     }
                     break;
                 case 'break':
                     if (this.attendanceData.breakStart) {
                         item.classList.remove('pending');
                         item.classList.add('completed');
-                        if (timeEl) timeEl.textContent = this.attendanceData.breakStart;
+                        if (timeEl) timeEl.textContent = dateTime.normalizeTime(this.attendanceData.breakStart);
                     }
                     break;
                 case 'after-break':
                     if (this.attendanceData.breakEnd) {
                         item.classList.remove('pending');
                         item.classList.add('completed');
-                        if (timeEl) timeEl.textContent = this.attendanceData.breakEnd;
+                        if (timeEl) timeEl.textContent = dateTime.normalizeTime(this.attendanceData.breakEnd);
                     }
                     break;
                 case 'clock-out':
                     if (this.attendanceData.clockOut) {
                         item.classList.remove('pending');
                         item.classList.add('completed');
-                        if (timeEl) timeEl.textContent = this.attendanceData.clockOut;
+                        if (timeEl) timeEl.textContent = dateTime.normalizeTime(this.attendanceData.clockOut);
                     }
                     break;
             }
