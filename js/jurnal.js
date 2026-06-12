@@ -293,7 +293,7 @@ const jurnal = {
                 <div class="jurnal-item">
                     <div class="jurnal-item-header">
                         <div class="jurnal-date"><span class="date-day">${day}</span><span class="date-month">${month}</span></div>
-                        <div class="jurnal-meta"><span class="jurnal-day">${dayName}</span><span class="jurnal-time">${dateTime.formatTime(j.updatedAt || j.date)} ${hasPhoto}</span></div>
+                        <div class="jurnal-meta"><span class="jurnal-day">${dayName}</span><span class="jurnal-time">${dateTime.getCurrentTimeHM()} ${hasPhoto}</span></div>
                     </div>
                     <div class="jurnal-content"><p class="jurnal-preview">${this.escapeHtml(preview)}</p></div>
                     <div class="jurnal-actions">
