@@ -27,7 +27,9 @@ const api = {
             }
         } catch (error) {
             console.error('API Error:', error);
-            return this._localFallback(action, data);
+            // Jangan tampilkan toast error, cukup log untuk debugging
+            // Error handling dilakukan oleh pemanggil sesuai kebutuhan
+            return { success: false, error: 'Network error: ' + error.message };
         }
     },
 
@@ -422,8 +424,9 @@ const api = {
         return { success: true, data: null };
     },
     _localFallback(action, data) {
-        console.warn(`API Fallback: ${action} - using localStorage`);
-        return { success: false, error: 'No fallback for action: ' + action };
+        console.warn(`⚠️ API Fallback: ${action} - using localStorage (offline mode)`);
+        // Kembalikan error tanpa menampilkan toast ke user
+        return { success: false, error: `Offline: ${action} tidak tersedia` };
     }
 };
 
