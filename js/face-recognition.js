@@ -138,7 +138,7 @@ const faceRecognition = {
                     toast.error('Gagal memuat kamera');
                     const captureBtn = document.getElementById('btn-capture');
                     if (captureBtn) captureBtn.disabled = true;
-                }, 1000);
+                }, 5000);
             };
 
             this.video.onloadedmetadata = () => {
