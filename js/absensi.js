@@ -549,7 +549,8 @@ const absensi = {
             if (action === 'overtime') {
                 storage.remove('temp_overtime_started');
             }
-            toast.error(error.message || 'Gagal menyimpan data. Silakan coba lagi.');
+            // Jangan tampilkan toast error, cukup log untuk debugging
+            // Error ini akan tercatat di console untuk debugging
         }
     },
 
