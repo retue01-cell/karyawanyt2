@@ -167,8 +167,8 @@ const dashboard = {
         if (durationEl) durationEl.textContent = '0j 0m';
 
         if (todayAttendance) {
-            if (clockInEl) clockInEl.textContent = todayAttendance.clockIn || '--:--';
-            if (clockOutEl) clockOutEl.textContent = todayAttendance.clockOut || '--:--';
+            if (clockInEl) clockInEl.textContent = dateTime.normalizeTime(todayAttendance.clockIn) || '--:--';
+            if (clockOutEl) clockOutEl.textContent = dateTime.normalizeTime(todayAttendance.clockOut) || '--:--';
 
             if (todayAttendance.clockIn && todayAttendance.clockOut && durationEl) {
                 const duration = dateTime.calculateDuration(
