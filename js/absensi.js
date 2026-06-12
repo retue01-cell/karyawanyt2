@@ -469,7 +469,7 @@ const absensi = {
         }
 
         const now = new Date();
-        const timeStr = dateTime.formatTime(now);
+        const timeStr = dateTime.getCurrentTimeHM();
         
         // Simpan state asli untuk rollback jika gagal
         const originalData = JSON.parse(JSON.stringify(this.attendanceData));
