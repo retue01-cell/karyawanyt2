@@ -968,6 +968,12 @@ const adminReports = {
                 await this.loadData();
                 this.renderLeaveReports();
                 
+                // Jika halaman Rekap Absensi sedang aktif, refresh juga
+                const attendancePage = document.getElementById('page-attendance-reports');
+                if (attendancePage && attendancePage.classList.contains('active')) {
+                    this.renderAttendanceReports();
+                }
+                
                 // Tutup modal detail jika sedang terbuka
                 if (this.currentDetailEmployee) {
                     const modal = document.getElementById('dynamic-modal');
@@ -991,6 +997,12 @@ const adminReports = {
                 toast.info('Pengajuan ditolak');
                 await this.loadData();
                 this.renderLeaveReports();
+                
+                // Jika halaman Rekap Absensi sedang aktif, refresh juga
+                const attendancePage = document.getElementById('page-attendance-reports');
+                if (attendancePage && attendancePage.classList.contains('active')) {
+                    this.renderAttendanceReports();
+                }
                 
                 // Tutup modal detail jika sedang terbuka
                 if (this.currentDetailEmployee) {
