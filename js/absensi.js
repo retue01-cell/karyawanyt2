@@ -36,7 +36,8 @@ const absensi = {
             }, 100);
         } catch (error) {
             console.error('Error initializing absensi:', error);
-            toast.error('Gagal memuat absensi');
+            // Jangan tampilkan toast error untuk error non-kritis saat inisialisasi
+            // Error ini biasanya terjadi karena refresh data yang gagal, bukan kegagalan utama
         } finally {
             loadingIndicator.hide();
         }
@@ -530,8 +531,14 @@ const absensi = {
             }
 
             // Refresh shift info setelah clock out untuk konsistensi dashboard
+            // Gunakan try-catch terpisah agar error refresh tidak mengganggu flow utama
             if (action === 'clock-out' && window.dashboard) {
-                await window.dashboard.refreshShiftInfo();
+                try {
+                    await window.dashboard.refreshShiftInfo();
+                } catch (refreshError) {
+                    console.warn('Gagal refresh shift info (non-critical):', refreshError);
+                    // Jangan tampilkan error atau rollback karena ini hanya refresh UI
+                }
             }
         } catch (error) {
             console.error('Gagal menyimpan absensi:', error);
