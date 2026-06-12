@@ -201,26 +201,12 @@ const dateTime = {
             return `${hour}:${minute}`;
         }
         
-        // CASE 2: Format titik sebagai pemisah jam.menit (contoh: "14.31" -> 14:31, "22.5" -> 22:05)
-        // Ini adalah format HH.MM dimana bagian setelah titik adalah menit langsung (bukan fraksi jam)
-        let dotMatch = str.match(/^(\d{1,2})\.(\d{1,2})$/);
-        if (dotMatch) {
-            let hour = parseInt(dotMatch[1], 10);
-            let minute = parseInt(dotMatch[2], 10);
-            
-            // Jika menit hanya 1 digit, tambahkan 0 di depan (contoh: 22.5 -> 22:05)
-            // Jika menit >= 60, batasi menjadi 59
-            if (minute >= 60) minute = 59;
-            
-            return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        }
-        
-        // CASE 3: Format desimal dari Google Sheets (fraksi jam)
+        // CASE 2: Format desimal dari Google Sheets (fraksi jam)
         // 22.5 = 22 + 0.5*60 = 22:30
         // 22.3333 = 22 + 0.3333*60 ≈ 22:20
         // 22.1 = 22 + 0.1*60 = 22:06
         let num = parseFloat(str);
-        if (!isNaN(num) && str.includes('.') && str.split('.')[1] && str.split('.')[1].length > 2) {
+        if (!isNaN(num) && str.includes('.')) {
             let hour = Math.floor(num);
             let minuteDecimal = num - hour;
             let minute = Math.round(minuteDecimal * 60);
@@ -231,6 +217,19 @@ const dateTime = {
                 minute = 0;
             }
             minute = Math.min(59, Math.max(0, minute));
+            
+            return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        }
+        
+        // CASE 3: Format titik sebagai pemisah jam.menit (contoh: "14.31" -> 14:31)
+        // Hanya untuk kasus khusus dimana format jelas HH.MM dengan menit 2 digit
+        let dotMatch = str.match(/^(\d{1,2})\.(\d{2})$/);
+        if (dotMatch) {
+            let hour = parseInt(dotMatch[1], 10);
+            let minute = parseInt(dotMatch[2], 10);
+            
+            // Jika menit >= 60, batasi menjadi 59
+            if (minute >= 60) minute = 59;
             
             return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
         }
