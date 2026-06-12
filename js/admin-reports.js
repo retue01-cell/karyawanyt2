@@ -761,21 +761,27 @@ const adminReports = {
             let statusHtml = '';
             let photoHtml = '-';
 
-            // Jika tanggal di masa depan, tampilkan "-"
-            if (dateStr > todayStr) {
+            // 1. Cek TERLEBIH DAHULU apakah ada Izin atau Cuti yang disetujui di tanggal ini
+            if (leaveStatusMap[dateStr]) {
+                statusHtml = `<span class="badge-status info">${leaveStatusMap[dateStr].label}</span>`;
+                photoHtml = '-'; // Tidak ada foto absensi karena statusnya izin/cuti
+            } 
+            // 2. Jika tidak ada izin/cuti, barulah cek apakah tanggalnya di masa depan
+            else if (dateStr > todayStr) {
                 statusHtml = '<span class="badge-status secondary">-</span>';
                 photoHtml = '-';
-            } else if (leaveStatusMap[dateStr]) {
-                statusHtml = `<span class="badge-status info">${leaveStatusMap[dateStr].label}</span>`;
-            } else if (rec && rec.clockIn) {
+            } 
+            // 3. Jika di masa lalu/hari ini dan karyawan melakukan Clock In
+            else if (rec && rec.clockIn) {
                 const statusClass = this.getStatusClass(rec.status);
                 const statusLabel = rec.status || 'Hadir';
                 statusHtml = `<span class="badge-status ${statusClass}">${statusLabel}</span>`;
                 if (rec.verificationPhoto) {
-                    photoHtml = `<button class="btn-action view" onclick="adminReports.viewPhoto('${rec.verificationPhoto.replace(/\\'/g, "\\\\'")}')\" title=\"Lihat Bukti Foto\"><i class="fas fa-camera"></i></button>`;
+                    photoHtml = `<button class="btn-action view" onclick="adminReports.viewPhoto('${rec.verificationPhoto.replace(/\\'/g, "\\\\'")}')" title="Lihat Bukti Foto"><i class="fas fa-camera"></i></button>`;
                 }
-            } else {
-                // Tidak ada clock in dan tidak ada cuti/izin -> Alpha
+            } 
+            // 4. Jika di masa lalu/hari ini dan tidak melakukan Clock In & tidak ada izin/cuti
+            else {
                 statusHtml = '<span class="badge-status danger">Alpha</span>';
             }
 
