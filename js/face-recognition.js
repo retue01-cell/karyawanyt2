@@ -127,7 +127,22 @@ const faceRecognition = {
 
             this.video.srcObject = this.stream;
 
+            // Timeout untuk error handling - akan dibatalkan jika video berhasil load
+            let videoErrorTimeout = null;
+            
+            this.video.onerror = (err) => {
+                console.warn('Video element error (maybe temporary):', err);
+                // Jangan langsung tampilkan error, beri waktu 1 detik untuk pemulihan
+                videoErrorTimeout = setTimeout(() => {
+                    console.error('Video error persists after timeout:', err);
+                    toast.error('Gagal memuat kamera');
+                    const captureBtn = document.getElementById('btn-capture');
+                    if (captureBtn) captureBtn.disabled = true;
+                }, 1000);
+            };
+
             this.video.onloadedmetadata = () => {
+                clearTimeout(videoErrorTimeout);
                 const captureBtn = document.getElementById('btn-capture');
                 if (captureBtn) {
                     captureBtn.disabled = false;
@@ -135,12 +150,12 @@ const faceRecognition = {
                 this.video.play().catch(e => console.warn('Video play error:', e));
             };
 
-            this.video.onerror = (err) => {
-                console.error('Video error:', err);
-                toast.error('Gagal memuat kamera');
+            // Fallback: gunakan canplay sebagai indikasi tambahan bahwa kamera siap
+            this.video.addEventListener('canplay', () => {
+                clearTimeout(videoErrorTimeout);
                 const captureBtn = document.getElementById('btn-capture');
-                if (captureBtn) captureBtn.disabled = true;
-            };
+                if (captureBtn) captureBtn.disabled = false;
+            }, { once: true });
 
         } catch (error) {
             console.error('Camera error:', error);
