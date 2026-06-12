@@ -703,11 +703,14 @@ const adminReports = {
         
         const leaveStatusMap = {};
         
-        // Helper untuk normalisasi tanggal ke YYYY-MM-DD
+        // Helper untuk normalisasi tanggal ke YYYY-MM-DD (tanpa pengaruh timezone)
         const normalizeDate = (input) => {
             if (!input) return '';
             if (input instanceof Date) {
-                return input.toISOString().split('T')[0];
+                const year = input.getFullYear();
+                const month = String(input.getMonth() + 1).padStart(2, '0');
+                const day = String(input.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
             }
             if (typeof input === 'string') {
                 if (input.match(/^\d{4}-\d{2}-\d{2}$/)) return input;
