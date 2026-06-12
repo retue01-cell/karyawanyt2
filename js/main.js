@@ -159,31 +159,28 @@ const dateTime = {
 
     calculateDuration(start, end) {
         if (!start || !end) return '0j 0m';
-        
-        // Normalisasi kedua waktu terlebih dahulu
-        const startNorm = this.normalizeTime(start);
-        const endNorm = this.normalizeTime(end);
-        
-        // Ambil hanya HH:MM (abaikan detik jika ada)
-        const startStr = startNorm.substring(0, 5);
-        const endStr = endNorm.substring(0, 5);
-        
-        const startTime = new Date(`2000-01-01 ${startStr}`);
-        const endTime = new Date(`2000-01-01 ${endStr}`);
-        
-        if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) return '0j 0m';
-        
-        let diff = endTime - startTime;
-        
-        // Handle overnight shifts (if end time is less than start time, add 24 hours)
-        if (diff < 0) {
-            diff += 24 * 60 * 60 * 1000;
+
+        // Ganti titik atau pemisah tidak standar ke titik dua
+        const cleanStart = String(start).replace(/\./g, ':');
+        const cleanEnd = String(end).replace(/\./g, ':');
+
+        const [startH, startM] = cleanStart.split(':').map(Number);
+        const [endH, endM] = cleanEnd.split(':').map(Number);
+
+        if (isNaN(startH) || isNaN(startM) || isNaN(endH) || isNaN(endM)) return '0j 0m';
+
+        let startMinutes = startH * 60 + startM;
+        let endMinutes = endH * 60 + endM;
+
+        let diffMinutes = endMinutes - startMinutes;
+        if (diffMinutes < 0) {
+            // Mengatasi shift malam yang melewati tengah malam
+            diffMinutes += 24 * 60;
         }
-        
-        const hours = Math.floor(diff / (60 * 60 * 1000));
-        const minutes = Math.floor((diff % (60 * 60 * 1000)) / (60 * 1000));
-        
-        return `${hours}j ${minutes}m`;
+
+        const hours = Math.floor(diffMinutes / 60);
+        const mins = diffMinutes % 60;
+        return `${hours}j ${mins}m`;
     },
 
     normalizeTime(timeStr) {
@@ -260,11 +257,11 @@ const dateTime = {
     },
 
     getCurrentTime() {
-        const now = new Date();
-        const hour = now.getHours().toString().padStart(2, '0');
-        const minute = now.getMinutes().toString().padStart(2, '0');
-        const second = now.getSeconds().toString().padStart(2, '0');
-        return `${hour}:${minute}:${second}`;
+        const d = new Date();
+        const h = String(d.getHours()).padStart(2, '0');
+        const m = String(d.getMinutes()).padStart(2, '0');
+        const s = String(d.getSeconds()).padStart(2, '0');
+        return `${h}:${m}:${s}`; // Menjamin format HH:MM:SS konsisten di semua browser
     },
 };
 
