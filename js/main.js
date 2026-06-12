@@ -146,7 +146,9 @@ const dateTime = {
 
     getLocalDate() {
         // Menggunakan timezone Asia/Jakarta untuk konsistensi dengan backend
-        return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+        const dateStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+        // Pastikan format menggunakan pemisah '-' (bukan '/')
+        return dateStr.replace(/\//g, '-');
     },
 
     getGreeting() {
