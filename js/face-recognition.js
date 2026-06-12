@@ -18,7 +18,7 @@ const faceRecognition = {
     locationSettings: null,      // untuk menyimpan setting toko
     locationUpdateInterval: null, // untuk update waktu
 
-    init(action) {
+    async init(action) {
         if (this.isInitializing) {
             console.warn('Face recognition already initializing, skip');
             return;
@@ -27,6 +27,9 @@ const faceRecognition = {
         
         // Bersihkan stream dan map sebelumnya
         this.cleanup();
+        
+        // Tunggu 200ms agar stream benar-benar dilepas browser
+        await new Promise(resolve => setTimeout(resolve, 200));
         
         // Reset UI ke keadaan awal (tombol ambil foto muncul)
         this.resetUI();
@@ -41,21 +44,17 @@ const faceRecognition = {
         this.updateActionTitle(action);
         
         // Ambil setting lokasi toko dari backend
-        this.loadLocationSettings().then(() => {
-            setTimeout(() => {
-                this.initCamera();
-                this.initLocation();
-                this.bindButtons();
-                this.isInitializing = false;
-            }, 100);
-        }).catch(() => {
-            setTimeout(() => {
-                this.initCamera();
-                this.initLocation();
-                this.bindButtons();
-                this.isInitializing = false;
-            }, 100);
-        });
+        try {
+            await this.loadLocationSettings();
+        } catch(e) {
+            console.warn('Gagal ambil setting lokasi:', e);
+            this.locationSettings = null;
+        }
+        
+        this.initCamera();
+        this.initLocation();
+        this.bindButtons();
+        this.isInitializing = false;
     },
 
     async loadLocationSettings() {
@@ -137,7 +136,12 @@ const faceRecognition = {
 
         } catch (error) {
             console.error('Camera error:', error);
-            toast.error('Tidak dapat mengakses kamera. Pastikan Anda memberikan izin kamera.');
+            // Hanya tampilkan toast jika error bukan NotReadableError (kamera sibuk sementara)
+            if (error.name !== 'NotReadableError') {
+                toast.error('Tidak dapat mengakses kamera. Pastikan Anda memberikan izin kamera.');
+            } else {
+                console.warn('Camera temporarily busy, please retry');
+            }
             const captureBtn = document.getElementById('btn-capture');
             if (captureBtn) captureBtn.disabled = true;
             this.isInitializing = false;
@@ -282,7 +286,7 @@ const faceRecognition = {
         };
         
         bindSafe(captureBtn, () => this.capturePhoto());
-        bindSafe(retakeBtn, () => this.retakePhoto());
+        bindSafe(retakeBtn, async () => { await this.retakePhoto(); });
         bindSafe(confirmBtn, () => this.confirmAttendance());
     },
 
@@ -324,17 +328,16 @@ const faceRecognition = {
         this.checkCanSubmit();
     },
 
-    retakePhoto() {
+    async retakePhoto() {
         // Matikan stream lama
         this.cleanup();
         // Reset UI ke awal
         this.resetUI();
-        // Mulai ulang kamera
-        setTimeout(() => {
-            this.initCamera();
-            this.initLocation(); // lokasi tetap bisa diambil ulang
-            this.bindButtons();
-        }, 100);
+        // Mulai ulang kamera dengan delay agar stream benar-benar dilepas
+        await new Promise(resolve => setTimeout(resolve, 200));
+        this.initCamera();
+        this.initLocation(); // lokasi tetap bisa diambil ulang
+        this.bindButtons();
     },
 
     resetUI() {
@@ -614,10 +617,14 @@ const faceRecognition = {
             this.stream.getTracks().forEach(track => track.stop());
             this.stream = null;
         }
+        // Bersihkan video element
         if (this.video) {
-            if (this.video.srcObject) this.video.srcObject = null;
+            if (this.video.srcObject) {
+                this.video.srcObject = null;
+            }
             this.video.pause();
             this.video.src = '';
+            this.video.load(); // Reset internal state video element
         }
         // Hancurkan map
         if (this.map) {
@@ -633,7 +640,6 @@ const faceRecognition = {
             clearInterval(this.countdownTimer);
             this.countdownTimer = null;
         }
-        // Jangan reset tombol di sini, biar resetUI() yang mengatur
     },
 };
 
