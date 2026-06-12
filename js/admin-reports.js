@@ -3,6 +3,16 @@
  * Versi debugging untuk Rekap Cuti & Izin
  */
 
+// Helper function untuk membersihkan apostrof dari Google Sheets
+const cleanValue = (val) => {
+    if (!val) return '';
+    let str = String(val).trim();
+    if (str.startsWith("'")) {
+        str = str.substring(1);
+    }
+    return str;
+};
+
 const adminReports = {
     rawAttendance: [],
     rawEmployees: [],
@@ -182,7 +192,7 @@ const adminReports = {
                 name: emp.name, department: emp.department,
                 tasks: j.tasks || '-', achievements: j.achievements || '-',
                 obstacles: j.obstacles || '-', plan: j.plan || '-',
-                photo: j.photo || null,
+                photo: j.photo ? cleanValue(j.photo) : null,
                 status: (j.tasks && j.tasks !== '-') ? 'filled' : 'empty',
                 updatedAt: j.updatedAt
             };
@@ -764,32 +774,44 @@ const adminReports = {
             let statusHtml = '';
             let photoHtml = '-';
 
+            // Bersihkan data dari apostrof Google Sheets
+            let cleanRec = null;
+            if (rec) {
+                cleanRec = {
+                    ...rec,
+                    clockIn: cleanValue(rec.clockIn),
+                    clockOut: cleanValue(rec.clockOut),
+                    status: cleanValue(rec.status),
+                    verificationPhoto: cleanValue(rec.verificationPhoto)
+                };
+            }
+
             // 1. Cek TERLEBIH DAHULU apakah ada Izin atau Cuti yang disetujui di tanggal ini
             if (leaveStatusMap[dateStr]) {
                 statusHtml = `<span class="badge-status info">${leaveStatusMap[dateStr].label}</span>`;
                 photoHtml = '-'; // Tidak ada foto absensi karena statusnya izin/cuti
-            } 
+            }
             // 2. Jika tidak ada izin/cuti, barulah cek apakah tanggalnya di masa depan
             else if (dateStr > todayStr) {
                 statusHtml = '<span class="badge-status secondary">-</span>';
                 photoHtml = '-';
-            } 
+            }
             // 3. Jika di masa lalu/hari ini dan karyawan melakukan Clock In
-            else if (rec && rec.clockIn) {
-                const statusClass = this.getStatusClass(rec.status);
-                const statusLabel = rec.status || 'Hadir';
+            else if (cleanRec && cleanRec.clockIn) {
+                const statusClass = this.getStatusClass(cleanRec.status);
+                const statusLabel = cleanRec.status || 'Hadir';
                 statusHtml = `<span class="badge-status ${statusClass}">${statusLabel}</span>`;
-                if (rec.verificationPhoto) {
-                    photoHtml = `<button class="btn-action view" onclick="adminReports.viewPhoto('${rec.verificationPhoto.replace(/\\'/g, "\\\\'")}')" title="Lihat Bukti Foto"><i class="fas fa-camera"></i></button>`;
+                if (cleanRec.verificationPhoto) {
+                    photoHtml = `<button class="btn-action view" onclick="adminReports.viewPhoto('${cleanRec.verificationPhoto}')" title="Lihat Bukti Foto"><i class="fas fa-camera"></i></button>`;
                 }
-            } 
+            }
             // 4. Jika di masa lalu/hari ini dan tidak melakukan Clock In & tidak ada izin/cuti
             else {
                 statusHtml = '<span class="badge-status danger">Alpha</span>';
             }
 
-            const clockIn = rec?.clockIn || '-';
-            const clockOut = rec?.clockOut || '-';
+            const clockIn = cleanRec?.clockIn || '-';
+            const clockOut = cleanRec?.clockOut || '-';
 
             tableRows += `
                 <tr>
