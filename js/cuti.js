@@ -6,6 +6,7 @@ const cuti = {
     leaves: [],
     leaveBalance: 12,
     filterStatus: '',
+    isSubmitting: false, // flag untuk mencegah double submit
 
     async init() {
         loadingIndicator.show('Memuat data cuti...');
@@ -86,6 +87,12 @@ const cuti = {
     async handleSubmit(e) {
         e.preventDefault();
 
+        // Cegah double submit
+        if (this.isSubmitting) {
+            console.warn('Form sedang diproses, abaikan klik ganda.');
+            return;
+        }
+
         const type = document.getElementById('leave-type');
         const startDate = document.getElementById('leave-start');
         const endDate = document.getElementById('leave-end');
@@ -129,6 +136,14 @@ const cuti = {
             reason: reason.value
         };
 
+        // Set flag dan nonaktifkan tombol
+        this.isSubmitting = true;
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengirim...';
+        }
+
         loadingIndicator.show('Mengirim pengajuan cuti...');
         try {
             const result = await api.submitLeave(leaveData);
@@ -148,6 +163,12 @@ const cuti = {
             toast.error('Terjadi kesalahan');
         } finally {
             loadingIndicator.hide();
+            // Reset flag dan tombol
+            this.isSubmitting = false;
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Ajukan Cuti';
+            }
         }
 
         e.target.reset();
