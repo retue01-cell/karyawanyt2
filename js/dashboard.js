@@ -6,6 +6,9 @@
 const dashboard = {
     initialized: false,
     attendanceData: [],
+    leavesData: [],
+    izinData: [],
+    currentPeriod: 'current', // 'current' atau 'last'
 
     async init() {
         console.log('Dashboard init - start');
@@ -27,7 +30,8 @@ const dashboard = {
             await this.refreshShiftInfo();
             // Update komponen lain
             this.updateWelcomeCard();
-            this.updateStats();
+            this.setupPeriodSelector();
+            this.updateStats(this.currentPeriod);
             this.updateSessionInfo();
             this.updateProgressBar();
             this.renderWeeklyChart();
@@ -40,6 +44,19 @@ const dashboard = {
         }
     },
 
+    setupPeriodSelector() {
+        const selectEl = document.querySelector('.select-period');
+        if (!selectEl) return;
+        
+        selectEl.addEventListener('change', (e) => {
+            this.currentPeriod = e.target.value === 'Bulan Lalu' ? 'last' : 'current';
+            this.updateStats(this.currentPeriod);
+        });
+        
+        // Set nilai awal
+        selectEl.value = this.currentPeriod === 'last' ? 'Bulan Lalu' : 'Bulan Ini';
+    },
+
     async loadData() {
         try {
             const currentUser = auth.getCurrentUser();
@@ -47,10 +64,20 @@ const dashboard = {
                 // Fetch attendance data only
                 const attResult = await api.getAttendance(currentUser.id);
                 this.attendanceData = (attResult && attResult.success) ? attResult.data : [];
+                
+                // Fetch leaves data
+                const leavesResult = await api.getLeaves(currentUser.id);
+                this.leavesData = (leavesResult && leavesResult.success) ? leavesResult.data : [];
+                
+                // Fetch izin data
+                const izinResult = await api.getIzin(currentUser.id);
+                this.izinData = (izinResult && izinResult.success) ? izinResult.data : [];
             }
         } catch (error) {
             console.error('Error loading dashboard data:', error);
             this.attendanceData = [];
+            this.leavesData = [];
+            this.izinData = [];
         }
     },
 
@@ -127,25 +154,72 @@ const dashboard = {
         welcomeCard.className = `welcome-card ${className}`;
     },
 
-    updateStats() {
+    updateStats(period = 'current') {
         const attendance = this.attendanceData;
-
-        // Hitung berdasarkan bulan berjalan
-        const currentYearMonth = dateTime.getLocalDate().substring(0, 7);
+        
+        // Tentukan bulan yang akan dihitung
+        let targetDate = new Date();
+        if (period === 'last') {
+            targetDate.setMonth(targetDate.getMonth() - 1);
+        }
+        
+        const year = targetDate.getFullYear();
+        const month = targetDate.getMonth(); // 0-indexed
+        const currentYearMonth = `${year}-${String(month + 1).padStart(2, '0')}`;
+        
+        // Filter data untuk bulan yang dipilih
         const monthlyAttendance = attendance.filter(a => a.date && a.date.startsWith(currentYearMonth));
         
+        // Hitung total hari kerja di bulan tersebut (berdasarkan settings)
+        const settings = storage.get('settings', {});
+        const workingDaysConfig = settings.working_days || [1, 2, 3, 4, 5]; // Default: Senin-Jumat
+        
+        // Hitung total hari kerja di bulan ini
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        let totalWorkingDays = 0;
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dayOfWeek = new Date(year, month, d).getDay();
+            if (workingDaysConfig.includes(dayOfWeek)) {
+                totalWorkingDays++;
+            }
+        }
+        
+        // Hitung kehadiran
         const present = monthlyAttendance.filter(a => a.clockIn && a.clockIn !== '').length;
         const late = monthlyAttendance.filter(a => 
             a.status && (a.status === 'Terlambat' || a.status === 'Late')
         ).length;
-        const absent = monthlyAttendance.filter(a => {
-            if (a.clockIn && a.clockIn !== '') return false;
-            const status = (a.status || '').toLowerCase();
-            return !status.includes('cuti') && !status.includes('izin') && status !== 'libur';
-        }).length;
-
-        const totalDays = monthlyAttendance.length;
-        const presentPercent = totalDays > 0 ? Math.round((present / totalDays) * 100) : 0;
+        
+        // Hitung cuti/izin yang approved
+        const approvedLeaves = this.leavesData.filter(l => {
+            if (l.status !== 'approved') return false;
+            const leaveStart = new Date(l.startDate);
+            const leaveEnd = new Date(l.endDate);
+            return leaveStart.getFullYear() === year && leaveStart.getMonth() === month;
+        }).reduce((total, l) => total + (parseInt(l.duration) || 0), 0);
+        
+        const approvedIzin = this.izinData.filter(i => {
+            if (i.status !== 'approved') return false;
+            const izinDate = new Date(i.date);
+            return izinDate.getFullYear() === year && izinDate.getMonth() === month;
+        }).reduce((total, i) => total + (parseInt(i.duration) || 1), 0);
+        
+        // Alpha = Total hari kerja - Hadir - Cuti Approved - Izin Approved
+        const absent = Math.max(0, totalWorkingDays - present - approvedLeaves - approvedIzin);
+        
+        // Persentase berdasarkan hari kerja yang sudah terlewat
+        const today = new Date();
+        let workingDaysPassed = 0;
+        for (let d = 1; d <= today.getDate(); d++) {
+            const dayOfWeek = new Date(year, month, d).getDay();
+            if (workingDaysConfig.includes(dayOfWeek)) {
+                workingDaysPassed++;
+            }
+        }
+        
+        // Jika periode bulan lalu, gunakan totalWorkingDays sebagai denominator
+        const denominator = period === 'last' ? totalWorkingDays : Math.min(workingDaysPassed, totalWorkingDays);
+        const presentPercent = denominator > 0 ? Math.round((present / denominator) * 100) : 0;
 
         // Update center text
         const donutValue = document.querySelector('.donut-value');
@@ -222,27 +296,91 @@ const dashboard = {
         const barChartContainer = document.querySelector('.bar-chart');
         if (!barChartContainer) return;
 
-        // Ambil 7 hari terakhir (termasuk hari ini)
         const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
         const today = new Date();
-        const weeklyData = [];
         
-        for (let i = 6; i >= 0; i--) {
-            const date = new Date(today);
-            date.setDate(today.getDate() - i);
+        // Cari hari Senin dari minggu ini
+        const dayOfWeek = today.getDay(); // 0 = Minggu, 1 = Senin, ..., 6 = Sabtu
+        const mondayOffset = dayOfWeek === 0 ? -6 : (1 - dayOfWeek); // Jika Minggu, mundur 6 hari; jika Senin, 0; jika Selasa, -1, dst.
+        const monday = new Date(today);
+        monday.setDate(today.getDate() + mondayOffset);
+        
+        // Set ke tengah hari untuk menghindari masalah timezone
+        monday.setHours(12, 0, 0, 0);
+        
+        const weeklyData = [];
+        const standardWorkHours = 9; // Asumsi jam kerja standar 9 jam (termasuk istirahat)
+        
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(monday);
+            date.setDate(monday.getDate() + i);
             const dateStr = dateTime.getLocalDate(date);
             const dayName = days[date.getDay()];
             const attendance = this.attendanceData.find(a => a.date === dateStr);
-            const isPresent = attendance && attendance.clockIn && attendance.clockIn !== '';
+            
             const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-            weeklyData.push({ day: dayName, present: isPresent, weekend: isWeekend });
+            let heightPercent = 0;
+            let statusClass = '';
+            let labelSuffix = '';
+            
+            if (attendance) {
+                // Cek status cuti/izin terlebih dahulu
+                const statusLower = (attendance.status || '').toLowerCase();
+                
+                if (statusLower.includes('cuti') || statusLower.includes('libur')) {
+                    statusClass = 'leave';
+                    labelSuffix = ' (Cuti/Libur)';
+                    heightPercent = 0; // Tidak ada batang untuk cuti/libur
+                } else if (statusLower.includes('izin')) {
+                    statusClass = 'izin';
+                    labelSuffix = ' (Izin)';
+                    heightPercent = 0;
+                } else if (attendance.clockIn && attendance.clockIn !== '') {
+                    // Hitung durasi kerja
+                    let workHours = 0;
+                    if (attendance.clockOut && attendance.clockOut !== '') {
+                        const clockIn = dateTime.normalizeTime(attendance.clockIn);
+                        const clockOut = dateTime.normalizeTime(attendance.clockOut);
+                        
+                        const [inH, inM] = clockIn.split(':').map(Number);
+                        const [outH, outM] = clockOut.split(':').map(Number);
+                        
+                        if (!isNaN(inH) && !isNaN(inM) && !isNaN(outH) && !isNaN(outM)) {
+                            let workMinutes = (outH * 60 + outM) - (inH * 60 + inM);
+                            if (workMinutes < 0) workMinutes += 24 * 60; // Handle shift malam
+                            workHours = workMinutes / 60;
+                        }
+                    }
+                    
+                    // Hitung persentase tinggi berdasarkan durasi kerja (max 100% untuk 9 jam)
+                    heightPercent = Math.min(100, Math.round((workHours / standardWorkHours) * 100));
+                    
+                    // Pastikan minimal terlihat jika hadir
+                    if (heightPercent < 10) heightPercent = 100;
+                } else {
+                    // Alpha (tidak hadir tanpa keterangan)
+                    heightPercent = 0;
+                    statusClass = 'absent';
+                }
+            } else {
+                // Tidak ada data sama sekali
+                heightPercent = 0;
+            }
+            
+            weeklyData.push({ 
+                day: dayName, 
+                height: heightPercent,
+                weekend: isWeekend,
+                statusClass: statusClass,
+                labelSuffix: labelSuffix
+            });
         }
 
         // Render bar chart
         barChartContainer.innerHTML = weeklyData.map(day => `
             <div class="bar-item">
-                <div class="bar-fill ${day.weekend ? 'weekend' : ''}" style="height: ${day.present ? '100%' : '0%'}; min-height: 4px;"></div>
-                <span class="bar-label">${day.day}</span>
+                <div class="bar-fill ${day.weekend ? 'weekend' : ''} ${day.statusClass}" style="height: ${day.height}%; min-height: ${day.height > 0 ? '4px' : '0'};"></div>
+                <span class="bar-label">${day.day}${day.labelSuffix}</span>
             </div>
         `).join('');
     },
@@ -251,59 +389,122 @@ const dashboard = {
         const activityList = document.querySelector('.activity-list');
         if (!activityList) return;
 
-        // Ambil 5 aktivitas terbaru dari attendance + jurnal
         const currentUser = auth.getCurrentUser();
         const userId = currentUser?.id;
         
-        // Gabungkan data attendance dan jurnal
+        // Gabungkan data attendance, jurnal, leaves, dan izin
         let activities = [];
         
-        // Dari attendance
+        // Dari attendance - Clock In dan Clock Out
         this.attendanceData.forEach(att => {
-            if (att.clockIn) {
-                const timeStr = dateTime.normalizeTime(att.clockIn);
-                activities.push({
-                    type: 'clock-in',
-                    title: 'Clock In',
-                    time: timeStr,
-                    date: att.date,
-                    timestamp: new Date(att.date + 'T' + (att.clockIn.includes(':') ? att.clockIn : att.clockIn.replace('.', ':') + ':00'))
-                });
+            if (att.clockIn && att.clockIn !== '') {
+                try {
+                    const timeStr = dateTime.normalizeTime(att.clockIn);
+                    // Sanitasi waktu untuk mencegah Invalid Date
+                    const cleanTime = timeStr.substring(0, 5);
+                    const timestamp = new Date(att.date + 'T' + cleanTime + ':00');
+                    if (!isNaN(timestamp.getTime())) {
+                        activities.push({
+                            type: 'clock-in',
+                            title: 'Clock In',
+                            time: timeStr,
+                            date: att.date,
+                            timestamp: timestamp
+                        });
+                    }
+                } catch(e) { console.warn('Error parsing clock-in:', e); }
             }
-            if (att.clockOut) {
-                const timeStr = dateTime.normalizeTime(att.clockOut);
-                activities.push({
-                    type: 'clock-out',
-                    title: 'Clock Out',
-                    time: timeStr,
-                    date: att.date,
-                    timestamp: new Date(att.date + 'T' + (att.clockOut.includes(':') ? att.clockOut : att.clockOut.replace('.', ':') + ':00'))
-                });
+            if (att.clockOut && att.clockOut !== '') {
+                try {
+                    const timeStr = dateTime.normalizeTime(att.clockOut);
+                    const cleanTime = timeStr.substring(0, 5);
+                    const timestamp = new Date(att.date + 'T' + cleanTime + ':00');
+                    if (!isNaN(timestamp.getTime())) {
+                        activities.push({
+                            type: 'clock-out',
+                            title: 'Clock Out',
+                            time: timeStr,
+                            date: att.date,
+                            timestamp: timestamp
+                        });
+                    }
+                } catch(e) { console.warn('Error parsing clock-out:', e); }
             }
         });
         
-        // Dari jurnal (ambil dari API atau storage)
+        // Dari jurnal - gunakan storage untuk performa lebih baik
         try {
-            const journalResult = await api.getJournals(userId);
-            const journals = journalResult.data || [];
+            const journals = storage.get('jurnals', []);
             journals.forEach(j => {
                 if (j.tasks && j.tasks.trim() !== '') {
-                    let journalDate = j.date || (j.updatedAt ? j.updatedAt.split('T')[0] : '');
-                    let journalTime = j.updatedAt ? dateTime.formatTime(j.updatedAt) : '00:00';
-                    if (journalDate) {
-                        activities.push({
-                            type: 'journal',
-                            title: 'Mengisi Jurnal',
-                            time: journalTime,
-                            date: journalDate,
-                            timestamp: new Date(journalDate + 'T' + journalTime)
-                        });
-                    }
+                    try {
+                        let journalDate = j.date || (j.updatedAt ? j.updatedAt.split('T')[0] : '');
+                        let journalTime = '00:00';
+                        
+                        if (j.updatedAt) {
+                            journalTime = dateTime.formatTime(j.updatedAt);
+                        } else if (j.createdAt) {
+                            journalTime = dateTime.formatTime(j.createdAt);
+                        }
+                        
+                        if (journalDate) {
+                            const cleanTime = journalTime.substring(0, 5);
+                            const timestamp = new Date(journalDate + 'T' + cleanTime + ':00');
+                            if (!isNaN(timestamp.getTime())) {
+                                activities.push({
+                                    type: 'journal',
+                                    title: 'Mengisi Jurnal',
+                                    time: journalTime,
+                                    date: journalDate,
+                                    timestamp: timestamp
+                                });
+                            }
+                        }
+                    } catch(e) { console.warn('Error parsing journal:', e); }
                 }
             });
         } catch(e) { 
-            console.warn('Gagal ambil jurnal untuk aktivitas', e); 
+            console.warn('Gagal ambil jurnal dari storage', e); 
         }
+        
+        // Dari Leaves (Cuti) - tambahkan aktivitas pengajuan cuti
+        this.leavesData.forEach(leave => {
+            if (leave.appliedAt) {
+                try {
+                    const timestamp = new Date(leave.appliedAt + 'T00:00:00');
+                    if (!isNaN(timestamp.getTime())) {
+                        const statusLabel = leave.status === 'approved' ? 'Disetujui' : (leave.status === 'rejected' ? 'Ditolak' : 'Pending');
+                        activities.push({
+                            type: 'leave',
+                            title: `Pengajuan ${leave.typeLabel || 'Cuti'} (${statusLabel})`,
+                            time: '--:--',
+                            date: leave.appliedAt,
+                            timestamp: timestamp
+                        });
+                    }
+                } catch(e) { console.warn('Error parsing leave:', e); }
+            }
+        });
+        
+        // Dari Izin - tambahkan aktivitas pengajuan izin
+        this.izinData.forEach(izin => {
+            if (izin.appliedAt || izin.date) {
+                try {
+                    const applyDate = izin.appliedAt || izin.date;
+                    const timestamp = new Date(applyDate + 'T00:00:00');
+                    if (!isNaN(timestamp.getTime())) {
+                        const statusLabel = izin.status === 'approved' ? 'Disetujui' : (izin.status === 'rejected' ? 'Ditolak' : 'Pending');
+                        activities.push({
+                            type: 'izin',
+                            title: `Pengajuan Izin (${statusLabel})`,
+                            time: '--:--',
+                            date: applyDate,
+                            timestamp: timestamp
+                        });
+                    }
+                } catch(e) { console.warn('Error parsing izin:', e); }
+            }
+        });
         
         // Urutkan berdasarkan timestamp terbaru, ambil 5
         activities.sort((a, b) => b.timestamp - a.timestamp);
@@ -315,8 +516,35 @@ const dashboard = {
         }
         
         activityList.innerHTML = recent.map(act => {
-            const iconClass = act.type === 'clock-in' ? 'clock-in' : (act.type === 'clock-out' ? 'clock-out' : 'journal');
-            const icon = act.type === 'clock-in' ? 'fa-sign-in-alt' : (act.type === 'clock-out' ? 'fa-sign-out-alt' : 'fa-book');
+            let iconClass = '';
+            let icon = '';
+            
+            switch(act.type) {
+                case 'clock-in':
+                    iconClass = 'clock-in';
+                    icon = 'fa-sign-in-alt';
+                    break;
+                case 'clock-out':
+                    iconClass = 'clock-out';
+                    icon = 'fa-sign-out-alt';
+                    break;
+                case 'journal':
+                    iconClass = 'journal';
+                    icon = 'fa-book';
+                    break;
+                case 'leave':
+                    iconClass = 'leave';
+                    icon = 'fa-plane';
+                    break;
+                case 'izin':
+                    iconClass = 'izin';
+                    icon = 'fa-file-alt';
+                    break;
+                default:
+                    iconClass = '';
+                    icon = 'fa-clock';
+            }
+            
             const timeAgo = this.getTimeAgo(act.timestamp);
             return `
                 <div class="activity-item">
