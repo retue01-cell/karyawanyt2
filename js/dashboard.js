@@ -282,6 +282,57 @@ const dashboard = {
             legendValues[1].textContent = `${late} hari`;
             legendValues[2].textContent = `${absent} hari`;
         }
+
+        // =========================================================
+        // UPDATE POTONGAN GRAFIK SVG DONUT CHART
+        // =========================================================
+        
+        // 1. Ambil elemen SVG lingkaran dari grafik
+        const circlePresent = document.querySelector('.donut-fill.present');
+        const circleLate = document.querySelector('.donut-fill.late');
+        const circleAbsent = document.querySelector('.donut-fill.absent');
+
+        // 2. Tentukan jumlah untuk setiap kategori (mutually exclusive)
+        // present = semua yang clockIn (termasuk yang late)
+        // late = subset dari present yang terlambat
+        // absent = alpha (tidak hadir tanpa keterangan)
+        const onTimeAmount = present; // Semua yang hadir
+        const lateAmount = late;      // Yang terlambat
+        const absentAmount = absent;  // Alpha
+
+        const totalGraph = onTimeAmount + lateAmount + absentAmount;
+
+        // Matematika SVG: Keliling lingkaran dengan r=40 (rumus: 2 * Math.PI * 40 ≈ 251.327)
+        const circ = 251.327;
+
+        if (totalGraph > 0 && circlePresent && circleLate && circleAbsent) {
+            // 3. Hitung proporsi persentase panjang garis (dash) masing-masing
+            const presentDash = (onTimeAmount / totalGraph) * circ;
+            const lateDash = (lateAmount / totalGraph) * circ;
+            const absentDash = (absentAmount / totalGraph) * circ;
+
+            // 4. Hitung posisi titik mulai/offset (negatif agar bersambung searah jarum jam)
+            // Ditambahkan gap '- 2' agar ada jarak visual kecil pemisah berwarna putih
+            const presentOffset = 0;
+            const lateOffset = -presentDash - (presentDash > 0 && lateDash > 0 ? 2 : 0);
+            const absentOffset = lateOffset - lateDash - ((lateDash > 0 || presentDash > 0) && absentDash > 0 ? 2 : 0);
+
+            // 5. Terapkan update CSS style ke elemen Circle SVG
+            circlePresent.style.strokeDasharray = `${presentDash} ${circ}`;
+            circlePresent.style.strokeDashoffset = presentOffset;
+
+            circleLate.style.strokeDasharray = `${lateDash} ${circ}`;
+            circleLate.style.strokeDashoffset = lateOffset;
+
+            circleAbsent.style.strokeDasharray = `${absentDash} ${circ}`;
+            circleAbsent.style.strokeDashoffset = absentOffset;
+
+        } else if (circlePresent && circleLate && circleAbsent) {
+            // Jika tidak ada hari kerja yang bisa dihitung (total = 0), hapus semua potongan grafik
+            circlePresent.style.strokeDasharray = `0 ${circ}`;
+            circleLate.style.strokeDasharray = `0 ${circ}`;
+            circleAbsent.style.strokeDasharray = `0 ${circ}`;
+        }
     },
 
     updateSessionInfo() {
