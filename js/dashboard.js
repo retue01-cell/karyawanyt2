@@ -156,6 +156,7 @@ const dashboard = {
 
     updateStats(period = 'current') {
         const attendance = this.attendanceData;
+        const currentUser = auth.getCurrentUser();
         
         // Tentukan bulan yang akan dihitung
         let targetDate = new Date();
@@ -170,55 +171,102 @@ const dashboard = {
         // Filter data untuk bulan yang dipilih
         const monthlyAttendance = attendance.filter(a => a.date && a.date.startsWith(currentYearMonth));
         
-        // Hitung total hari kerja di bulan tersebut (berdasarkan settings)
-        const settings = storage.get('settings', {});
-        const workingDaysConfig = settings.working_days || [1, 2, 3, 4, 5]; // Default: Senin-Jumat
-        
-        // Hitung total hari kerja di bulan ini
+        // Hitung total hari dalam bulan (tanpa filter weekend - sama seperti admin)
         const daysInMonth = new Date(year, month + 1, 0).getDate();
-        let totalWorkingDays = 0;
-        for (let d = 1; d <= daysInMonth; d++) {
-            const dayOfWeek = new Date(year, month, d).getDay();
-            if (workingDaysConfig.includes(dayOfWeek)) {
-                totalWorkingDays++;
+        
+        // Tentukan batas akhir perhitungan
+        let lastDayToCount = daysInMonth;
+        
+        // Jika bulan ini, batasi hanya sampai hari ini (tidak menghitung hari masa depan)
+        if (period === 'current') {
+            const today = new Date();
+            if (today.getFullYear() === year && today.getMonth() === month) {
+                lastDayToCount = today.getDate();
             }
         }
         
-        // Hitung kehadiran
+        // Cek join date - jika bulan pertama bergabung, mulai dari tanggal join
+        let startDay = 1;
+        if (currentUser && currentUser.joinDate) {
+            const joinDate = new Date(currentUser.joinDate);
+            if (joinDate.getFullYear() === year && joinDate.getMonth() === month) {
+                startDay = joinDate.getDate();
+                // Jika join date setelah lastDayToCount, tidak ada data
+                if (startDay > lastDayToCount) {
+                    // Bulan sebelum join - tampilkan 0
+                    const donutValue = document.querySelector('.donut-value');
+                    if (donutValue) donutValue.textContent = '0%';
+                    const legendValues = document.querySelectorAll('.legend-value');
+                    if (legendValues.length >= 3) {
+                        legendValues[0].textContent = '0 hari';
+                        legendValues[1].textContent = '0 hari';
+                        legendValues[2].textContent = '0 hari';
+                    }
+                    return;
+                }
+            }
+        }
+        
+        // Total hari kalender yang dihitung (sama seperti logika admin)
+        const totalDays = lastDayToCount - startDay + 1;
+        
+        // Hitung kehadiran (hadir jika ada clockIn)
         const present = monthlyAttendance.filter(a => a.clockIn && a.clockIn !== '').length;
+        
+        // Hitung terlambat
         const late = monthlyAttendance.filter(a => 
             a.status && (a.status === 'Terlambat' || a.status === 'Late')
         ).length;
         
-        // Hitung cuti/izin yang approved
+        // Hitung cuti/izin yang approved (hanya yang jatuh dalam rentang tanggal yang dihitung)
         const approvedLeaves = this.leavesData.filter(l => {
             if (l.status !== 'approved') return false;
             const leaveStart = new Date(l.startDate);
             const leaveEnd = new Date(l.endDate);
-            return leaveStart.getFullYear() === year && leaveStart.getMonth() === month;
-        }).reduce((total, l) => total + (parseInt(l.duration) || 0), 0);
+            
+            // Cek apakah cuti berada dalam bulan dan rentang tanggal yang dihitung
+            if (leaveStart.getFullYear() !== year || leaveStart.getMonth() !== month) return false;
+            
+            const startDayNum = leaveStart.getDate();
+            const endDayNum = leaveEnd.getDate();
+            
+            // Hitung durasi yang masuk dalam rentang
+            let overlapDays = 0;
+            for (let d = startDayNum; d <= endDayNum; d++) {
+                if (d >= startDay && d <= lastDayToCount) {
+                    overlapDays++;
+                }
+            }
+            return overlapDays > 0;
+        }).reduce((total, l) => {
+            const leaveStart = new Date(l.startDate);
+            const leaveEnd = new Date(l.endDate);
+            const startDayNum = leaveStart.getDate();
+            const endDayNum = leaveEnd.getDate();
+            
+            let overlapDays = 0;
+            for (let d = startDayNum; d <= endDayNum; d++) {
+                if (d >= startDay && d <= lastDayToCount) {
+                    overlapDays++;
+                }
+            }
+            return total + overlapDays;
+        }, 0);
         
         const approvedIzin = this.izinData.filter(i => {
             if (i.status !== 'approved') return false;
             const izinDate = new Date(i.date);
-            return izinDate.getFullYear() === year && izinDate.getMonth() === month;
+            if (izinDate.getFullYear() !== year || izinDate.getMonth() !== month) return false;
+            
+            const izinDay = izinDate.getDate();
+            return izinDay >= startDay && izinDay <= lastDayToCount;
         }).reduce((total, i) => total + (parseInt(i.duration) || 1), 0);
         
-        // Alpha = Total hari kerja - Hadir - Cuti Approved - Izin Approved
-        const absent = Math.max(0, totalWorkingDays - present - approvedLeaves - approvedIzin);
+        // Alpha = Total hari - Hadir - Cuti Approved - Izin Approved (sama seperti admin)
+        const absent = Math.max(0, totalDays - present - approvedLeaves - approvedIzin);
         
-        // Persentase berdasarkan hari kerja yang sudah terlewat
-        const today = new Date();
-        let workingDaysPassed = 0;
-        for (let d = 1; d <= today.getDate(); d++) {
-            const dayOfWeek = new Date(year, month, d).getDay();
-            if (workingDaysConfig.includes(dayOfWeek)) {
-                workingDaysPassed++;
-            }
-        }
-        
-        // Jika periode bulan lalu, gunakan totalWorkingDays sebagai denominator
-        const denominator = period === 'last' ? totalWorkingDays : Math.min(workingDaysPassed, totalWorkingDays);
+        // Persentase kehadiran
+        const denominator = totalDays > 0 ? totalDays : 1;
         const presentPercent = denominator > 0 ? Math.round((present / denominator) * 100) : 0;
 
         // Update center text
