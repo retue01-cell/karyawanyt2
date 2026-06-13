@@ -951,6 +951,12 @@ const notifications = {
             // Urutkan data berdasarkan waktu terbaru di atas
             this.notifData.sort((a, b) => new Date(b.time) - new Date(a.time));
             
+            // Gabungkan dengan readNotifs dari server (currentUser.readNotifs) untuk sinkronisasi lintas device
+            const serverReadNotifs = currentUser.readNotifs ? JSON.parse(currentUser.readNotifs || '[]') : [];
+            const localReadNotifs = storage.get('read_notifications', []);
+            const combinedReadNotifs = [...new Set([...serverReadNotifs, ...localReadNotifs])];
+            storage.set('read_notifications', combinedReadNotifs);
+            
             // Hitung Badge
             this.updateBadge();
 
