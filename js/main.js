@@ -887,30 +887,40 @@ const notifications = {
         try {
             if (currentUser.role === 'admin') {
                 // -- NOTIFIKASI ADMIN --
-                // Cari Pengajuan Cuti & Izin milik siapa saja yang menunggu "Pending"
-                const [leaveRes, izinRes] = await Promise.all([
+                // Tambahkan API getEmployees untuk mendapatkan nama dari ID
+                const [leaveRes, izinRes, empRes] = await Promise.all([
                     api.getAllLeaves(),
-                    api.getAllIzin()
+                    api.getAllIzin(),
+                    api.getEmployees() // Ambil daftar karyawan
                 ]);
                 
+                const employees = empRes.data || [];
                 const pendingLeaves = (leaveRes.data || []).filter(l => l.status === 'pending');
                 const pendingIzin = (izinRes.data || []).filter(i => i.status === 'pending');
 
                 pendingLeaves.forEach(l => {
+                    // Cari nama karyawan
+                    const emp = employees.find(e => String(e.id) === String(l.userId));
+                    const empName = emp ? emp.name : `Karyawan (ID: ${l.userId})`;
+
                     this.notifData.push({
                         id: `cuti_${l.id}`,
                         title: 'Pengajuan Cuti Baru',
-                        desc: `Terdapat pengajuan cuti menunggu dari ID: ${l.userId}.`,
+                        desc: `Terdapat pengajuan cuti menunggu dari ${empName}.`,
                         time: l.appliedAt || new Date().toISOString(),
                         action: 'leave-reports'
                     });
                 });
 
                 pendingIzin.forEach(i => {
+                    // Cari nama karyawan
+                    const emp = employees.find(e => String(e.id) === String(i.userId));
+                    const empName = emp ? emp.name : `Karyawan (ID: ${i.userId})`;
+
                     this.notifData.push({
                         id: `izin_${i.id}`,
                         title: 'Pengajuan Izin Baru',
-                        desc: `Terdapat pengajuan izin menunggu dari ID: ${i.userId}.`,
+                        desc: `Terdapat pengajuan izin menunggu dari ${empName}.`,
                         time: i.appliedAt || new Date().toISOString(),
                         action: 'leave-reports'
                     });
@@ -1036,13 +1046,22 @@ const notifications = {
         const listContainer = document.getElementById('notifications-list');
         if (!listContainer) return;
 
-        if (this.notifData.length === 0) {
+        const currentUser = auth.getCurrentUser();
+        const readNotifs = storage.get('read_notifications', []);
+        
+        // Filter notifikasi agar karyawan hanya melihat notifikasi yang belum dibaca (hilang saat di-check)
+        let displayNotifs = this.notifData;
+        if (currentUser && currentUser.role !== 'admin') {
+            displayNotifs = this.notifData.filter(n => !readNotifs.includes(n.id));
+        }
+
+        if (displayNotifs.length === 0) {
             listContainer.innerHTML = '<div class="notification-empty">Tidak ada notifikasi baru</div>';
             return;
         }
 
         // Render Top 10 Terbaru 
-        listContainer.innerHTML = this.notifData.slice(0, 10).map(n => `
+        listContainer.innerHTML = displayNotifs.slice(0, 10).map(n => `
             <div class="notification-item" onclick="notifications.goToAction('${n.action}')">
                 <div class="notification-title">${n.title}</div>
                 <div class="notification-desc">${n.desc}</div>
