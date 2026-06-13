@@ -252,7 +252,16 @@ const dateTime = {
     },
 
     formatTime(date) {
+        if (!date) return '--:--';
+        
+        // Jika sudah berupa string waktu (HH:MM atau HH:MM:SS)
+        if (typeof date === 'string' && date.match(/^\d{2}:\d{2}/)) {
+            return date.substring(0, 5);
+        }
+        
         const d = new Date(date);
+        if (isNaN(d.getTime())) return '--:--';
+        
         const hour = d.getHours().toString().padStart(2, '0');
         const minute = d.getMinutes().toString().padStart(2, '0');
         return `${hour}:${minute}`;
