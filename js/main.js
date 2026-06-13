@@ -1023,6 +1023,10 @@ const notifications = {
         // Sinkronisasi dengan server untuk notifikasi lintas device
         const currentUser = auth.getCurrentUser();
         if (currentUser && currentUser.id) {
+            // Update sesi aktif dengan data readNotifs terbaru
+            currentUser.readNotifs = JSON.stringify(readNotifs);
+            storage.set('session', currentUser);
+            
             api.updateReadNotifications(currentUser.id, readNotifs).catch(e => console.warn('Gagal sinkronisasi notifikasi', e));
         }
     },
