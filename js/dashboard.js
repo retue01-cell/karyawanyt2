@@ -132,21 +132,20 @@ const dashboard = {
 
         // Hitung berdasarkan bulan berjalan
         const currentYearMonth = dateTime.getLocalDate().substring(0, 7);
-        const monthlyAttendance = attendance.filter(a => a.date.startsWith(currentYearMonth));
+        const monthlyAttendance = attendance.filter(a => a.date && a.date.startsWith(currentYearMonth));
         
-        const total = monthlyAttendance.length || 26; // Gunakan hari kerja default jika tidak ada data
-        const present = monthlyAttendance.filter(a => 
-            a.status === 'Tepat' || a.status === 'Rajin' || a.status === 'Early In' || a.status === 'On Time'
-        ).length;
+        const present = monthlyAttendance.filter(a => a.clockIn && a.clockIn !== '').length;
         const late = monthlyAttendance.filter(a => 
-            a.status === 'Terlambat' || a.status === 'Late'
+            a.status && (a.status === 'Terlambat' || a.status === 'Late')
         ).length;
-        const absent = monthlyAttendance.filter(a => 
-            !a.clockIn && a.status !== 'Libur' && a.status !== 'Cuti' && a.status !== 'Izin' && a.status !== 'waiting'
-        ).length;
+        const absent = monthlyAttendance.filter(a => {
+            if (a.clockIn && a.clockIn !== '') return false;
+            const status = (a.status || '').toLowerCase();
+            return !status.includes('cuti') && !status.includes('izin') && status !== 'libur';
+        }).length;
 
-        // Update donut chart values
-        const presentPercent = total > 0 ? Math.round((present / total) * 100) : 0;
+        const totalDays = monthlyAttendance.length;
+        const presentPercent = totalDays > 0 ? Math.round((present / totalDays) * 100) : 0;
 
         // Update center text
         const donutValue = document.querySelector('.donut-value');
@@ -234,7 +233,7 @@ const dashboard = {
             const dateStr = dateTime.getLocalDate(date);
             const dayName = days[date.getDay()];
             const attendance = this.attendanceData.find(a => a.date === dateStr);
-            const isPresent = attendance && attendance.clockIn;
+            const isPresent = attendance && attendance.clockIn && attendance.clockIn !== '';
             const isWeekend = date.getDay() === 0 || date.getDay() === 6;
             weeklyData.push({ day: dayName, present: isPresent, weekend: isWeekend });
         }
@@ -242,7 +241,7 @@ const dashboard = {
         // Render bar chart
         barChartContainer.innerHTML = weeklyData.map(day => `
             <div class="bar-item">
-                <div class="bar-fill ${day.weekend ? 'weekend' : ''}" style="height: ${day.present ? '100%' : '0%'}"></div>
+                <div class="bar-fill ${day.weekend ? 'weekend' : ''}" style="height: ${day.present ? '100%' : '0%'}; min-height: 4px;"></div>
                 <span class="bar-label">${day.day}</span>
             </div>
         `).join('');
@@ -262,21 +261,23 @@ const dashboard = {
         // Dari attendance
         this.attendanceData.forEach(att => {
             if (att.clockIn) {
+                const timeStr = dateTime.normalizeTime(att.clockIn);
                 activities.push({
                     type: 'clock-in',
                     title: 'Clock In',
-                    time: att.clockIn,
+                    time: timeStr,
                     date: att.date,
-                    timestamp: new Date(att.date + 'T' + (att.clockIn || '00:00'))
+                    timestamp: new Date(att.date + 'T' + (att.clockIn.includes(':') ? att.clockIn : att.clockIn.replace('.', ':') + ':00'))
                 });
             }
             if (att.clockOut) {
+                const timeStr = dateTime.normalizeTime(att.clockOut);
                 activities.push({
                     type: 'clock-out',
                     title: 'Clock Out',
-                    time: att.clockOut,
+                    time: timeStr,
                     date: att.date,
-                    timestamp: new Date(att.date + 'T' + (att.clockOut || '00:00'))
+                    timestamp: new Date(att.date + 'T' + (att.clockOut.includes(':') ? att.clockOut : att.clockOut.replace('.', ':') + ':00'))
                 });
             }
         });
@@ -286,19 +287,22 @@ const dashboard = {
             const journalResult = await api.getJournals(userId);
             const journals = journalResult.data || [];
             journals.forEach(j => {
-                if (j.tasks) {
-                    const timePart = j.updatedAt ? j.updatedAt.split('T')[1]?.substring(0, 5) : '00:00';
-                    activities.push({
-                        type: 'journal',
-                        title: 'Mengisi Jurnal',
-                        time: timePart || '--:--',
-                        date: j.date,
-                        timestamp: new Date(j.date + 'T' + (timePart || '00:00'))
-                    });
+                if (j.tasks && j.tasks.trim() !== '') {
+                    let journalDate = j.date || (j.updatedAt ? j.updatedAt.split('T')[0] : '');
+                    let journalTime = j.updatedAt ? dateTime.formatTime(j.updatedAt) : '00:00';
+                    if (journalDate) {
+                        activities.push({
+                            type: 'journal',
+                            title: 'Mengisi Jurnal',
+                            time: journalTime,
+                            date: journalDate,
+                            timestamp: new Date(journalDate + 'T' + journalTime)
+                        });
+                    }
                 }
             });
         } catch(e) { 
-            console.warn('Gagal ambil jurnal untuk aktivitas'); 
+            console.warn('Gagal ambil jurnal untuk aktivitas', e); 
         }
         
         // Urutkan berdasarkan timestamp terbaru, ambil 5
@@ -306,7 +310,7 @@ const dashboard = {
         const recent = activities.slice(0, 5);
         
         if (recent.length === 0) {
-            activityList.innerHTML = '<div class="empty-activity">Belum ada aktivitas</div>';
+            activityList.innerHTML = '<div class="empty-activity" style="text-align:center; padding:20px;">Belum ada aktivitas</div>';
             return;
         }
         
