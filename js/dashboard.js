@@ -30,6 +30,8 @@ const dashboard = {
             this.updateStats();
             this.updateSessionInfo();
             this.updateProgressBar();
+            this.renderWeeklyChart();
+            await this.renderRecentActivities();
 
             this.initialized = true;
             console.log('Dashboard init - done');
@@ -128,11 +130,20 @@ const dashboard = {
     updateStats() {
         const attendance = this.attendanceData;
 
-        // Calculate stats - gunakan status yang sesuai dengan backend ('Tepat', 'Terlambat', dll)
-        const total = Math.max(26, attendance.length); // Assuming min 26 working days base
-        const present = attendance.filter(a => a.status === 'Tepat' || a.status === 'Rajin' || a.status === 'Early In').length;
-        const late = attendance.filter(a => a.status === 'Terlambat').length;
-        const absent = attendance.filter(a => a.status === 'Tidak Hadir' || (!a.clockIn && a.status !== 'Libur' && a.status !== 'waiting')).length;
+        // Hitung berdasarkan bulan berjalan
+        const currentYearMonth = dateTime.getLocalDate().substring(0, 7);
+        const monthlyAttendance = attendance.filter(a => a.date.startsWith(currentYearMonth));
+        
+        const total = monthlyAttendance.length || 26; // Gunakan hari kerja default jika tidak ada data
+        const present = monthlyAttendance.filter(a => 
+            a.status === 'Tepat' || a.status === 'Rajin' || a.status === 'Early In' || a.status === 'On Time'
+        ).length;
+        const late = monthlyAttendance.filter(a => 
+            a.status === 'Terlambat' || a.status === 'Late'
+        ).length;
+        const absent = monthlyAttendance.filter(a => 
+            !a.clockIn && a.status !== 'Libur' && a.status !== 'Cuti' && a.status !== 'Izin' && a.status !== 'waiting'
+        ).length;
 
         // Update donut chart values
         const presentPercent = total > 0 ? Math.round((present / total) * 100) : 0;
@@ -206,6 +217,126 @@ const dashboard = {
         if (progressFill) {
             progressFill.style.width = `${progress}%`;
         }
+    },
+
+    renderWeeklyChart() {
+        const barChartContainer = document.querySelector('.bar-chart');
+        if (!barChartContainer) return;
+
+        // Ambil 7 hari terakhir (termasuk hari ini)
+        const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+        const today = new Date();
+        const weeklyData = [];
+        
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date(today);
+            date.setDate(today.getDate() - i);
+            const dateStr = dateTime.getLocalDate(date);
+            const dayName = days[date.getDay()];
+            const attendance = this.attendanceData.find(a => a.date === dateStr);
+            const isPresent = attendance && attendance.clockIn;
+            const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+            weeklyData.push({ day: dayName, present: isPresent, weekend: isWeekend });
+        }
+
+        // Render bar chart
+        barChartContainer.innerHTML = weeklyData.map(day => `
+            <div class="bar-item">
+                <div class="bar-fill ${day.weekend ? 'weekend' : ''}" style="height: ${day.present ? '100%' : '0%'}"></div>
+                <span class="bar-label">${day.day}</span>
+            </div>
+        `).join('');
+    },
+
+    async renderRecentActivities() {
+        const activityList = document.querySelector('.activity-list');
+        if (!activityList) return;
+
+        // Ambil 5 aktivitas terbaru dari attendance + jurnal
+        const currentUser = auth.getCurrentUser();
+        const userId = currentUser?.id;
+        
+        // Gabungkan data attendance dan jurnal
+        let activities = [];
+        
+        // Dari attendance
+        this.attendanceData.forEach(att => {
+            if (att.clockIn) {
+                activities.push({
+                    type: 'clock-in',
+                    title: 'Clock In',
+                    time: att.clockIn,
+                    date: att.date,
+                    timestamp: new Date(att.date + 'T' + (att.clockIn || '00:00'))
+                });
+            }
+            if (att.clockOut) {
+                activities.push({
+                    type: 'clock-out',
+                    title: 'Clock Out',
+                    time: att.clockOut,
+                    date: att.date,
+                    timestamp: new Date(att.date + 'T' + (att.clockOut || '00:00'))
+                });
+            }
+        });
+        
+        // Dari jurnal (ambil dari API atau storage)
+        try {
+            const journalResult = await api.getJournals(userId);
+            const journals = journalResult.data || [];
+            journals.forEach(j => {
+                if (j.tasks) {
+                    const timePart = j.updatedAt ? j.updatedAt.split('T')[1]?.substring(0, 5) : '00:00';
+                    activities.push({
+                        type: 'journal',
+                        title: 'Mengisi Jurnal',
+                        time: timePart || '--:--',
+                        date: j.date,
+                        timestamp: new Date(j.date + 'T' + (timePart || '00:00'))
+                    });
+                }
+            });
+        } catch(e) { 
+            console.warn('Gagal ambil jurnal untuk aktivitas'); 
+        }
+        
+        // Urutkan berdasarkan timestamp terbaru, ambil 5
+        activities.sort((a, b) => b.timestamp - a.timestamp);
+        const recent = activities.slice(0, 5);
+        
+        if (recent.length === 0) {
+            activityList.innerHTML = '<div class="empty-activity">Belum ada aktivitas</div>';
+            return;
+        }
+        
+        activityList.innerHTML = recent.map(act => {
+            const iconClass = act.type === 'clock-in' ? 'clock-in' : (act.type === 'clock-out' ? 'clock-out' : 'journal');
+            const icon = act.type === 'clock-in' ? 'fa-sign-in-alt' : (act.type === 'clock-out' ? 'fa-sign-out-alt' : 'fa-book');
+            const timeAgo = this.getTimeAgo(act.timestamp);
+            return `
+                <div class="activity-item">
+                    <div class="activity-icon ${iconClass}"><i class="fas ${icon}"></i></div>
+                    <div class="activity-content">
+                        <p class="activity-title">${act.title}</p>
+                        <p class="activity-time">${timeAgo}</p>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    },
+
+    getTimeAgo(date) {
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        if (diffMins < 1) return 'Baru saja';
+        if (diffMins < 60) return `${diffMins} menit lalu`;
+        const diffHours = Math.floor(diffMins / 60);
+        if (diffHours < 24) return `${diffHours} jam lalu`;
+        const diffDays = Math.floor(diffHours / 24);
+        if (diffDays === 1) return 'Kemarin';
+        return `${diffDays} hari lalu`;
     }
 };
 
