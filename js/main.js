@@ -1023,11 +1023,12 @@ const notifications = {
         // Sinkronisasi dengan server untuk notifikasi lintas device
         const currentUser = auth.getCurrentUser();
         if (currentUser && currentUser.id) {
-            // Update sesi aktif dengan data readNotifs terbaru
+            // PERBAIKAN 1: Tambahkan currentUser.role ke pemanggilan api backend
+            api.updateReadNotifications(currentUser.id, readNotifs, currentUser.role).catch(e => console.warn('Gagal sinkronisasi notifikasi', e));
+            
+            // PERBAIKAN 2: Pastikan session lokal dalam string juga ikut di timpa dengan real-time agar refresh cache tidak kembali kosong
             currentUser.readNotifs = JSON.stringify(readNotifs);
             storage.set('session', currentUser);
-            
-            api.updateReadNotifications(currentUser.id, readNotifs).catch(e => console.warn('Gagal sinkronisasi notifikasi', e));
         }
     },
 
