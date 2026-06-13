@@ -31,7 +31,7 @@
 </head>
 <body>
     <!-- Login Container -->
-    <div id="login-container" class="login-container">
+    <div id="login-container" class="login-container" style="opacity: 0; transition: opacity 0.5s ease-in;">
         <div class="login-left">
             <div class="login-animation">
                 <div class="floating-icons">
@@ -617,11 +617,11 @@
     <script src="js/account-settings.js"></script>
     <script src="js/mobile.js"></script>
     
-    <!-- Loading Overlay (deprecated) -->
-    <div id="loading-overlay" class="loading-overlay">
-        <div class="loading-spinner">
-            <i class="fas fa-circle-notch"></i>
-            <p>Memproses data...</p>
+    <!-- Loading Overlay sebagai Splash Screen Pelindung Awal -->
+    <div id="loading-overlay" class="loading-overlay active" style="background-color: var(--color-white); z-index: 10000; align-items: center; justify-content: center;">
+        <div class="loading-spinner" style="box-shadow: none; background: transparent; display: flex; flex-direction: column; align-items: center;">
+            <i class="fas fa-circle-notch fa-spin fa-3x" style="color: var(--color-primary);"></i>
+            <p style="margin-top: 20px; color: var(--text-primary); font-weight: 500;">Memuat Identitas Portal...</p>
         </div>
     </div>
     
