@@ -254,6 +254,9 @@ const auth = {
         if (loginContainer && appContainer) {
             appContainer.classList.add('hidden');
             loginContainer.style.display = 'flex';
+            
+            // TAMBAHKAN SATU BARIS INI:
+            loginContainer.style.opacity = '1';
 
             // Reset form
             const loginForm = document.getElementById('login-form');
