@@ -6,6 +6,7 @@ const izin = {
     izinData: [],
     currentFile: null,
     filterStatus: '',
+    isSubmitting: false, // flag untuk mencegah double submit
 
     async init() {
         loadingIndicator.show('Memuat data izin...');
@@ -105,6 +106,12 @@ const izin = {
     },
 
     async handleSubmit() {
+        // Cegah double submit
+        if (this.isSubmitting) {
+            console.warn('Form sedang diproses, abaikan klik ganda.');
+            return;
+        }
+
         const type = document.getElementById('izin-type')?.value;
         const date = document.getElementById('izin-date')?.value;
         const duration = document.getElementById('izin-duration')?.value;
@@ -119,6 +126,14 @@ const izin = {
     },
 
     async submitIzin(type, date, duration, reason) {
+        // Set flag dan nonaktifkan tombol
+        this.isSubmitting = true;
+        const submitBtn = document.querySelector('#izin-form button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengirim...';
+        }
+
         const typeLabels = {
             sick: 'Sakit',
             permission: 'Izin Penting',
@@ -158,6 +173,12 @@ const izin = {
             toast.error('Terjadi kesalahan');
         } finally {
             loadingIndicator.hide();
+            // Reset flag dan tombol
+            this.isSubmitting = false;
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Kirim Pengajuan';
+            }
         }
     },
 
