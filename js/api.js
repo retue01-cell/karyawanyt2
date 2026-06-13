@@ -129,6 +129,10 @@ const api = {
         if (!API_BASE_URL) return { success: true, data: storage.get('jurnals', []) };
         return this.request('getJournals', { userId });
     },
+    async updateReadNotifications(userId, readNotifIds) {
+        if (!API_BASE_URL) return { success: true };
+        return this.request('updateReadNotifs', { userId, readNotifs: JSON.stringify(readNotifIds) });
+    },
     async saveJournal(data) {
         if (!API_BASE_URL) {
             const all = storage.get('jurnals', []);
