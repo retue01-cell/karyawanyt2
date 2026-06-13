@@ -50,6 +50,10 @@ const api = {
         if (!API_BASE_URL) return { success: false, error: 'Backend required' };
         return this.request('updateEmployeeEmail', { userId, newEmail, password });
     },
+    async updateReadNotifications(userId, readNotifIds) {
+        if (!API_BASE_URL) return { success: true };
+        return this.request('updateReadNotifs', { userId, readNotifs: JSON.stringify(readNotifIds) });
+    },
     async updateEmployeeLeaveBalance(userId, leaveBalance) {
         if (!API_BASE_URL) return { success: false, error: 'Backend required' };
         return this.request('updateEmployeeLeaveBalance', { userId, leaveBalance });
