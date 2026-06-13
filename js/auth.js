@@ -108,7 +108,8 @@ const auth = {
                     position: result.data.position || '',
                     shift: result.data.shift || '',
                     avatar: result.data.avatar || '',
-                    loginTime: new Date().toISOString()
+                    loginTime: new Date().toISOString(),
+                    readNotifs: result.data.readNotifs || '[]'
                 };
                 
                 // VALIDASI ROLE: Bandingkan role yang dipilih dengan role yang sudah dinormalisasi
