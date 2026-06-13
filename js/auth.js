@@ -239,6 +239,11 @@ const auth = {
             if (window.mobile) {
                 window.mobile.handleResize();
             }
+
+            // Bangunkan notifikasi otomatis setelah login
+            if (window.notifications) {
+                window.notifications.init();
+            }
         }
     },
 
