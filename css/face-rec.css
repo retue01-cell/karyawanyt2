@@ -421,17 +421,19 @@
 
 /* Map container styling */
 #location-map {
-    height: 250px;
-    width: 100%;
+    height: 250px !important;
     min-height: 200px;
+    width: 100%;
+    background: #e5e7eb;
+    position: relative;
+    z-index: 1;
     border-radius: var(--border-radius);
     overflow: hidden;
-    background: #e5e7eb; /* warna fallback */
 }
 
 @media (max-width: 768px) {
     #location-map {
-        height: 200px;
+        height: 200px !important;
         min-height: 180px;
     }
 }
