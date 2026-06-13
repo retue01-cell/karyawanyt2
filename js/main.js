@@ -274,6 +274,15 @@ const dateTime = {
         const s = String(d.getSeconds()).padStart(2, '0');
         return `${h}:${m}:${s}`; // Menjamin format HH:MM:SS konsisten di semua browser
     },
+
+    getTimeAgo(date) {
+        if (!date || isNaN(date)) return '-';
+        const diffMins = Math.floor((new Date() - date) / 60000);
+        if (diffMins < 1) return 'Baru saja';
+        if (diffMins < 60) return `${diffMins} menit lalu`;
+        if (diffMins < 1440) return `${Math.floor(diffMins / 60)} jam lalu`;
+        return `${Math.floor(diffMins / 1440)} hari lalu`;
+    }
 };
 
 // Form Utilities
@@ -822,3 +831,199 @@ const departmentManager = {
 };
 
 window.departmentManager = departmentManager;
+
+/* ============================================
+   PORTAL KARYAWAN - NOTIFICATIONS MODULE
+   ============================================ */
+const notifications = {
+    notifData: [],
+    
+    async init() {
+        this.bindEvents();
+        // Proses pengecekan
+        if(auth.getCurrentUser()) {
+            await this.checkNotifications();
+        }
+        
+        // Auto-refresh notifikasi setiap 3 menit
+        setInterval(() => {
+            if(auth.getCurrentUser()) this.checkNotifications();
+        }, 3 * 60 * 1000);
+    },
+
+    bindEvents() {
+        const btn = document.getElementById('btn-notifications');
+        const dropdown = document.getElementById('notifications-dropdown');
+        
+        if (btn && dropdown) {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isShowing = dropdown.style.display === 'block';
+                
+                // Toggle buka tutup popup
+                dropdown.style.display = isShowing ? 'none' : 'block';
+                
+                if (!isShowing) {
+                    this.renderList();
+                    this.markAsRead(); // Hapus badge angka (tandai sudah dilihat)
+                }
+            });
+
+            // Tutup dropdown saat pengguna klik area lain di layar
+            document.addEventListener('click', (e) => {
+                if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.style.display = 'none';
+                }
+            });
+        }
+    },
+
+    async checkNotifications() {
+        const currentUser = auth.getCurrentUser();
+        if (!currentUser) return;
+
+        this.notifData = [];
+        
+        try {
+            if (currentUser.role === 'admin') {
+                // -- NOTIFIKASI ADMIN --
+                // Cari Pengajuan Cuti & Izin milik siapa saja yang menunggu "Pending"
+                const [leaveRes, izinRes] = await Promise.all([
+                    api.getAllLeaves(),
+                    api.getAllIzin()
+                ]);
+                
+                const pendingLeaves = (leaveRes.data || []).filter(l => l.status === 'pending');
+                const pendingIzin = (izinRes.data || []).filter(i => i.status === 'pending');
+
+                pendingLeaves.forEach(l => {
+                    this.notifData.push({
+                        id: `cuti_${l.id}`,
+                        title: 'Pengajuan Cuti Baru',
+                        desc: `Terdapat pengajuan cuti menunggu dari ID: ${l.userId}.`,
+                        time: l.appliedAt || new Date().toISOString(),
+                        action: 'leave-reports'
+                    });
+                });
+
+                pendingIzin.forEach(i => {
+                    this.notifData.push({
+                        id: `izin_${i.id}`,
+                        title: 'Pengajuan Izin Baru',
+                        desc: `Terdapat pengajuan izin menunggu dari ID: ${i.userId}.`,
+                        time: i.appliedAt || new Date().toISOString(),
+                        action: 'leave-reports'
+                    });
+                });
+
+            } else {
+                // -- NOTIFIKASI KARYAWAN --
+                // Cek apakah Pengajuan Cuti / Izin pribadi mereka telah "Disetujui" atau "Ditolak"
+                const [leaveRes, izinRes] = await Promise.all([
+                    api.getLeaves(currentUser.id),
+                    api.getIzin(currentUser.id)
+                ]);
+
+                const resolvedLeaves = (leaveRes.data || []).filter(l => l.status !== 'pending');
+                const resolvedIzin = (izinRes.data || []).filter(i => i.status !== 'pending');
+
+                resolvedLeaves.forEach(l => {
+                    this.notifData.push({
+                        id: `cuti_${l.id}_${l.status}`,
+                        title: `Cuti Anda ${l.status === 'approved' ? 'Disetujui' : 'Ditolak'}`,
+                        desc: `Riwayat pengajuan cuti Anda pada tanggal ${l.startDate} telah direspon admin.`,
+                        time: l.appliedAt || new Date().toISOString(),
+                        action: 'cuti'
+                    });
+                });
+
+                resolvedIzin.forEach(i => {
+                    this.notifData.push({
+                        id: `izin_${i.id}_${i.status}`,
+                        title: `Izin Anda ${i.status === 'approved' ? 'Disetujui' : 'Ditolak'}`,
+                        desc: `Pengajuan izin Anda pada tanggal ${i.date} telah direspon admin.`,
+                        time: i.appliedAt || new Date().toISOString(),
+                        action: 'izin'
+                    });
+                });
+            }
+
+            // Urutkan data berdasarkan waktu terbaru di atas
+            this.notifData.sort((a, b) => new Date(b.time) - new Date(a.time));
+            
+            // Hitung Badge
+            this.updateBadge();
+
+        } catch (error) {
+            console.error('Error mengecek notifikasi:', error);
+        }
+    },
+
+    updateBadge() {
+        const badge = document.getElementById('notification-badge');
+        if (!badge) return;
+
+        // Ambil riwayat IDs notifikasi yang SEMPAT DIBACA oleh user dari localStorage
+        const readNotifs = storage.get('read_notifications', []);
+        
+        // Filter notifikasi baru yang belum masuk index readNotifs
+        const unreadCount = this.notifData.filter(n => !readNotifs.includes(n.id)).length;
+
+        if (unreadCount > 0) {
+            badge.textContent = unreadCount;
+            badge.style.display = 'flex';
+        } else {
+            badge.style.display = 'none';
+        }
+    },
+
+    markAsRead() {
+        const badge = document.getElementById('notification-badge');
+        if (badge) badge.style.display = 'none';
+
+        // Tandai semua notifikasi hari ini sebagai DIBACA ke dalam localstorage
+        const readNotifs = storage.get('read_notifications', []);
+        
+        this.notifData.forEach(n => {
+            if (!readNotifs.includes(n.id)) {
+                readNotifs.push(n.id);
+            }
+        });
+
+        // Limit localStorage agar tidak berat (Hapus jika di atas toleransi)
+        if (readNotifs.length > 200) {
+            readNotifs.splice(0, readNotifs.length - 200);
+        }
+        
+        storage.set('read_notifications', readNotifs);
+    },
+
+    renderList() {
+        const listContainer = document.getElementById('notifications-list');
+        if (!listContainer) return;
+
+        if (this.notifData.length === 0) {
+            listContainer.innerHTML = '<div class="notification-empty">Tidak ada notifikasi baru</div>';
+            return;
+        }
+
+        // Render Top 10 Terbaru 
+        listContainer.innerHTML = this.notifData.slice(0, 10).map(n => `
+            <div class="notification-item" onclick="notifications.goToAction('${n.action}')">
+                <div class="notification-title">${n.title}</div>
+                <div class="notification-desc">${n.desc}</div>
+                <span class="notification-time">${dateTime.getTimeAgo(new Date(n.time))}</span>
+            </div>
+        `).join('');
+    },
+
+    goToAction(actionPage) {
+        // Arahkan ke halaman spesifik ketika notifikasi diklik
+        document.getElementById('notifications-dropdown').style.display = 'none';
+        if (window.router) {
+            router.navigate(actionPage);
+        }
+    }
+};
+
+window.notifications = notifications;
