@@ -963,8 +963,25 @@ const notifications = {
         const badge = document.getElementById('notification-badge');
         if (!badge) return;
 
-        // Ambil riwayat IDs notifikasi yang SEMPAT DIBACA oleh user dari localStorage
-        const readNotifs = storage.get('read_notifications', []);
+        // Ambil riwayat IDs notifikasi yang SEMPAT DIBACA dari server (currentUser.readNotifs) dan localStorage
+        const currentUser = auth.getCurrentUser();
+        let readNotifs = storage.get('read_notifications', []);
+        
+        // Gabungkan dengan data dari server jika tersedia (untuk sinkronisasi lintas device)
+        if (currentUser && currentUser.readNotifs) {
+            try {
+                const serverReadNotifs = typeof currentUser.readNotifs === 'string' ? JSON.parse(currentUser.readNotifs) : currentUser.readNotifs;
+                if (Array.isArray(serverReadNotifs)) {
+                    serverReadNotifs.forEach(id => {
+                        if (!readNotifs.includes(id)) {
+                            readNotifs.push(id);
+                        }
+                    });
+                }
+            } catch(e) {
+                console.warn('Gagal parse readNotifs dari server:', e);
+            }
+        }
         
         // Filter notifikasi baru yang belum masuk index readNotifs
         const unreadCount = this.notifData.filter(n => !readNotifs.includes(n.id)).length;
@@ -996,6 +1013,12 @@ const notifications = {
         }
         
         storage.set('read_notifications', readNotifs);
+
+        // Sinkronisasi dengan server untuk notifikasi lintas device
+        const currentUser = auth.getCurrentUser();
+        if (currentUser && currentUser.id) {
+            api.updateReadNotifications(currentUser.id, readNotifs).catch(e => console.warn('Gagal sinkronisasi notifikasi', e));
+        }
     },
 
     renderList() {
