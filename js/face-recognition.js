@@ -487,86 +487,116 @@ const faceRecognition = {
 
     initMap(position) {
         const mapContainer = document.getElementById('location-map');
-        if (!mapContainer) return;
+        if (!mapContainer) {
+            console.warn('Map container not found');
+            return;
+        }
 
-        // === PERBAIKAN 1: Hancurkan map sebelumnya ===
+        // Pastikan Leaflet sudah tersedia
+        if (typeof L === 'undefined') {
+            console.error('Leaflet library not loaded');
+            this.initMapFallback();
+            return;
+        }
+
+        // Hancurkan map lama jika ada
         if (this.map) {
             try {
                 this.map.remove();
             } catch(e) {
-                console.warn('Gagal menghapus map lama:', e);
+                console.warn('Error removing old map:', e);
             }
             this.map = null;
         }
 
-        // Bersihkan container
-        // === PERBAIKAN 1: Override path marker Leaflet dari CDN ===
-        delete L.Icon.Default.prototype._getIconUrl;
-        L.Icon.Default.mergeOptions({
-            iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-            iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-            shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-        });
-
+        // Bersihkan container dan pastikan memiliki ukuran yang valid
         mapContainer.innerHTML = '';
-        
-        // Buat peta Leaflet (tambahkan opsi zoom control untuk debugging)
-        const map = L.map(mapContainer, {
-            zoomControl: true,
-            fadeAnimation: false  // hindari efek fade yang bisa ganggu
-        }).setView([position.coords.latitude, position.coords.longitude], 15);
-        
-        // Tile layer (peta dasar) dari CartoDB
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-            subdomains: 'abcd',
-            maxZoom: 19
-        }).addTo(map);
-        
-        // Marker lokasi user
-        const userMarker = L.marker([position.coords.latitude, position.coords.longitude], {
-            title: 'Lokasi Anda'
-        }).addTo(map);
-        
-        userMarker.bindPopup(`
-            <strong>📍 Lokasi Anda</strong><br>
-            ${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}<br>
-            Akurasi: ±${Math.round(position.coords.accuracy)} m
-        `).openPopup();
-        
-        // Lingkaran akurasi GPS
-        L.circle([position.coords.latitude, position.coords.longitude], {
-            radius: position.coords.accuracy,
-            color: '#3B82F6',
-            fillColor: '#3B82F6',
-            fillOpacity: 0.1,
-            weight: 2
-        }).addTo(map);
-        
-        // Simpan instance map untuk keperluan lain (opsional)
-        this.map = map;
-        
-        // === PERBAIKAN 2: invalidateSize dengan delay lebih andal ===
-        setTimeout(() => {
-            if (this.map) {
-                this.map.invalidateSize();
+        mapContainer.style.height = '250px'; // pastikan tinggi tetap
+        mapContainer.style.width = '100%';
+
+        // Tunggu hingga container benar-benar memiliki dimensi (gunakan requestAnimationFrame)
+        const initMapWhenReady = () => {
+            const rect = mapContainer.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) {
+                // Container belum siap, coba lagi setelah animasi
+                requestAnimationFrame(initMapWhenReady);
+                return;
             }
-        }, 600); // 600ms aman dari durasi animasi fadeInUp (400ms)
-        
-        // Tambahkan event listener untuk resize window
-        window.addEventListener('resize', () => {
-            if (this.map) this.map.invalidateSize();
-        });
+
+            try {
+                // Override icon marker Leaflet
+                delete L.Icon.Default.prototype._getIconUrl;
+                L.Icon.Default.mergeOptions({
+                    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+                    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+                    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+                });
+
+                // Buat map dengan fallback tile layer
+                const map = L.map(mapContainer, {
+                    zoomControl: true,
+                    fadeAnimation: false
+                }).setView([position.coords.latitude, position.coords.longitude], 15);
+
+                // Gunakan tile layer OpenStreetMap (lebih stabil)
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                    maxZoom: 19
+                }).addTo(map);
+
+                // Marker user
+                const userMarker = L.marker([position.coords.latitude, position.coords.longitude], {
+                    title: 'Lokasi Anda'
+                }).addTo(map);
+                userMarker.bindPopup(`
+                    <strong>📍 Lokasi Anda</strong><br>
+                    ${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}<br>
+                    Akurasi: ±${Math.round(position.coords.accuracy)} m
+                `).openPopup();
+
+                // Lingkaran akurasi
+                L.circle([position.coords.latitude, position.coords.longitude], {
+                    radius: position.coords.accuracy,
+                    color: '#3B82F6',
+                    fillColor: '#3B82F6',
+                    fillOpacity: 0.1,
+                    weight: 2
+                }).addTo(map);
+
+                this.map = map;
+
+                // Panggil invalidateSize beberapa kali untuk memastikan render
+                const invalidateMap = () => {
+                    if (this.map) this.map.invalidateSize({ animate: false });
+                };
+                setTimeout(invalidateMap, 100);
+                setTimeout(invalidateMap, 400);
+                setTimeout(invalidateMap, 1000);
+
+                // Resize listener
+                window.addEventListener('resize', invalidateMap);
+
+                console.log('Map initialized successfully');
+            } catch (err) {
+                console.error('Error creating map:', err);
+                this.initMapFallback();
+            }
+        };
+
+        // Mulai proses dengan sedikit delay untuk memastikan DOM stabil
+        setTimeout(() => {
+            requestAnimationFrame(initMapWhenReady);
+        }, 100);
     },
 
     initMapFallback() {
         const mapContainer = document.getElementById('location-map');
-        if (!mapContainer) return;
+        if (!mapContainer || !this.position) return;
         mapContainer.innerHTML = `
             <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #e5e7eb; color: #6b7280; flex-direction: column;">
                 <i class="fas fa-map-marker-alt fa-2x" style="margin-bottom: 8px;"></i>
-                <p style="font-size: 14px;">Tidak dapat menampilkan peta</p>
-                <p style="font-size: 12px;">Lokasi gagal diakses atau tidak tersedia</p>
+                <p style="font-size: 14px;">Lokasi Anda: ${this.position.coords.latitude.toFixed(6)}, ${this.position.coords.longitude.toFixed(6)}</p>
+                <p style="font-size: 12px;">(Peta tidak dapat ditampilkan, namun lokasi terekam)</p>
             </div>
         `;
     },
