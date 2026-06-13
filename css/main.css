@@ -1023,15 +1023,13 @@ img {
 
 /* Bar chart status colors */
 .bar-fill.leave {
-    background: #F59E0B; /* Amber untuk cuti/libur */
+    background: var(--color-info); /* Biru untuk cuti */
+    opacity: 0.8;
 }
 
 .bar-fill.izin {
-    background: #3B82F6; /* Biru untuk izin */
-}
-
-.bar-fill.absent {
-    background: #EF4444; /* Merah untuk alpha/tidak hadir tanpa keterangan */
+    background: var(--color-danger); /* Merah untuk Izin / Sakit */
+    opacity: 0.8;
 }
 
 .bar-label {
