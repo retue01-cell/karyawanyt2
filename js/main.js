@@ -1027,3 +1027,59 @@ const notifications = {
 };
 
 window.notifications = notifications;
+
+// Initialize App Sequentially
+document.addEventListener('DOMContentLoaded', async () => {
+    loadingIndicator.init();
+    initializeData();
+
+    // 1. Terapkan identitas dari _local cache_ terlebih dahulu untuk performa
+    updateCompanyUI();
+    applyLoginDisplaySettings();
+
+    // 2. Berhentikan render UI sementara dan tunggu *request API* logo & nama perusahaan selesai
+    try {
+        await refreshCompanyData();
+    } catch (e) {
+        console.warn('Gagal memuat identitas online, paksa gunakan cache.', e);
+    } finally {
+        // 3. Update secara menyeluruh untuk terakhir kalinya agar 100% presisi
+        updateCompanyUI();
+        applyLoginDisplaySettings();
+
+        // 4. Inisiasi proses autentikasi *(Dipindah dari auth.js ke sini)*, 
+        // sehingga pengecekan "apa user ini sudah login?" tidak mendahului memuatnya layout nama perusahaan
+        if (window.auth && typeof window.auth.init === 'function') {
+            window.auth.init();
+        }
+
+        // 5. Munculkan Form Login UI dengan perlahan *(Fade In)*
+        const loginContainer = document.getElementById('login-container');
+        if (loginContainer && loginContainer.style.display !== 'none') {
+            loginContainer.style.opacity = '1';
+        }
+
+        // 6. Matikan Layar _Splash Screen_ / full-screen loader
+        const loadingOverlay = document.getElementById('loading-overlay');
+        if (loadingOverlay) {
+            loadingOverlay.classList.remove('active');
+            
+            // Kembalikan properti background ke default (transparan gelap) jika nanti sewaktu-waktu dipakai proses lain
+            setTimeout(() => {
+                loadingOverlay.style.background = 'rgba(0, 0, 0, 0.5)';
+            }, 500);
+        }
+    }
+
+    // Update Live Clock Tick
+    const timeEl = document.getElementById('current-time');
+    if (timeEl) {
+        setInterval(() => {
+            const now = new Date();
+            const time = timeEl.querySelector('.time');
+            const date = timeEl.querySelector('.date');
+            if (time) time.textContent = dateTime.getCurrentTimeHM();
+            if (date) date.textContent = dateTime.formatDate(now);
+        }, 1000);
+    }
+});
