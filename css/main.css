@@ -1021,6 +1021,19 @@ img {
     background: var(--color-gray-300);
 }
 
+/* Bar chart status colors */
+.bar-fill.leave {
+    background: #F59E0B; /* Amber untuk cuti/libur */
+}
+
+.bar-fill.izin {
+    background: #3B82F6; /* Biru untuk izin */
+}
+
+.bar-fill.absent {
+    background: #EF4444; /* Merah untuk alpha/tidak hadir tanpa keterangan */
+}
+
 .bar-label {
     font-size: var(--font-size-xs);
     color: var(--text-muted);
@@ -1057,6 +1070,8 @@ img {
 .activity-icon.clock-in { background: var(--color-success); }
 .activity-icon.clock-out { background: var(--color-danger); }
 .activity-icon.journal { background: var(--color-info); }
+.activity-icon.leave { background: #F59E0B; } /* Amber untuk cuti */
+.activity-icon.izin { background: #3B82F6; } /* Biru untuk izin */
 
 .activity-content {
     flex: 1;
