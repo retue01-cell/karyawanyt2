@@ -396,93 +396,88 @@ const dashboard = {
         if (!barChartContainer) return;
 
         const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-        const today = new Date();
-        
-        // Cari hari Senin dari minggu ini
-        const dayOfWeek = today.getDay(); // 0 = Minggu, 1 = Senin, ..., 6 = Sabtu
-        const mondayOffset = dayOfWeek === 0 ? -6 : (1 - dayOfWeek); // Jika Minggu, mundur 6 hari; jika Senin, 0; jika Selasa, -1, dst.
-        const monday = new Date(today);
-        monday.setDate(today.getDate() + mondayOffset);
-        
-        // Set ke tengah hari untuk menghindari masalah timezone
-        monday.setHours(12, 0, 0, 0);
-        
         const weeklyData = [];
-        const standardWorkHours = 9; // Asumsi jam kerja standar 9 jam (termasuk istirahat)
         
+        // 1. Dapatkan tanggal hari Senin untuk minggu ini
+        const today = new Date();
+        const currentDay = today.getDay();
+        const diffToMonday = currentDay === 0 ? -6 : (1 - currentDay); 
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() + diffToMonday);
+        
+        // 2. Loop dari Senin (0) sampai Minggu (6)
         for (let i = 0; i < 7; i++) {
-            const date = new Date(monday);
-            date.setDate(monday.getDate() + i);
+            const date = new Date(startOfWeek);
+            date.setDate(startOfWeek.getDate() + i);
+            
             const dateStr = dateTime.getLocalDate(date);
             const dayName = days[date.getDay()];
-            const attendance = this.attendanceData.find(a => a.date === dateStr);
-            
             const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-            let heightPercent = 0;
-            let statusClass = '';
-            let labelSuffix = '';
             
-            if (attendance) {
-                // Cek status cuti/izin terlebih dahulu
-                const statusLower = (attendance.status || '').toLowerCase();
+            // Ambil referensi kehadiran hari tersebut
+            const attendance = this.attendanceData.find(a => a.date === dateStr);
+            const status = attendance ? String(attendance.status || '').toLowerCase() : '';
+            
+            const isCuti = status.includes('cuti') || status.includes('libur');
+            const isIzin = status.includes('izin') || status.includes('sakit');
+            const isPresent = attendance && attendance.clockIn && attendance.clockIn !== '';
+            
+            // 3. Kalkulasi tinggi batang grafik proporsional
+            let heightPercent = 0;
+            if (isCuti || isIzin) {
+                heightPercent = 100; // Cuti/Izin tampil penuh
+            } else if (isPresent) {
+                let startMins = 0;
+                let endMins = 0;
                 
-                if (statusLower.includes('cuti') || statusLower.includes('libur')) {
-                    statusClass = 'leave';
-                    labelSuffix = ' (Cuti/Libur)';
-                    heightPercent = 0; // Tidak ada batang untuk cuti/libur
-                } else if (statusLower.includes('izin')) {
-                    statusClass = 'izin';
-                    labelSuffix = ' (Izin)';
-                    heightPercent = 0;
-                } else if (attendance.clockIn && attendance.clockIn !== '') {
-                    // Hitung durasi kerja
-                    let workHours = 0;
-                    if (attendance.clockOut && attendance.clockOut !== '') {
-                        const clockIn = dateTime.normalizeTime(attendance.clockIn);
-                        const clockOut = dateTime.normalizeTime(attendance.clockOut);
-                        
-                        const [inH, inM] = clockIn.split(':').map(Number);
-                        const [outH, outM] = clockOut.split(':').map(Number);
-                        
-                        if (!isNaN(inH) && !isNaN(inM) && !isNaN(outH) && !isNaN(outM)) {
-                            let workMinutes = (outH * 60 + outM) - (inH * 60 + inM);
-                            if (workMinutes < 0) workMinutes += 24 * 60; // Handle shift malam
-                            workHours = workMinutes / 60;
-                        }
-                    }
-                    
-                    // Hitung persentase tinggi berdasarkan durasi kerja (max 100% untuk 9 jam)
-                    heightPercent = Math.min(100, Math.round((workHours / standardWorkHours) * 100));
-                    
-                    // Pastikan minimal terlihat jika hadir
-                    if (heightPercent < 10) heightPercent = 100;
+                // Parsing jam clock in
+                const startStr = dateTime.normalizeTime(attendance.clockIn);
+                const [startH, startM] = startStr.split(':').map(Number);
+                startMins = startH * 60 + startM;
+                
+                // Parsing jam clock out
+                if (attendance.clockOut && attendance.clockOut !== '') {
+                    const endStr = dateTime.normalizeTime(attendance.clockOut);
+                    const [endH, endM] = endStr.split(':').map(Number);
+                    endMins = endH * 60 + endM;
+                } else if (dateStr === dateTime.getLocalDate(new Date())) {
+                    // Jika hari ini dan belum clock out tutup durasi dengan jam sekarang
+                    const now = new Date();
+                    endMins = now.getHours() * 60 + now.getMinutes();
                 } else {
-                    // Alpha (tidak hadir tanpa keterangan)
-                    heightPercent = 0;
-                    statusClass = 'absent';
+                    // Jika di masa lalu belum clock out tapi status present (lupa absen)
+                    endMins = startMins + (4 * 60); // Asumsi 4 jam minimal
                 }
-            } else {
-                // Tidak ada data sama sekali
-                heightPercent = 0;
+                
+                let diffMins = endMins - startMins;
+                if (diffMins < 0) diffMins += 24 * 60; // Antisipasi shift malam
+                
+                // Asumsi standar 9 jam kerja = 540 menit sebagai 100% tinggi
+                heightPercent = Math.min(100, Math.round((diffMins / 540) * 100));
             }
+            
+            // 4. Mapping custom class untuk membedakan representasi visual
+            let fillClass = '';
+            if (isCuti) fillClass = 'leave';
+            else if (isIzin) fillClass = 'izin';
+            else if (isWeekend && !isPresent) fillClass = 'weekend';
             
             weeklyData.push({ 
                 day: dayName, 
-                height: heightPercent,
-                weekend: isWeekend,
-                statusClass: statusClass,
-                labelSuffix: labelSuffix
+                height: heightPercent, 
+                fillClass: fillClass 
             });
         }
 
-        // Render bar chart
+        // 5. Render HTML Bar ke dalam container
         barChartContainer.innerHTML = weeklyData.map(day => `
-            <div class="bar-item">
-                <div class="bar-fill ${day.weekend ? 'weekend' : ''} ${day.statusClass}" style="height: ${day.height}%; min-height: ${day.height > 0 ? '4px' : '0'};"></div>
-                <span class="bar-label">${day.day}${day.labelSuffix}</span>
+            <div class="bar-item" title="${day.height}%">
+                <div class="bar-fill ${day.fillClass}" style="height: ${day.height}%; min-height: ${day.height > 0 ? '4px' : '0'};"></div>
+                <span class="bar-label">${day.day}</span>
             </div>
         `).join('');
     },
+
 
     async renderRecentActivities() {
         const activityList = document.querySelector('.activity-list');
