@@ -1067,6 +1067,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Kembalikan properti background ke default (transparan gelap) jika nanti sewaktu-waktu dipakai proses lain
             setTimeout(() => {
                 loadingOverlay.style.background = 'rgba(0, 0, 0, 0.5)';
+                loadingOverlay.style.display = 'none';
             }, 500);
         }
     }
