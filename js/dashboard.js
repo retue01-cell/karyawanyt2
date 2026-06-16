@@ -10,6 +10,15 @@ const dashboard = {
     izinData: [],
     currentPeriod: 'current', // 'current' atau 'last'
 
+    reset() {
+        this.initialized = false;
+        this.attendanceData = [];
+        this.leavesData = [];
+        this.izinData = [];
+        this.currentPeriod = 'current';
+        console.log('Dashboard reset');
+    },
+
     async init() {
         console.log('Dashboard init - start');
         
