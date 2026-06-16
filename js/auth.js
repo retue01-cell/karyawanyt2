@@ -192,6 +192,16 @@ const auth = {
                 window.absensi.reset();
             }
 
+            // Reset dashboard
+            if (window.dashboard && typeof window.dashboard.reset === 'function') {
+                window.dashboard.reset();
+            }
+
+            // Hapus data lokal
+            storage.remove('leaveBalance');
+            storage.remove('read_notifications');
+            storage.remove('temp_overtime_started');
+
             this.currentUser = null;
             storage.remove('session');
             storage.remove('currentPage');
@@ -204,6 +214,11 @@ const auth = {
     showApp() {
         // Hapus currentPage yang tersimpan untuk mencegah override router
         storage.remove('currentPage');
+        
+        // Reset dashboard sebelum navigasi halaman
+        if (window.dashboard && typeof window.dashboard.reset === 'function') {
+            window.dashboard.reset();
+        }
         
         const loginContainer = document.getElementById('login-container');
         const appContainer = document.getElementById('app-container');
