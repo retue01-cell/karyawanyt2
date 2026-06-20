@@ -185,6 +185,13 @@
 .verification-status .status-icon {
     font-size: 4rem;
     margin-bottom: var(--spacing);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.verification-status .status-icon i {
+    transform: none !important;
 }
 
 .verification-status p {
